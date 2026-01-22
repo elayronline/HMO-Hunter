@@ -1,0 +1,68 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Holloway Article 4 Direction",
+        "authority": "Islington Council",
+        "effective_date": "2024-01-01",
+        "restrictions": "HMO conversions restricted"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-0.1180, 51.5550],
+            [-0.1150, 51.5550],
+            [-0.1150, 51.5520],
+            [-0.1180, 51.5520],
+            [-0.1180, 51.5550]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bethnal Green Article 4 Direction",
+        "authority": "Tower Hamlets Council",
+        "effective_date": "2023-06-01",
+        "restrictions": "HMO conversions restricted"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-0.0620, 51.5280],
+            [-0.0580, 51.5280],
+            [-0.0580, 51.5250],
+            [-0.0620, 51.5250],
+            [-0.0620, 51.5280]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Camberwell Article 4 Direction",
+        "authority": "Southwark Council",
+        "effective_date": "2024-03-01",
+        "restrictions": "HMO conversions restricted"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-0.0900, 51.4740],
+            [-0.0850, 51.4740],
+            [-0.0850, 51.4710],
+            [-0.0900, 51.4710],
+            [-0.0900, 51.4740]
+          ]
+        ]
+      }
+    }
+  ]
+}
