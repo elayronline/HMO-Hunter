@@ -222,10 +222,10 @@ function getPropertyTypeCode(type: string | undefined): "D" | "S" | "T" | "F" | 
   return "O"
 }
 
-export function formatPropertyType(code: string): string {
+export async function formatPropertyType(code: string): Promise<string> {
   return PROPERTY_TYPE_MAP[code] || "Other"
 }
 
-export function formatTenure(code: string): string {
+export async function formatTenure(code: string): Promise<string> {
   return TENURE_MAP[code] || "Unknown"
 }

@@ -83,7 +83,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       query = query.or(`available_from.is.null,available_from.lte.${today}`)
     }
 
-    const { data, error } = await safeSupabaseQuery(() => query)
+    const { data, error } = await safeSupabaseQuery(async () => await query)
 
     if (error) {
       const errorMessage = error.message || String(error)

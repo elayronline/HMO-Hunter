@@ -44,6 +44,9 @@ import type { Property } from "@/lib/types/database"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
 import { BookViewingButton } from "@/components/book-viewing-button"
+import { DEFAULT_CITY, type UKCity } from "@/lib/data/uk-cities"
+import { CitySearchAutocomplete } from "@/components/city-search-autocomplete"
+import { MainMapView } from "@/components/main-map-view"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
@@ -56,7 +59,7 @@ export default function HMOHunterPage() {
 
   const [showFullDetails, setShowFullDetails] = useState(false)
 
-  const [mapCenter] = useState({ lat: 51.5074, lng: -0.1278 }) // London center
+  const [selectedCity, setSelectedCity] = useState<UKCity>(DEFAULT_CITY)
 
   const [priceRange, setPriceRange] = useState([1000, 10000])
   const priceRangeKey = priceRange.join(",")
@@ -73,6 +76,8 @@ export default function HMOHunterPage() {
   const [savedExpanded, setSavedExpanded] = useState(true)
   const [recentExpanded, setRecentExpanded] = useState(false)
   const [trendsExpanded, setTrendsExpanded] = useState(true)
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true)
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
@@ -143,7 +148,7 @@ export default function HMOHunterPage() {
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
           propertyTypes,
-          city: "London",
+          city: selectedCity.name,
           availableNow,
           studentFriendly,
           petFriendly,
@@ -189,6 +194,7 @@ export default function HMOHunterPage() {
     listingType,
     priceRangeKey,
     propertyTypesKey,
+    selectedCity,
     availableNow,
     studentFriendly,
     petFriendly,
@@ -204,7 +210,7 @@ export default function HMOHunterPage() {
         minPrice: priceRange[0],
         maxPrice: priceRange[1],
         propertyTypes,
-        city: "London",
+        city: selectedCity.name,
         availableNow,
         studentFriendly,
         petFriendly,
@@ -225,26 +231,6 @@ export default function HMOHunterPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push("/auth/login")
-  }
-
-  const latLngToScreenPosition = (lat: number, lng: number) => {
-    // London bounding box for viewport
-    const bounds = {
-      north: 51.55,
-      south: 51.45,
-      east: -0.05,
-      west: -0.2,
-    }
-
-    // Calculate percentage position within bounds
-    const x = ((lng - bounds.west) / (bounds.east - bounds.west)) * 100
-    const y = ((bounds.north - lat) / (bounds.north - bounds.south)) * 100
-
-    // Clamp values to keep markers on screen
-    return {
-      x: Math.max(10, Math.min(90, x)),
-      y: Math.max(10, Math.min(90, y)),
-    }
   }
 
   const calculateAveragePrice = () => {
@@ -364,9 +350,30 @@ export default function HMOHunterPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0 }}>
+        {/* Left Sidebar Toggle Button */}
+        {!leftPanelOpen && (
+          <button
+            onClick={() => setLeftPanelOpen(true)}
+            className="absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
+            title="Open filters"
+          >
+            <Search className="w-5 h-5 text-teal-600" />
+          </button>
+        )}
+
         {/* Left Sidebar */}
-        <aside className="w-[280px] bg-white border-r border-slate-200 overflow-y-auto">
+        {leftPanelOpen && (
+        <aside className="w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 relative">
+          {/* Close button */}
+          <button
+            onClick={() => setLeftPanelOpen(false)}
+            className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+            title="Close filters"
+          >
+            <X className="w-4 h-4 text-slate-600" />
+          </button>
+
           {/* Search Parameters */}
           <div className="p-4 border-b border-slate-200">
             <button
@@ -462,16 +469,10 @@ export default function HMOHunterPage() {
 
                 <div>
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Location</label>
-                  <Select defaultValue="london">
-                    <SelectTrigger className="w-full bg-white border-teal-200 focus:border-teal-500 focus:ring-teal-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="london">London, UK</SelectItem>
-                      <SelectItem value="manchester">Manchester, UK</SelectItem>
-                      <SelectItem value="birmingham">Birmingham, UK</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CitySearchAutocomplete
+                    selectedCity={selectedCity}
+                    onCityChange={setSelectedCity}
+                  />
                 </div>
 
                 <Button onClick={handleSearch} className="w-full bg-teal-600 hover:bg-teal-700 text-white">
@@ -581,7 +582,10 @@ export default function HMOHunterPage() {
                   savedProperties.slice(0, 4).map((savedProp) => (
                     <div
                       key={savedProp.id}
-                      onClick={() => setSelectedProperty(savedProp.property)}
+                      onClick={() => {
+                        setSelectedProperty(savedProp.property)
+                        setRightPanelOpen(true)
+                      }}
                       className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <div className="w-10 h-10 bg-slate-200 rounded flex-shrink-0">
@@ -661,166 +665,108 @@ export default function HMOHunterPage() {
             )}
           </div>
         </aside>
+        )}
 
         {/* Map Area */}
-        <main className="flex-1 relative bg-slate-200">
-          <div className="w-full h-full relative overflow-hidden">
-            {/* Map background with street pattern */}
-            <div className="absolute inset-0 bg-slate-100">
-              <svg className="absolute inset-0 w-full h-full opacity-30" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
-                    <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgb(148 163 184)" strokeWidth="0.5" />
-                    <path d="M 50 0 L 50 100 M 0 50 L 100 50" fill="none" stroke="rgb(148 163 184)" strokeWidth="0.3" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+        <main className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
+          {/* MapLibre GL Map */}
+          <MainMapView
+            selectedCity={selectedCity}
+            properties={properties}
+            selectedProperty={selectedProperty}
+            onPropertySelect={(property) => {
+              setSelectedProperty(property)
+              setRightPanelOpen(true)
+            }}
+            loading={loading}
+          />
 
-                {/* Street names and labels */}
-                <text x="15%" y="20%" fontSize="8" fill="rgb(100 116 139)" opacity="0.5">
-                  Regent St
-                </text>
-                <text x="65%" y="30%" fontSize="8" fill="rgb(100 116 139)" opacity="0.5">
-                  Baker St
-                </text>
-                <text x="25%" y="60%" fontSize="8" fill="rgb(100 116 139)" opacity="0.5">
-                  Towarea Road
-                </text>
-                <text x="75%" y="75%" fontSize="8" fill="rgb(100 116 139)" opacity="0.5">
-                  Russell Square
-                </text>
-                <text x="50%" y="65%" fontSize="10" fill="rgb(71 85 105)" opacity="0.7" fontWeight="500">
-                  London
-                </text>
-              </svg>
-
-              {/* Green park areas */}
-              <div className="absolute top-[15%] right-[10%] w-24 h-32 bg-green-100 opacity-40 rounded-lg"></div>
-              <div className="absolute bottom-[20%] left-[8%] w-32 h-24 bg-green-100 opacity-40 rounded-lg"></div>
-              <div className="absolute top-[10%] left-[30%] w-20 h-20 bg-green-100 opacity-40 rounded-full"></div>
-            </div>
-
-            {/* Search radius circle */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full border-2 border-teal-500/40 bg-teal-50/30"></div>
-
-            {loading ? (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-600">
-                Loading properties...
+          {/* Selected Property Card Overlay */}
+          {selectedProperty && (
+            <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-72 shadow-2xl bg-white border-slate-200 z-20">
+              <div className="relative">
+                <SavePropertyButton
+                  propertyId={selectedProperty.id}
+                  initialSaved={savedPropertyIds.has(selectedProperty.id)}
+                />
               </div>
-            ) : (
-              properties.map((property) => {
-                const { x, y } = latLngToScreenPosition(Number(property.latitude), Number(property.longitude))
-
-                const markerType =
-                  property.hmo_status === "Licensed HMO"
-                    ? "licensed"
-                    : property.hmo_status === "Potential HMO"
-                      ? "potential"
-                      : "standard"
-
-                return (
-                  <div
-                    key={property.id}
-                    onClick={() => setSelectedProperty(property)}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full font-bold text-white flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-md
-                      ${
-                        markerType === "licensed"
-                          ? "bg-teal-700 w-10 h-10 text-xs"
-                          : markerType === "potential"
-                            ? "bg-white border-2 border-teal-600 text-teal-600 w-9 h-9 text-xs"
-                            : "bg-teal-600 w-9 h-9 text-xs"
-                      }
-                    `}
-                    style={{ left: `${x}%`, top: `${y}%` }}
-                  >
-                    {property.bedrooms}
-                  </div>
-                )
-              })
-            )}
-
-            {selectedProperty && (
-              <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-72 shadow-2xl bg-white border-slate-200">
-                <div className="relative">
-                  <SavePropertyButton
-                    propertyId={selectedProperty.id}
-                    initialSaved={savedPropertyIds.has(selectedProperty.id)}
+              <div className="flex gap-3 p-3">
+                <div className="w-20 h-20 bg-slate-200 rounded flex-shrink-0 overflow-hidden">
+                  <PropertyGallery
+                    images={selectedProperty.images}
+                    floorPlans={selectedProperty.floor_plans}
+                    primaryImage={selectedProperty.primary_image}
+                    fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
+                    propertyTitle={selectedProperty.title}
                   />
                 </div>
-                <div className="flex gap-3 p-3">
-                  <div className="w-20 h-20 bg-slate-200 rounded flex-shrink-0 overflow-hidden">
-                    <PropertyGallery
-                      images={selectedProperty.images}
-                      floorPlans={selectedProperty.floor_plans}
-                      primaryImage={selectedProperty.primary_image}
-                      fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
-                      propertyTitle={selectedProperty.title}
+                <div className="flex-1 min-w-0">
+                  <div className="text-lg font-bold text-slate-900 mb-0.5">
+                    {selectedProperty.listing_type === "purchase"
+                      ? `£${selectedProperty.purchase_price?.toLocaleString()}`
+                      : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
+                  </div>
+                  <div className="text-xs text-slate-600 leading-relaxed">
+                    {selectedProperty.address},
+                    <br />
+                    {selectedProperty.postcode}
+                  </div>
+                  <div className="mt-2">
+                    <FreshnessBadge
+                      lastSeenAt={selectedProperty.last_seen_at}
+                      isStale={selectedProperty.is_stale}
+                      className="text-xs"
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-lg font-bold text-slate-900 mb-0.5">
-                      {selectedProperty.listing_type === "purchase"
-                        ? `£${selectedProperty.purchase_price?.toLocaleString()}`
-                        : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
-                    </div>
-                    <div className="text-xs text-slate-600 leading-relaxed">
-                      {selectedProperty.address},
-                      <br />
-                      {selectedProperty.postcode}
-                    </div>
-                    <div className="mt-2">
-                      <FreshnessBadge
-                        lastSeenAt={selectedProperty.last_seen_at}
-                        isStale={selectedProperty.is_stale}
-                        className="text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Map legend */}
-            <Card className="absolute bottom-8 left-6 p-4 shadow-xl bg-white border-slate-200">
-              <div className="font-semibold text-sm mb-3 text-slate-900">Legend</div>
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-teal-600"></div>
-                  <span className="text-xs text-slate-700">Standard HMO</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-teal-700"></div>
-                  <span className="text-xs text-slate-700">Licensed HMO</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full border-2 border-teal-600 bg-white"></div>
-                  <span className="text-xs text-slate-700">Potential HMO</span>
                 </div>
               </div>
             </Card>
+          )}
 
-            {/* Google Maps attribution */}
-            <div className="absolute bottom-3 right-3 text-[10px] text-slate-500 bg-white/90 px-2 py-1 rounded">
-              Map data ©2022 Weds Mbaas Terms of Use
+          {/* Map legend */}
+          <Card className="absolute bottom-8 left-6 p-4 shadow-xl bg-white border-slate-200 z-20">
+            <div className="font-semibold text-sm mb-3 text-slate-900">Legend</div>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-teal-600"></div>
+                <span className="text-xs text-slate-700">Standard HMO</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-teal-700"></div>
+                <span className="text-xs text-slate-700">Licensed HMO</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-4 h-4 rounded-full border-2 border-teal-600 bg-white"></div>
+                <span className="text-xs text-slate-700">Potential HMO</span>
+              </div>
             </div>
+          </Card>
 
-            {/* Add Property button */}
-            <Button className="absolute bottom-8 right-8 rounded-full h-14 px-6 bg-teal-600 hover:bg-teal-700 shadow-xl text-white font-medium">
-              <Plus className="w-5 h-5 mr-2" />
-              Add Property
-            </Button>
-          </div>
+          {/* Add Property button */}
+          <Button className="absolute bottom-8 right-8 rounded-full h-14 px-6 bg-teal-600 hover:bg-teal-700 shadow-xl text-white font-medium z-20">
+            <Plus className="w-5 h-5 mr-2" />
+            Add Property
+          </Button>
         </main>
 
         {/* Right Sidebar */}
-        <aside className="w-[360px] bg-white border-l border-slate-200 overflow-y-auto">
-          {selectedProperty && (
-            <div>
-              <div className="p-5 border-b border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-4 h-4 text-teal-600" />
-                  <span className="font-semibold text-sm text-slate-900">Property Details</span>
-                </div>
+        {rightPanelOpen && (
+          <aside className="w-[360px] bg-white border-l border-slate-200 overflow-y-auto relative">
+            {/* Close button */}
+            <button
+              onClick={() => setRightPanelOpen(false)}
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+              title="Close panel"
+            >
+              <X className="w-4 h-4 text-slate-600" />
+            </button>
+            {selectedProperty ? (
+              <div>
+                <div className="p-5 border-b border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-4 h-4 text-teal-600" />
+                    <span className="font-semibold text-sm text-slate-900">Property Details</span>
+                  </div>
 
                 <div className="relative mb-4">
                   <PropertyGallery
@@ -1077,8 +1023,25 @@ export default function HMOHunterPage() {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8">
+              <FileText className="w-12 h-12 mb-4 opacity-30" />
+              <p className="text-sm text-center">Select a property on the map to view details</p>
+            </div>
           )}
         </aside>
+        )}
+
+        {/* Toggle button when panel is closed */}
+        {!rightPanelOpen && (
+          <button
+            onClick={() => setRightPanelOpen(true)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white shadow-lg rounded-l-lg p-3 hover:bg-slate-50 transition-colors border border-r-0 border-slate-200"
+            title="Open property panel"
+          >
+            <ChevronDown className="w-5 h-5 text-slate-600 -rotate-90" />
+          </button>
+        )}
       </div>
 
       {showFullDetails && selectedProperty && (
