@@ -1,7 +1,7 @@
 /**
  * API Configuration for HMO Hunter
  * Manages legitimate data source connections
- * Active APIs: PropertyData, StreetData, PaTMa
+ * Active APIs: PropertyData, StreetData, PaTMa, Apify (Rightmove)
  */
 
 export const apiConfig = {
@@ -35,6 +35,28 @@ export const apiConfig = {
       requestsPerMinute: 100,
       requestsPerDay: 100000,
     },
+  },
+
+  // Phase 3: Listing Matcher (Direct URLs + Photos)
+  apify: {
+    apiToken: process.env.APIFY_API_TOKEN,
+    baseUrl: "https://api.apify.com/v2",
+    enabled: !!process.env.APIFY_API_TOKEN,
+    actorId: "memo23~rightmove-scraper",
+    rateLimit: {
+      // Apify has generous limits, mainly cost-based
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
+    },
+    pricing: {
+      costPer1000Results: 0.95, // USD
+    },
+  },
+
+  // Google Maps (Optional - Street View fallback)
+  googleMaps: {
+    apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    enabled: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   },
 
   // Development Mode
@@ -71,6 +93,15 @@ export function validateApiConfig(): {
     warnings.push("PaTMa API not configured. Transaction history will be unavailable.")
   }
 
+  // Warnings for missing Phase 3 APIs (Listing Matcher)
+  if (!apiConfig.apify.enabled) {
+    warnings.push("Apify not configured. Direct listing URLs will fallback to search links. Add APIFY_API_TOKEN for direct Rightmove links.")
+  }
+
+  if (!apiConfig.googleMaps.enabled) {
+    warnings.push("Google Maps API not configured. Property images will use placeholders. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY for Street View images.")
+  }
+
   // Check for mock data in production
   if (process.env.NODE_ENV === "production" && apiConfig.useMockData) {
     warnings.push("Mock data mode is enabled in production. This should only be used for demo purposes.")
@@ -105,6 +136,20 @@ export function getApiStatus() {
         enabled: apiConfig.patma.enabled,
         name: "PaTMa API",
         status: apiConfig.patma.enabled ? "connected" : "not_configured",
+      },
+    },
+    phase3: {
+      apify: {
+        enabled: apiConfig.apify.enabled,
+        name: "Apify Rightmove (Listing Matcher)",
+        status: apiConfig.apify.enabled ? "connected" : "not_configured",
+        description: "Direct listing URLs + photos from Rightmove",
+      },
+      googleMaps: {
+        enabled: apiConfig.googleMaps.enabled,
+        name: "Google Street View",
+        status: apiConfig.googleMaps.enabled ? "connected" : "not_configured",
+        description: "Fallback property images",
       },
     },
     mockMode: apiConfig.useMockData,

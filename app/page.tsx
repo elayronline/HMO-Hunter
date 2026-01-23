@@ -43,6 +43,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Property } from "@/lib/types/database"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
+import { BookViewingButton } from "@/components/book-viewing-button"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
@@ -949,9 +950,18 @@ export default function HMOHunterPage() {
                   >
                     View Full Details
                   </Button>
-                  <Button className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
-                    {selectedProperty.listing_type === "purchase" ? "Contact Seller" : "Book Viewing"}
-                  </Button>
+                  {selectedProperty.listing_type === "purchase" ? (
+                    <Button className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
+                      Contact Seller
+                    </Button>
+                  ) : (
+                    <BookViewingButton
+                      address={selectedProperty.address}
+                      postcode={selectedProperty.postcode}
+                      bedrooms={selectedProperty.bedrooms}
+                      className="flex-1"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1235,20 +1245,24 @@ export default function HMOHunterPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <Button
-                  onClick={() => {
-                    /* Save property logic */
-                  }}
-                  className="flex-1 bg-white border border-teal-600 text-teal-600 hover:bg-teal-50"
-                >
+                <div className="flex-1">
                   <SavePropertyButton
                     propertyId={selectedProperty.id}
                     initialSaved={savedPropertyIds.has(selectedProperty.id)}
                   />
-                </Button>
-                <Button className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
-                  {selectedProperty.listing_type === "purchase" ? "Contact Seller" : "Book Viewing"}
-                </Button>
+                </div>
+                {selectedProperty.listing_type === "purchase" ? (
+                  <Button className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
+                    Contact Seller
+                  </Button>
+                ) : (
+                  <BookViewingButton
+                    address={selectedProperty.address}
+                    postcode={selectedProperty.postcode}
+                    bedrooms={selectedProperty.bedrooms}
+                    className="flex-1"
+                  />
+                )}
               </div>
             </div>
           </div>
