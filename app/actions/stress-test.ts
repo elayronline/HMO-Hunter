@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { UK_CITIES } from "@/lib/data/uk-cities"
 
 // System Test Types
 interface SystemTestResult {
@@ -376,6 +377,93 @@ export async function runAPIStressTest(): Promise<{
     successful,
     failed,
     skipped,
+    totalDuration: Date.now() - startTime,
+    results,
+    timestamp: new Date().toISOString(),
+  }
+}
+
+// City data coverage test
+interface CityTestResult {
+  city: string
+  region: string
+  propertyCount: number
+  hasRentals: boolean
+  hasPurchases: boolean
+  status: "pass" | "fail"
+  responseTime: number
+}
+
+export async function runCityDataTest(): Promise<{
+  totalCities: number
+  citiesWithData: number
+  citiesWithoutData: number
+  totalProperties: number
+  totalDuration: number
+  results: CityTestResult[]
+  timestamp: string
+}> {
+  const startTime = Date.now()
+  const results: CityTestResult[] = []
+
+  const supabase = await createClient()
+
+  for (const city of UK_CITIES) {
+    const cityStart = Date.now()
+    try {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, listing_type")
+        .eq("city", city.name)
+        .or("is_stale.eq.false,is_stale.is.null")
+
+      if (error) {
+        results.push({
+          city: city.name,
+          region: city.region,
+          propertyCount: 0,
+          hasRentals: false,
+          hasPurchases: false,
+          status: "fail",
+          responseTime: Date.now() - cityStart,
+        })
+        continue
+      }
+
+      const properties = data || []
+      const hasRentals = properties.some((p) => p.listing_type === "rent")
+      const hasPurchases = properties.some((p) => p.listing_type === "purchase")
+
+      results.push({
+        city: city.name,
+        region: city.region,
+        propertyCount: properties.length,
+        hasRentals,
+        hasPurchases,
+        status: properties.length > 0 ? "pass" : "fail",
+        responseTime: Date.now() - cityStart,
+      })
+    } catch {
+      results.push({
+        city: city.name,
+        region: city.region,
+        propertyCount: 0,
+        hasRentals: false,
+        hasPurchases: false,
+        status: "fail",
+        responseTime: Date.now() - cityStart,
+      })
+    }
+  }
+
+  const citiesWithData = results.filter((r) => r.propertyCount > 0).length
+  const totalProperties = results.reduce((sum, r) => sum + r.propertyCount, 0)
+
+  return {
+    totalCities: UK_CITIES.length,
+    citiesWithData,
+    citiesWithoutData: UK_CITIES.length - citiesWithData,
+    totalProperties,
     totalDuration: Date.now() - startTime,
     results,
     timestamp: new Date().toISOString(),
