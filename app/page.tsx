@@ -96,6 +96,7 @@ export default function HMOHunterPage() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
+  const [legendExpanded, setLegendExpanded] = useState(true)
   const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
@@ -996,77 +997,89 @@ export default function HMOHunterPage() {
           )}
 
           {/* Map legend */}
-          <Card className="absolute bottom-8 left-6 p-4 shadow-xl bg-white border-slate-200 z-20">
-            <div className="font-semibold text-sm mb-3 text-slate-900">Map Legend</div>
-            <div className="space-y-2.5">
-              {/* Green - Opportunities outside Article 4 */}
-              <div className="pb-2.5 border-b border-slate-100">
-                <span className="text-xs font-semibold text-green-700 mb-2 block">Opportunities (Outside Article 4)</span>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-green-600 flex items-center justify-center">
-                      <span className="text-[8px] text-white font-bold">85</span>
+          <Card className="absolute bottom-8 left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden">
+            <button
+              onClick={() => setLegendExpanded(!legendExpanded)}
+              className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
+            >
+              <span className="font-semibold text-sm text-slate-900">Map Legend</span>
+              {legendExpanded ? (
+                <ChevronDown className="w-4 h-4 text-slate-500" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-slate-500" />
+              )}
+            </button>
+            {legendExpanded && (
+              <div className="px-4 pb-4 space-y-2.5">
+                {/* Green - Opportunities outside Article 4 */}
+                <div className="pb-2.5 border-b border-slate-100">
+                  <span className="text-xs font-semibold text-green-700 mb-2 block">Opportunities (Outside Article 4)</span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-green-600 flex items-center justify-center">
+                        <span className="text-[8px] text-white font-bold">85</span>
+                      </div>
+                      <span className="text-xs text-slate-700">Ready to Go HMO</span>
                     </div>
-                    <span className="text-xs text-slate-700">Ready to Go HMO</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
-                    <span className="text-xs text-slate-700">Value-Add HMO</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-green-500 border-[3px] border-green-600"></div>
-                    <span className="text-xs text-slate-600">Potential HMO Opportunity</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
+                      <span className="text-xs text-slate-700">Value-Add HMO</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-5 h-5 rounded-full bg-green-500 border-[3px] border-green-600"></div>
+                      <span className="text-xs text-slate-600">Potential HMO Opportunity</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Teal - Standard properties */}
-              <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
-                <span className="text-xs font-medium text-teal-700">Standard Properties</span>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-teal-700"></div>
-                  <span className="text-xs text-slate-600">Licensed HMO</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-teal-500"></div>
-                  <span className="text-xs text-slate-600">Standard Property</span>
-                </div>
-              </div>
-
-              {/* Red - Article 4 restricted */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-red-600">Article 4 Restricted</span>
-                  <Switch
-                    checked={showArticle4Overlay}
-                    onCheckedChange={setShowArticle4Overlay}
-                    className="data-[state=checked]:bg-red-400 scale-75"
-                  />
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-red-600 border-[3px] border-white shadow-sm"></div>
-                  <span className="text-xs text-slate-600">Property in Article 4</span>
-                </div>
-                {showArticle4Overlay && (
+                {/* Teal - Standard properties */}
+                <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
+                  <span className="text-xs font-medium text-teal-700">Standard Properties</span>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
-                    <span className="text-xs text-slate-500">Article 4 Zone</span>
+                    <div className="w-4 h-4 rounded-full bg-teal-700"></div>
+                    <span className="text-xs text-slate-600">Licensed HMO</span>
                   </div>
-                )}
-                {showArticle4Overlay && (
-                  <div className="pt-1 mt-1 border-t border-slate-200">
-                    <a
-                      href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
-                    >
-                      Data: planning.data.gov.uk
-                    </a>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500"></div>
+                    <span className="text-xs text-slate-600">Standard Property</span>
                   </div>
-                )}
+                </div>
+
+                {/* Red - Article 4 restricted */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-red-600">Article 4 Restricted</span>
+                    <Switch
+                      checked={showArticle4Overlay}
+                      onCheckedChange={setShowArticle4Overlay}
+                      className="data-[state=checked]:bg-red-400 scale-75"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-red-600 border-[3px] border-white shadow-sm"></div>
+                    <span className="text-xs text-slate-600">Property in Article 4</span>
+                  </div>
+                  {showArticle4Overlay && (
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
+                      <span className="text-xs text-slate-500">Article 4 Zone</span>
+                    </div>
+                  )}
+                  {showArticle4Overlay && (
+                    <div className="pt-1 mt-1 border-t border-slate-200">
+                      <a
+                        href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
+                      >
+                        Data: planning.data.gov.uk
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </Card>
 
           {/* Add Property button */}
