@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import {
   Building2,
+  Calendar,
   Check,
   ChevronDown,
   ChevronUp,
@@ -291,35 +292,84 @@ export function OwnerInformationSection({
                 </div>
               )}
 
-              {/* Licence Details */}
-              {(property.licence_id || property.licence_end_date || property.max_occupants) && (
-                <div className="grid grid-cols-3 gap-2 text-xs bg-teal-100/50 rounded-lg p-2">
-                  {property.licence_id && (
-                    <div>
-                      <p className="text-gray-500">Licence #</p>
-                      <p className="font-medium text-gray-700">{property.licence_id}</p>
-                    </div>
-                  )}
-                  {property.licence_end_date && (
-                    <div>
-                      <p className="text-gray-500">Expires</p>
-                      <p className="font-medium text-gray-700">
-                        {new Date(property.licence_end_date).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  )}
-                  {property.max_occupants && (
-                    <div>
-                      <p className="text-gray-500">Max Occupants</p>
-                      <p className="font-medium text-gray-700">{property.max_occupants}</p>
-                    </div>
-                  )}
+              {/* Licence Type & Term Box */}
+              <div className="bg-gradient-to-r from-teal-100 to-emerald-100 rounded-lg p-3 space-y-3">
+                {/* Licence Type */}
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-teal-600" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Licence Type</p>
+                    <p className="font-semibold text-teal-800">
+                      {property.licence_status === "active" ? "Mandatory HMO Licence" :
+                       property.licence_status === "pending" ? "Pending HMO Licence" :
+                       property.licence_status === "expired" ? "Expired HMO Licence" :
+                       property.hmo_status || "HMO Licence"}
+                    </p>
+                  </div>
                 </div>
-              )}
+
+                {/* Licence Term */}
+                {(property.licence_start_date || property.licence_end_date) && (
+                  <div className="flex items-start gap-2 pt-2 border-t border-teal-200/50">
+                    <Calendar className="h-4 w-4 text-teal-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Existing Licence Term</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500">Start Date</p>
+                          <p className="font-medium text-teal-800">
+                            {property.licence_start_date
+                              ? new Date(property.licence_start_date).toLocaleDateString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Not specified"}
+                          </p>
+                        </div>
+                        <div className="text-gray-400">→</div>
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500">End Date</p>
+                          <p className={`font-medium ${
+                            property.licence_end_date && new Date(property.licence_end_date) < new Date()
+                              ? "text-red-600"
+                              : "text-teal-800"
+                          }`}>
+                            {property.licence_end_date
+                              ? new Date(property.licence_end_date).toLocaleDateString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Not specified"}
+                            {property.licence_end_date && new Date(property.licence_end_date) < new Date() && (
+                              <span className="ml-1 text-xs">(Expired)</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Details Row */}
+                {(property.licence_id || property.max_occupants) && (
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-teal-200/50">
+                    {property.licence_id && (
+                      <div>
+                        <p className="text-xs text-gray-500">Licence Number</p>
+                        <p className="font-medium text-teal-700 text-sm">{property.licence_id}</p>
+                      </div>
+                    )}
+                    {property.max_occupants && (
+                      <div>
+                        <p className="text-xs text-gray-500">Max Occupants</p>
+                        <p className="font-medium text-teal-700 text-sm">{property.max_occupants} persons</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Licence Holder Contact Buttons */}
               {hasLicenceHolderContact ? (
