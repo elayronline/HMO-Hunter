@@ -2,6 +2,44 @@
 
 A property intelligence platform for finding and analysing HMO (House in Multiple Occupation) investment opportunities in the UK.
 
+---
+
+## Project Status (January 2025)
+
+### Completed Features
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Interactive Map View | ✅ Complete | MapLibre GL with clustered markers, collapsible legend |
+| Property Filtering | ✅ Complete | Price, bedrooms, HMO status, EPC, Article 4, licence types |
+| Deal Scoring System | ✅ Complete | 0-100 score based on yield, compliance, contact availability |
+| Title Owner Section | ✅ Complete | Blue-themed card with Land Registry data |
+| Licence Holder Section | ✅ Complete | Teal-themed card with council register data |
+| Licence Type & Term Display | ✅ Complete | Shows licence type, start/end dates, max occupants |
+| Company Lookup | ✅ Complete | Links to Companies House for corporate landlords |
+| GDPR Compliance | ✅ Complete | Audit logging, opt-out system, privacy policy |
+| Property Images | ✅ Complete | Google Street View integration with accurate heading |
+| Multi-City Support | ✅ Complete | London, Manchester, Birmingham, Leeds, Bristol, etc. |
+
+### Data Sources - Current Status
+
+| Source | Purpose | Status |
+|--------|---------|--------|
+| Supabase | Database & Auth | ✅ Connected |
+| Searchland | Title/EPC/Planning | ✅ Configured (enrichment pending) |
+| Companies House | Corporate landlord details | ✅ Configured |
+| Google Street View | Property images | ✅ Working |
+| Google Custom Search | Listing images | ⚠️ 403 errors (quota/config issue) |
+| Kamma API | HMO licence registers | 🔜 Pending API access |
+
+### Known Limitations
+
+- **Licence Data**: Currently using sample data for licence terms. Real data will come from Kamma API once access is granted.
+- **Property Images**: Some properties show approximate Street View angles; Custom Search API needs troubleshooting.
+- **Searchland Ingestion**: Returns 0 results for HMO endpoint (may not be correct endpoint for licence data).
+
+---
+
 ## What It Does
 
 HMO Hunter aggregates property data from multiple sources and enriches it with ownership, licensing, and contact information to help property investors identify and contact HMO landlords.
@@ -64,7 +102,32 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_key
 
 ## Next Steps
 
-### Immediate Priorities
+### High Priority - API Integration
+
+- [ ] **Kamma API Integration** - Replace sample licence data with real HMO licence register data
+  - Licence holder names, start/end dates, max occupants
+  - Update `lib/ingestion/adapters/` with Kamma adapter
+  - Remove sample data from `scripts/012_populate_licence_term_data.sql`
+
+### High Priority - Core Features
+
+- [ ] **Saved Searches** - Allow users to save filter configurations for quick access
+- [ ] **Save Listings** - Enable users to save/favourite individual properties
+- [ ] **Yield Calculator** - Add ROI calculator for each listing showing:
+  - 1-year projected yield
+  - 3-year projected yield
+  - 5-year projected yield
+  - Based on purchase price, estimated rent, and running costs
+
+### Medium Priority - Listing Enhancements
+
+- [ ] **Floor Plans** - Pull floor plan images where available from listing sources
+- [ ] **Purchase Property View** - Stress test and optimize the purchase listing experience
+- [ ] **Premium Tier Toggle** - Add access control for HMO listings:
+  - Free tier: Limited property views
+  - Premium tier: Full HMO listing access with contact data
+
+### Compliance & Legal
 
 - [ ] **Register with ICO** (£52/year) - Required before using contact tracing services
   - https://ico.org.uk/for-organisations/register/
@@ -79,7 +142,6 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_key
 - [ ] **Scheduled Data Enrichment** - Cron job to enrich properties with missing owner data
 - [ ] **User Authentication** - Restrict contact data to logged-in users
 - [ ] **Export Functionality** - CSV/Excel export of filtered properties
-- [ ] **Saved Searches** - Allow users to save filter configurations
 - [ ] **Email Alerts** - Notify users of new properties matching criteria
 
 ### Data Quality
@@ -110,6 +172,8 @@ Run these in Supabase SQL Editor in order:
 6. `scripts/008_gdpr_compliance_tables.sql`
 7. `scripts/009_add_licence_holder_contact_fields.sql`
 8. `scripts/010_add_licence_types_table.sql`
+9. `scripts/011_add_licence_term_fields.sql` - Adds licence_id, start/end dates, status
+10. `scripts/012_populate_licence_term_data.sql` - **Sample data** (replace with Kamma API)
 
 ---
 
