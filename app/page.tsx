@@ -1184,12 +1184,10 @@ export default function HMOHunterPage() {
                   </div>
                 )}
 
-                {/* Owner Information Section */}
-                {(selectedProperty.owner_name || selectedProperty.company_name) && (
-                  <div className="mb-4">
-                    <OwnerInformationSection property={selectedProperty} />
-                  </div>
-                )}
+                {/* Owner Information Section - Always show, component handles "no data" state */}
+                <div className="mb-4">
+                  <OwnerInformationSection property={selectedProperty} />
+                </div>
 
                 {/* Potential HMO Analysis Section */}
                 {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
@@ -1512,13 +1510,11 @@ export default function HMOHunterPage() {
                 </div>
               )}
 
-              {/* Owner Information in Full Details */}
-              {(selectedProperty.owner_name || selectedProperty.company_name) && (
-                <div className="mb-6">
-                  <h4 className="font-semibold text-slate-900 mb-3">Owner Information</h4>
-                  <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
-                </div>
-              )}
+              {/* Owner Information in Full Details - Always show */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-slate-900 mb-3">Title Owner & Licence Holder</h4>
+                <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
+              </div>
 
               {/* Potential HMO Analysis in Full Details */}
               {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (

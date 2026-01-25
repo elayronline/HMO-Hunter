@@ -16,7 +16,8 @@ export function MapInner({
 }: MainMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const markersRef = useRef<maplibregl.Marker[]>([])
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map())
+  const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const popupRef = useRef<maplibregl.Popup | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -271,6 +272,11 @@ export function MapInner({
       if (popupRef.current) {
         popupRef.current.remove()
       }
+      // Clear all markers
+      markersRef.current.forEach((marker) => marker.remove())
+      markersRef.current.clear()
+      markerElementsRef.current.clear()
+
       if (mapRef.current) {
         console.log("Cleaning up map")
         mapRef.current.remove()
@@ -303,171 +309,174 @@ export function MapInner({
     })
   }, [selectedCity.longitude, selectedCity.latitude, selectedCity.zoom, mapReady])
 
-  // Update markers
-  useEffect(() => {
-    if (!mapRef.current || !mapReady) return
+  // Helper to get marker style properties for a property
+  const getMarkerStyle = useCallback((property: typeof properties[0], isSelected: boolean, showPotentialHMO: boolean) => {
+    const isLicensed = property.hmo_status === "Licensed HMO"
+    const isPotentialHMOStatus = property.hmo_status === "Potential HMO"
+    const isArticle4 = property.article_4_area
+    const isPotentialHMO = property.is_potential_hmo
+    const hmoClassification = property.hmo_classification
+    const isReadyToGo = isPotentialHMO && hmoClassification === "ready_to_go"
+    const isValueAdd = isPotentialHMO && hmoClassification === "value_add"
 
-    // Clear old markers
-    markersRef.current.forEach((m) => m.remove())
-    markersRef.current = []
+    let bgColor: string
+    let textColor = "white"
+    let borderStyle = "none"
+    let markerSize = 36
 
-    console.log("Adding", properties.length, "markers")
+    if (isArticle4) {
+      bgColor = "#dc2626"
+      textColor = "white"
+      borderStyle = "3px solid #ffffff"
+      markerSize = 36
+    } else if (isPotentialHMO && showPotentialHMO) {
+      if (isReadyToGo) {
+        bgColor = "#22c55e"
+        textColor = "white"
+        borderStyle = "3px solid #16a34a"
+        markerSize = 44
+      } else if (isValueAdd) {
+        bgColor = "#4ade80"
+        textColor = "#166534"
+        borderStyle = "3px solid #22c55e"
+        markerSize = 40
+      } else {
+        bgColor = "#14b8a6"
+        textColor = "white"
+        markerSize = 34
+      }
+    } else if (isPotentialHMOStatus) {
+      bgColor = "#22c55e"
+      textColor = "white"
+      borderStyle = "3px solid #16a34a"
+      markerSize = 42
+    } else if (isLicensed) {
+      bgColor = "#0f766e"
+      textColor = "white"
+      markerSize = 38
+    } else {
+      bgColor = "#14b8a6"
+      textColor = "white"
+      markerSize = 34
+    }
 
-    // Debug: Log coordinate distribution
-    if (properties.length > 0) {
-      const lats = properties.map(p => p.latitude).filter(Boolean)
-      const lngs = properties.map(p => p.longitude).filter(Boolean)
-      if (lats.length > 0 && lngs.length > 0) {
-        console.log("[MapDebug] Coordinate distribution:", {
-          total: properties.length,
-          withCoords: lats.length,
-          lat: { min: Math.min(...lats), max: Math.max(...lats), spread: Math.max(...lats) - Math.min(...lats) },
-          lng: { min: Math.min(...lngs), max: Math.max(...lngs), spread: Math.max(...lngs) - Math.min(...lngs) },
-          sample: properties.slice(0, 3).map(p => ({ id: p.id.slice(0, 8), lat: p.latitude, lng: p.longitude }))
-        })
+    // Selection ring style
+    let boxShadow = "0 2px 6px rgba(0,0,0,0.2)"
+    if (isSelected) {
+      if (isArticle4) {
+        boxShadow = "0 0 0 4px rgba(248,113,113,0.5), 0 4px 12px rgba(0,0,0,0.3)"
+      } else if (isReadyToGo || isValueAdd || isPotentialHMOStatus) {
+        boxShadow = "0 0 0 4px rgba(34,197,94,0.6), 0 4px 12px rgba(0,0,0,0.3)"
+      } else {
+        boxShadow = "0 0 0 3px rgba(13,148,136,0.5), 0 2px 6px rgba(0,0,0,0.3)"
       }
     }
 
-    // Add new markers - filter out properties without valid coordinates
+    const displayValue = isPotentialHMO && property.deal_score && !isArticle4
+      ? property.deal_score.toString()
+      : String(property.bedrooms)
+
+    const title = isArticle4
+      ? `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
+      : isPotentialHMO
+        ? `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Deal Score: ${property.deal_score}`
+        : `${property.bedrooms} bed ${property.hmo_status || "property"}`
+
+    return {
+      bgColor,
+      textColor,
+      borderStyle,
+      markerSize,
+      boxShadow,
+      displayValue,
+      title,
+      isSelected,
+    }
+  }, [])
+
+  // Helper to apply styles to a marker element without affecting positioning
+  const applyMarkerStyles = useCallback((el: HTMLDivElement, style: ReturnType<typeof getMarkerStyle>) => {
+    // Only update visual properties - never touch transform or position
+    el.style.width = `${style.markerSize}px`
+    el.style.height = `${style.markerSize}px`
+    el.style.backgroundColor = style.bgColor
+    el.style.color = style.textColor
+    el.style.border = style.borderStyle
+    el.style.boxShadow = style.boxShadow
+    el.textContent = style.displayValue
+    el.title = style.title
+  }, [])
+
+  // Update markers - use stable positioning
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return
+
+    // Filter properties with valid coordinates
     const validProperties = properties.filter(p => {
       const lat = Number(p.latitude)
       const lng = Number(p.longitude)
-      const isValid = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
-      if (!isValid) {
-        console.warn("[MapDebug] Skipping property with invalid coords:", p.id, { lat: p.latitude, lng: p.longitude })
-      }
-      return isValid
+      return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
     })
 
-    console.log(`[MapDebug] Rendering ${validProperties.length} of ${properties.length} properties with valid coordinates`)
+    const currentPropertyIds = new Set(validProperties.map(p => p.id))
+    const existingMarkerIds = new Set(markersRef.current.keys())
 
+    // Remove markers for properties that no longer exist
+    for (const id of existingMarkerIds) {
+      if (!currentPropertyIds.has(id)) {
+        const marker = markersRef.current.get(id)
+        if (marker) {
+          marker.remove()
+          markersRef.current.delete(id)
+          markerElementsRef.current.delete(id)
+        }
+      }
+    }
+
+    // Add or update markers
     validProperties.forEach((property) => {
-      const el = document.createElement("div")
-
-      const isLicensed = property.hmo_status === "Licensed HMO"
-      const isPotentialHMOStatus = property.hmo_status === "Potential HMO"
+      const existingMarker = markersRef.current.get(property.id)
+      const existingElement = markerElementsRef.current.get(property.id)
       const isSelected = selectedProperty?.id === property.id
-      const isArticle4 = property.article_4_area
+      const style = getMarkerStyle(property, isSelected, showPotentialHMOLayer)
 
-      // Potential HMO analysis data
-      const isPotentialHMO = property.is_potential_hmo
-      const hmoClassification = property.hmo_classification
-      const isReadyToGo = isPotentialHMO && hmoClassification === "ready_to_go"
-      const isValueAdd = isPotentialHMO && hmoClassification === "value_add"
-
-      // Determine marker colors based on Article 4 status and property type
-      let bgColor: string
-      let textColor = "white"
-      let borderStyle = "none"
-      let markerSize = "36px"
-      let opacity = "1"
-      let zIndex = "1"
-
-      if (isArticle4) {
-        // Properties IN Article 4 areas - distinct red circle with white border for contrast
-        bgColor = "#dc2626" // red-600 - distinct from zone fill
-        textColor = "white"
-        borderStyle = "3px solid #ffffff" // white border for visibility against red zone
-        markerSize = "36px"
-        opacity = "1"
-        zIndex = "5" // Above the zone fill
-      } else if (isPotentialHMO && showPotentialHMOLayer) {
-        // Potential HMOs NOT in Article 4 - GREEN (the opportunities!)
-        if (isReadyToGo) {
-          bgColor = "#22c55e" // green-500
-          textColor = "white"
-          borderStyle = "3px solid #16a34a" // green-600
-          markerSize = "44px"
-          zIndex = "10"
-        } else if (isValueAdd) {
-          bgColor = "#4ade80" // green-400 (lighter green for value-add)
-          textColor = "#166534" // green-800
-          borderStyle = "3px solid #22c55e" // green-500
-          markerSize = "40px"
-          zIndex = "8"
-        }
-      } else if (isPotentialHMOStatus) {
-        // Properties with hmo_status "Potential HMO" - bright green (opportunities!)
-        bgColor = "#22c55e" // green-500 - bright and visible
-        textColor = "white"
-        borderStyle = "3px solid #16a34a" // green-600
-        markerSize = "42px"
-        zIndex = "8"
-      } else if (isLicensed) {
-        // Licensed HMO (not in Article 4) - teal
-        bgColor = "#0f766e" // teal-700
-        textColor = "white"
-        markerSize = "38px"
-        zIndex = "3"
+      if (existingMarker && existingElement) {
+        // Update existing marker - only change visual styles, not position
+        applyMarkerStyles(existingElement, style)
       } else {
-        // Standard property (not in Article 4) - lighter teal
-        bgColor = "#14b8a6" // teal-500
-        textColor = "white"
-        markerSize = "34px"
-        zIndex = "2"
-      }
+        // Create new marker element with base styles that won't change
+        const el = document.createElement("div")
 
-      // Ring color for selection
-      let ringStyle = "0 2px 6px rgba(0,0,0,0.2)"
-      if (isSelected) {
-        if (isArticle4) {
-          ringStyle = "0 0 0 4px rgba(248,113,113,0.5), 0 4px 12px rgba(0,0,0,0.3)"
-        } else if (isReadyToGo || isValueAdd || isPotentialHMOStatus) {
-          ringStyle = "0 0 0 4px rgba(34,197,94,0.6), 0 4px 12px rgba(0,0,0,0.3)"
-        } else {
-          ringStyle = "0 0 0 3px rgba(13,148,136,0.5), 0 2px 6px rgba(0,0,0,0.3)"
+        // Set static styles that don't need updating
+        el.style.display = "flex"
+        el.style.alignItems = "center"
+        el.style.justifyContent = "center"
+        el.style.borderRadius = "50%"
+        el.style.fontWeight = "bold"
+        el.style.fontSize = "12px"
+        el.style.cursor = "pointer"
+
+        // Apply dynamic styles
+        applyMarkerStyles(el, style)
+
+        el.onclick = () => onPropertySelect(property)
+
+        try {
+          const marker = new maplibregl.Marker({
+            element: el,
+            anchor: "center"
+          })
+            .setLngLat([Number(property.longitude), Number(property.latitude)])
+            .addTo(mapRef.current!)
+
+          markersRef.current.set(property.id, marker)
+          markerElementsRef.current.set(property.id, el)
+        } catch (err) {
+          console.error("Failed to add marker:", err)
         }
-        zIndex = "20"
-        opacity = "1"
-      }
-
-      // Styling
-      el.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-weight: bold;
-        font-size: 12px;
-        cursor: pointer;
-        box-shadow: ${ringStyle};
-        transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
-        transition: all 0.2s ease-out;
-        width: ${markerSize};
-        height: ${markerSize};
-        background-color: ${bgColor};
-        color: ${textColor};
-        border: ${borderStyle};
-        opacity: ${opacity};
-        z-index: ${zIndex};
-        position: relative;
-      `
-
-      // Show deal score for potential HMOs (not in Article 4), otherwise bedrooms
-      const displayValue = isPotentialHMO && property.deal_score && !isArticle4
-        ? property.deal_score.toString()
-        : String(property.bedrooms)
-
-      el.textContent = displayValue
-      el.title = isArticle4
-        ? `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
-        : isPotentialHMO
-          ? `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Deal Score: ${property.deal_score}`
-          : `${property.bedrooms} bed ${property.hmo_status || "property"}`
-
-      el.onclick = () => onPropertySelect(property)
-
-      try {
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([Number(property.longitude), Number(property.latitude)])
-          .addTo(mapRef.current!)
-
-        markersRef.current.push(marker)
-      } catch (err) {
-        console.error("Failed to add marker:", err)
       }
     })
-  }, [properties, selectedProperty?.id, mapReady, onPropertySelect, showPotentialHMOLayer])
+  }, [properties, selectedProperty?.id, mapReady, onPropertySelect, showPotentialHMOLayer, getMarkerStyle, applyMarkerStyles])
 
   if (error) {
     return (

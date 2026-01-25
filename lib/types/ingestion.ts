@@ -139,21 +139,162 @@ export abstract class SourceAdapter {
     return postcodeToCity[prefix] || postcodeToCity[singlePrefix] || "Unknown"
   }
 
-  // Cache for postcode lookups to avoid repeated API calls
+  // Cache for address lookups to avoid repeated API calls
+  private static addressCache: Map<string, { lat: number; lng: number }> = new Map()
   private static postcodeCache: Map<string, { lat: number; lng: number }> = new Map()
 
+  // Rate limiter for Nominatim (max 1 request per second)
+  private static lastNominatimCall = 0
+
+  private static async rateLimitNominatim(): Promise<void> {
+    const now = Date.now()
+    const timeSinceLastCall = now - SourceAdapter.lastNominatimCall
+    if (timeSinceLastCall < 1100) {
+      await new Promise(resolve => setTimeout(resolve, 1100 - timeSinceLastCall))
+    }
+    SourceAdapter.lastNominatimCall = Date.now()
+  }
+
+  /**
+   * Geocode a property address to exact coordinates
+   * Uses multiple strategies:
+   * 1. Full address geocoding via Nominatim (most accurate)
+   * 2. Postcode centroid via postcodes.io (fallback)
+   * 3. Adds small offset if multiple properties at same location
+   */
   protected async geocode(address: string, postcode: string): Promise<{ lat: number; lng: number } | null> {
+    if (!address && !postcode) return null
+
+    // Create cache key from full address + postcode
+    const cacheKey = `${address}|${postcode}`.toLowerCase().replace(/\s+/g, " ").trim()
+
+    // Check address cache first
+    if (SourceAdapter.addressCache.has(cacheKey)) {
+      return SourceAdapter.addressCache.get(cacheKey)!
+    }
+
+    // Strategy 1: Try full address geocoding via Nominatim (OpenStreetMap)
+    if (address && postcode) {
+      const addressCoords = await this.geocodeAddress(address, postcode)
+      if (addressCoords) {
+        SourceAdapter.addressCache.set(cacheKey, addressCoords)
+        return addressCoords
+      }
+    }
+
+    // Strategy 2: Fall back to postcode centroid
+    const postcodeCoords = await this.geocodePostcode(postcode)
+    if (postcodeCoords) {
+      // Add small random offset so properties don't stack exactly
+      const offset = this.generateOffset(address)
+      const coords = {
+        lat: postcodeCoords.lat + offset.lat,
+        lng: postcodeCoords.lng + offset.lng,
+      }
+      SourceAdapter.addressCache.set(cacheKey, coords)
+      return coords
+    }
+
+    return null
+  }
+
+  /**
+   * Geocode full address using Nominatim (OpenStreetMap)
+   * More accurate than postcode-only geocoding
+   */
+  private async geocodeAddress(address: string, postcode: string): Promise<{ lat: number; lng: number } | null> {
+    try {
+      await SourceAdapter.rateLimitNominatim()
+
+      // Clean and format address for geocoding
+      const cleanAddress = address
+        .replace(/flat\s*\d+[a-z]?\s*,?\s*/gi, "") // Remove flat numbers
+        .replace(/apartment\s*\d+[a-z]?\s*,?\s*/gi, "")
+        .replace(/unit\s*\d+[a-z]?\s*,?\s*/gi, "")
+        .replace(/\s+/g, " ")
+        .trim()
+
+      // Format query: address, postcode, United Kingdom
+      const query = `${cleanAddress}, ${postcode}, United Kingdom`
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=gb&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "HMO-Hunter-App/1.0 (contact@hmohunter.com)",
+            "Accept": "application/json",
+          },
+        }
+      )
+
+      if (response.ok) {
+        const results = await response.json()
+        if (results && results.length > 0) {
+          const result = results[0]
+          const lat = parseFloat(result.lat)
+          const lng = parseFloat(result.lon)
+
+          if (!isNaN(lat) && !isNaN(lng)) {
+            console.log(`[Geocode] Address match: "${cleanAddress}" -> ${lat}, ${lng}`)
+            return { lat, lng }
+          }
+        }
+      }
+
+      // Try with just street name and postcode
+      const streetMatch = cleanAddress.match(/\d+[a-z]?\s+(.+)/i)
+      if (streetMatch) {
+        await SourceAdapter.rateLimitNominatim()
+
+        const streetQuery = `${streetMatch[1]}, ${postcode}, United Kingdom`
+        const response2 = await fetch(
+          `https://nominatim.openstreetmap.org/search?` +
+          `q=${encodeURIComponent(streetQuery)}&format=json&limit=1&countrycodes=gb`,
+          {
+            headers: {
+              "User-Agent": "HMO-Hunter-App/1.0 (contact@hmohunter.com)",
+              "Accept": "application/json",
+            },
+          }
+        )
+
+        if (response2.ok) {
+          const results2 = await response2.json()
+          if (results2 && results2.length > 0) {
+            const lat = parseFloat(results2[0].lat)
+            const lng = parseFloat(results2[0].lon)
+            if (!isNaN(lat) && !isNaN(lng)) {
+              // Add small offset based on house number
+              const houseNum = parseInt(cleanAddress.match(/^(\d+)/)?.[1] || "0")
+              const houseOffset = (houseNum % 100) * 0.00001
+              console.log(`[Geocode] Street match with house offset: "${streetMatch[1]}" -> ${lat + houseOffset}, ${lng}`)
+              return { lat: lat + houseOffset, lng }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[Geocode] Nominatim error for "${address}":`, error)
+    }
+
+    return null
+  }
+
+  /**
+   * Geocode postcode centroid using postcodes.io (UK only)
+   */
+  private async geocodePostcode(postcode: string): Promise<{ lat: number; lng: number } | null> {
     if (!postcode) return null
 
     const normalizedPostcode = postcode.toUpperCase().replace(/\s+/g, "").trim()
 
-    // Check cache first
+    // Check postcode cache
     if (SourceAdapter.postcodeCache.has(normalizedPostcode)) {
       return SourceAdapter.postcodeCache.get(normalizedPostcode)!
     }
 
     try {
-      // Use postcodes.io - free UK postcode geocoding API
       const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalizedPostcode)}`)
 
       if (response.ok) {
@@ -163,13 +304,12 @@ export abstract class SourceAdapter {
             lat: data.result.latitude,
             lng: data.result.longitude,
           }
-          // Cache the result
           SourceAdapter.postcodeCache.set(normalizedPostcode, coords)
           return coords
         }
       }
 
-      // Try with space in postcode (e.g., "N7 6PA")
+      // Try with space in postcode
       const spacedPostcode = normalizedPostcode.length > 4
         ? `${normalizedPostcode.slice(0, -3)} ${normalizedPostcode.slice(-3)}`
         : normalizedPostcode
@@ -187,10 +327,32 @@ export abstract class SourceAdapter {
         }
       }
     } catch (error) {
-      console.error(`[Geocode] Error geocoding postcode ${postcode}:`, error)
+      console.error(`[Geocode] postcodes.io error for ${postcode}:`, error)
     }
 
     return null
+  }
+
+  /**
+   * Generate a small, deterministic offset based on address
+   * This prevents properties at the same postcode from stacking exactly on top of each other
+   */
+  private generateOffset(address: string): { lat: number; lng: number } {
+    if (!address) return { lat: 0, lng: 0 }
+
+    // Generate a hash from the address for consistent offset
+    let hash = 0
+    for (let i = 0; i < address.length; i++) {
+      const char = address.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash
+    }
+
+    // Create small offset (roughly ±50 meters)
+    const latOffset = ((hash % 100) - 50) * 0.00005
+    const lngOffset = (((hash >> 8) % 100) - 50) * 0.00005
+
+    return { lat: latOffset, lng: lngOffset }
   }
 }
 

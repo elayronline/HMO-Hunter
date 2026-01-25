@@ -34,15 +34,19 @@ export interface HMOAnalysisResult {
   floorAreaBand: "under_90" | "90_120" | "120_plus" | null
   hasValueAddPotential: boolean
   exclusionReasons: string[]
+  hasTitleOwnerInfo: boolean
+  hasLicenceHolderInfo: boolean
+  hasContactInfo: boolean
 }
 
 export interface DealScoreBreakdown {
-  floorAreaEfficiency: number      // 0-20 points
+  floorAreaEfficiency: number      // 0-15 points
   epcRatingScore: number           // 0-15 points
-  licensingUpside: number          // 0-15 points
+  licensingUpside: number          // 0-10 points
   lettableRoomsScore: number       // 0-15 points
-  complianceScore: number          // 0-15 points
-  yieldScore: number               // 0-20 points
+  complianceScore: number          // 0-10 points
+  yieldScore: number               // 0-15 points
+  contactDataScore: number         // 0-20 points (title owner + licence holder info)
 }
 
 // Minimum space standards (UK HMO regulations)
@@ -143,6 +147,11 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
       : 0
   const yieldBand = getYieldBand(estimatedYield)
 
+  // Check for contact/owner information availability
+  const hasTitleOwnerInfo = !!(property.owner_name || property.company_name || property.company_number)
+  const hasLicenceHolderInfo = !!(property.licensed_hmo || property.hmo_status?.includes("Licensed"))
+  const hasContactInfo = !!(property.owner_contact_email || property.owner_contact_phone || property.owner_address)
+
   // Calculate scores
   const dealScoreBreakdown = calculateDealScoreBreakdown(
     property,
@@ -150,7 +159,10 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
     lettableRooms,
     epcAnalysis,
     requiresMandatoryLicensing,
-    estimatedYield
+    estimatedYield,
+    hasTitleOwnerInfo,
+    hasLicenceHolderInfo,
+    hasContactInfo
   )
 
   const dealScore = Object.values(dealScoreBreakdown).reduce((a, b) => a + b, 0)
@@ -161,7 +173,9 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
     isPotentialHMO,
     dealScore,
     epcAnalysis,
-    property
+    property,
+    hasTitleOwnerInfo,
+    hasLicenceHolderInfo
   )
 
   // Compliance complexity
@@ -201,6 +215,9 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
     floorAreaBand,
     hasValueAddPotential,
     exclusionReasons,
+    hasTitleOwnerInfo,
+    hasLicenceHolderInfo,
+    hasContactInfo,
   }
 }
 
@@ -298,20 +315,23 @@ function calculateDealScoreBreakdown(
   lettableRooms: number,
   epcAnalysis: ReturnType<typeof analyzeEPC>,
   requiresMandatoryLicensing: boolean,
-  estimatedYield: number
+  estimatedYield: number,
+  hasTitleOwnerInfo: boolean,
+  hasLicenceHolderInfo: boolean,
+  hasContactInfo: boolean
 ): DealScoreBreakdown {
-  // Floor area efficiency (0-20)
+  // Floor area efficiency (0-15)
   let floorAreaEfficiency = 0
-  if (grossArea >= 120) floorAreaEfficiency = 20
-  else if (grossArea >= 90) floorAreaEfficiency = 15
-  else if (grossArea >= 70) floorAreaEfficiency = 10
-  else floorAreaEfficiency = 5
+  if (grossArea >= 120) floorAreaEfficiency = 15
+  else if (grossArea >= 90) floorAreaEfficiency = 12
+  else if (grossArea >= 70) floorAreaEfficiency = 8
+  else floorAreaEfficiency = 4
 
   // EPC rating score (0-15)
   const epcRatingScore = epcAnalysis.score
 
-  // Licensing upside (0-15) - 5+ occupants = mandatory licensing = more value
-  const licensingUpside = requiresMandatoryLicensing ? 15 : 8
+  // Licensing upside (0-10) - 5+ occupants = mandatory licensing = more value
+  const licensingUpside = requiresMandatoryLicensing ? 10 : 5
 
   // Lettable rooms score (0-15)
   let lettableRoomsScore = 0
@@ -321,21 +341,40 @@ function calculateDealScoreBreakdown(
   else if (lettableRooms >= 3) lettableRoomsScore = 6
   else lettableRoomsScore = 3
 
-  // Compliance score (0-15) - simpler = better
-  let complianceScore = 15
-  if (property.conservation_area) complianceScore -= 5
-  if (property.article_4_area) complianceScore -= 10 // Should already be excluded, but just in case
-  if (epcAnalysis.improvementPotential === "high") complianceScore -= 3
+  // Compliance score (0-10) - simpler = better
+  let complianceScore = 10
+  if (property.conservation_area) complianceScore -= 3
+  if (property.article_4_area) complianceScore -= 7 // Should already be excluded, but just in case
+  if (epcAnalysis.improvementPotential === "high") complianceScore -= 2
   complianceScore = Math.max(0, complianceScore)
 
-  // Yield score (0-20)
+  // Yield score (0-15)
   let yieldScore = 0
-  if (estimatedYield >= 10) yieldScore = 20
-  else if (estimatedYield >= 8) yieldScore = 17
-  else if (estimatedYield >= 6) yieldScore = 14
-  else if (estimatedYield >= 5) yieldScore = 10
-  else if (estimatedYield >= 4) yieldScore = 6
-  else yieldScore = 3
+  if (estimatedYield >= 10) yieldScore = 15
+  else if (estimatedYield >= 8) yieldScore = 13
+  else if (estimatedYield >= 6) yieldScore = 10
+  else if (estimatedYield >= 5) yieldScore = 7
+  else if (estimatedYield >= 4) yieldScore = 4
+  else yieldScore = 2
+
+  // Contact/Owner data score (0-20) - CRITICAL for "Ready to Go"
+  // This is the key differentiator for top-ranked properties
+  let contactDataScore = 0
+
+  // Title owner information (0-10)
+  if (hasTitleOwnerInfo) {
+    contactDataScore += 10
+  }
+
+  // Licence holder information (0-5)
+  if (hasLicenceHolderInfo) {
+    contactDataScore += 5
+  }
+
+  // Contact details (email/phone/address) (0-5)
+  if (hasContactInfo) {
+    contactDataScore += 5
+  }
 
   return {
     floorAreaEfficiency,
@@ -344,6 +383,7 @@ function calculateDealScoreBreakdown(
     lettableRoomsScore,
     complianceScore,
     yieldScore,
+    contactDataScore,
   }
 }
 
@@ -351,24 +391,37 @@ function determineClassification(
   isPotentialHMO: boolean,
   dealScore: number,
   epcAnalysis: ReturnType<typeof analyzeEPC>,
-  property: Property
+  property: Property,
+  hasTitleOwnerInfo: boolean,
+  hasLicenceHolderInfo: boolean
 ): "ready_to_go" | "value_add" | "not_suitable" {
   if (!isPotentialHMO) return "not_suitable"
 
-  // Ready-to-go: Good EPC (A-D), high score, minimal work needed
+  // Ready-to-go: HIGHEST TIER - Must have:
+  // - Good EPC (A-D)
+  // - High score (70+)
+  // - Not in conservation area
+  // - MUST have Title Owner information (critical for "Ready to Go")
+  const hasGoodEpc = ["A", "B", "C", "D"].includes(property.epc_rating || "")
+
   if (
     dealScore >= 70 &&
-    (property.epc_rating === "A" || property.epc_rating === "B" || property.epc_rating === "C" || property.epc_rating === "D") &&
-    !property.conservation_area
+    hasGoodEpc &&
+    !property.conservation_area &&
+    hasTitleOwnerInfo // REQUIRED: Must have title owner info to be "Ready to Go"
   ) {
     return "ready_to_go"
   }
 
-  // Value-add: Needs work but viable
+  // Value-add: Good potential but missing something
+  // - Score 40+ but missing contact info
+  // - OR has contact info but needs EPC work
+  // - OR has contact info but lower score
   if (dealScore >= 40) {
     return "value_add"
   }
 
+  // Properties with very low scores or major issues
   return "not_suitable"
 }
 
