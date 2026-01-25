@@ -9,7 +9,7 @@ import { SourceAdapter, type PropertyListing } from "@/lib/types/ingestion"
  */
 export class PropertyDataHMOAdapter extends SourceAdapter {
   name = "PropertyData HMO"
-  type = "council_register" as const
+  type = "hmo_register" as const
   phase = 1 as const
 
   private apiKey: string

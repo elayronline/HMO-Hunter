@@ -1,3 +1,5 @@
+import type { Director, PlanningConstraint } from "./database"
+
 export interface PropertyListing {
   title: string
   address: string
@@ -37,6 +39,32 @@ export interface PropertyListing {
   rental_yield?: number
   area_population?: number
   area_avg_rent?: number
+  // Phase 3 - Owner/Contact Information
+  owner_name?: string
+  owner_address?: string
+  owner_type?: "individual" | "company" | "trust" | "government" | "unknown"
+  owner_contact_email?: string
+  owner_contact_phone?: string
+  // Phase 3 - Company Information (for corporate landlords)
+  company_name?: string
+  company_number?: string
+  company_status?: string
+  company_incorporation_date?: string
+  directors?: Director[]
+  // Phase 3 - EPC Data
+  epc_rating?: "A" | "B" | "C" | "D" | "E" | "F" | "G"
+  epc_rating_numeric?: number
+  epc_certificate_url?: string
+  epc_expiry_date?: string
+  // Phase 3 - Planning Constraints
+  article_4_area?: boolean
+  planning_constraints?: PlanningConstraint[]
+  conservation_area?: boolean
+  listed_building_grade?: "I" | "II*" | "II"
+  // Phase 3 - Enrichment Tracking
+  title_number?: string
+  title_last_enriched_at?: string
+  owner_enrichment_source?: string
 }
 
 export interface IngestionSource {

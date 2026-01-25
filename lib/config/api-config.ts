@@ -1,7 +1,7 @@
 /**
  * API Configuration for HMO Hunter
  * Manages legitimate data source connections
- * Active APIs: PropertyData, StreetData, PaTMa, Apify (Rightmove)
+ * Active APIs: PropertyData, StreetData, PaTMa, Apify (Rightmove), Searchland, Companies House
  */
 
 export const apiConfig = {
@@ -53,6 +53,37 @@ export const apiConfig = {
     },
   },
 
+  // Phase 3: Searchland API (Title, EPC, Planning)
+  searchland: {
+    apiKey: process.env.SEARCHLAND_API_KEY,
+    baseUrl: process.env.SEARCHLAND_BASE_URL || "https://api.searchland.co.uk/v1",
+    enabled: !!process.env.SEARCHLAND_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
+    },
+    endpoints: {
+      title: "/title",
+      epc: "/epc",
+      planning: "/planning",
+    },
+  },
+
+  // Phase 3: Companies House API (Corporate landlord details)
+  companiesHouse: {
+    apiKey: process.env.COMPANIES_HOUSE_API_KEY,
+    baseUrl: "https://api.company-information.service.gov.uk",
+    enabled: !!process.env.COMPANIES_HOUSE_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 600, // Companies House has generous limits
+      requestsPerDay: 50000,
+    },
+    endpoints: {
+      company: "/company",
+      officers: "/company/{company_number}/officers",
+    },
+  },
+
   // Google Maps (Optional - Street View fallback)
   googleMaps: {
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -96,6 +127,15 @@ export function validateApiConfig(): {
   // Warnings for missing Phase 3 APIs (Listing Matcher)
   if (!apiConfig.apify.enabled) {
     warnings.push("Apify not configured. Direct listing URLs will fallback to search links. Add APIFY_API_TOKEN for direct Rightmove links.")
+  }
+
+  // Warnings for missing Phase 3 APIs (Owner/EPC/Planning)
+  if (!apiConfig.searchland.enabled) {
+    warnings.push("Searchland API not configured. Owner/EPC/Planning data will be unavailable. Add SEARCHLAND_API_KEY for enrichment.")
+  }
+
+  if (!apiConfig.companiesHouse.enabled) {
+    warnings.push("Companies House API not configured. Corporate landlord details will be unavailable. Add COMPANIES_HOUSE_API_KEY for company lookups.")
   }
 
   if (!apiConfig.googleMaps.enabled) {
@@ -144,6 +184,18 @@ export function getApiStatus() {
         name: "Apify Rightmove (Listing Matcher)",
         status: apiConfig.apify.enabled ? "connected" : "not_configured",
         description: "Direct listing URLs + photos from Rightmove",
+      },
+      searchland: {
+        enabled: apiConfig.searchland.enabled,
+        name: "Searchland API",
+        status: apiConfig.searchland.enabled ? "connected" : "not_configured",
+        description: "Title/owner, EPC, and planning data",
+      },
+      companiesHouse: {
+        enabled: apiConfig.companiesHouse.enabled,
+        name: "Companies House API",
+        status: apiConfig.companiesHouse.enabled ? "connected" : "not_configured",
+        description: "Corporate landlord company details and directors",
       },
       googleMaps: {
         enabled: apiConfig.googleMaps.enabled,

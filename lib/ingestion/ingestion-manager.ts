@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 
 export class IngestionManager {
   private phase1Adapters: SourceAdapter[] = [] // Core HMO data
-  private phase2Adapters: EnrichmentAdapter[] = [] // Enrichment data
+  private phase2Adapters: EnrichmentAdapter[] = [] // Basic enrichment data
+  private phase3Adapters: EnrichmentAdapter[] = [] // Owner/EPC/Planning enrichment
   private existingExternalIds = new Set<string>() // For deduplication
 
   registerPhase1Adapter(adapter: SourceAdapter) {
@@ -14,6 +15,10 @@ export class IngestionManager {
 
   registerPhase2Adapter(adapter: EnrichmentAdapter) {
     this.phase2Adapters.push(adapter)
+  }
+
+  registerPhase3Adapter(adapter: EnrichmentAdapter) {
+    this.phase3Adapters.push(adapter)
   }
 
   async runIngestion(sourceName?: string): Promise<IngestionResult[]> {
@@ -122,6 +127,31 @@ export class IngestionManager {
             is_stale: false,
             stale_marked_at: null,
             hmo_status: listing.licence_status === "active" ? "Licensed HMO" : "Standard HMO",
+            // Phase 3 - Owner/Contact fields
+            owner_name: listing.owner_name,
+            owner_address: listing.owner_address,
+            owner_type: listing.owner_type,
+            owner_contact_email: listing.owner_contact_email,
+            owner_contact_phone: listing.owner_contact_phone,
+            company_name: listing.company_name,
+            company_number: listing.company_number,
+            company_status: listing.company_status,
+            company_incorporation_date: listing.company_incorporation_date,
+            directors: listing.directors,
+            // Phase 3 - EPC fields
+            epc_rating: listing.epc_rating,
+            epc_rating_numeric: listing.epc_rating_numeric,
+            epc_certificate_url: listing.epc_certificate_url,
+            epc_expiry_date: listing.epc_expiry_date,
+            // Phase 3 - Planning fields
+            article_4_area: listing.article_4_area ?? false,
+            planning_constraints: listing.planning_constraints,
+            conservation_area: listing.conservation_area ?? false,
+            listed_building_grade: listing.listed_building_grade,
+            // Phase 3 - Enrichment tracking
+            title_number: listing.title_number,
+            title_last_enriched_at: listing.title_last_enriched_at,
+            owner_enrichment_source: listing.owner_enrichment_source,
           }
 
           if (existingProperty) {
@@ -168,7 +198,7 @@ export class IngestionManager {
       // Get properties that need enrichment (recently added or updated)
       const { data: properties } = await supabase
         .from("properties")
-        .select("id, address, postcode, city, property_type, purchase_price")
+        .select("id, address, postcode, city, property_type, purchase_price, uprn, company_number, epc_rating, owner_name")
         .is("purchase_price", null)
         .limit(50) // Enrich in batches
 
@@ -182,6 +212,16 @@ export class IngestionManager {
 
         // Run all Phase 2 enrichment adapters
         for (const adapter of this.phase2Adapters) {
+          try {
+            const data = await adapter.enrich(property as any)
+            Object.assign(enrichedData, data)
+          } catch (error) {
+            console.error(`[${adapter.name}] Enrichment failed:`, error)
+          }
+        }
+
+        // Run all Phase 3 enrichment adapters (Owner/EPC/Planning)
+        for (const adapter of this.phase3Adapters) {
           try {
             const data = await adapter.enrich(property as any)
             Object.assign(enrichedData, data)

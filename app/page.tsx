@@ -47,6 +47,9 @@ import { BookViewingButton } from "@/components/book-viewing-button"
 import { DEFAULT_CITY, type UKCity } from "@/lib/data/uk-cities"
 import { CitySearchAutocomplete } from "@/components/city-search-autocomplete"
 import { MainMapView } from "@/components/main-map-view"
+import { EPCBadge } from "@/components/epc-badge"
+import { Article4Warning } from "@/components/article4-warning"
+import { OwnerInformationSection } from "@/components/owner-information-section"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
@@ -70,6 +73,8 @@ export default function HMOHunterPage() {
   const [petFriendly, setPetFriendly] = useState(false)
   const [furnished, setFurnished] = useState(true)
   const [licensedHmoOnly, setLicensedHmoOnly] = useState(false)
+  const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
+  const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
 
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
@@ -154,6 +159,8 @@ export default function HMOHunterPage() {
           petFriendly,
           furnished,
           licensedHmoOnly,
+          minEpcRating,
+          article4Filter,
         })
         setProperties(data)
         if (data.length > 0 && !selectedProperty) {
@@ -200,6 +207,8 @@ export default function HMOHunterPage() {
     petFriendly,
     furnished,
     licensedHmoOnly,
+    minEpcRating,
+    article4Filter,
   ])
 
   const handleSearch = async () => {
@@ -216,6 +225,8 @@ export default function HMOHunterPage() {
         petFriendly,
         furnished,
         licensedHmoOnly,
+        minEpcRating,
+        article4Filter,
       })
       setProperties(data)
       if (data.length > 0) {
@@ -551,6 +562,45 @@ export default function HMOHunterPage() {
                     />
                   </div>
                 )}
+
+                {/* EPC Rating Filter */}
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">Min EPC Rating</label>
+                  <Select
+                    value={minEpcRating || "any"}
+                    onValueChange={(value) => setMinEpcRating(value === "any" ? null : value as any)}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200">
+                      <SelectValue placeholder="Any" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any</SelectItem>
+                      <SelectItem value="A">A (Most Efficient)</SelectItem>
+                      <SelectItem value="B">B or better</SelectItem>
+                      <SelectItem value="C">C or better</SelectItem>
+                      <SelectItem value="D">D or better</SelectItem>
+                      <SelectItem value="E">E or better</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Article 4 Filter */}
+                <div>
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">Article 4 Areas</label>
+                  <Select
+                    value={article4Filter}
+                    onValueChange={(value) => setArticle4Filter(value as any)}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="include">Include All</SelectItem>
+                      <SelectItem value="exclude">Exclude Article 4</SelectItem>
+                      <SelectItem value="only">Only Article 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </div>
@@ -711,12 +761,28 @@ export default function HMOHunterPage() {
                     <br />
                     {selectedProperty.postcode}
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     <FreshnessBadge
                       lastSeenAt={selectedProperty.last_seen_at}
                       isStale={selectedProperty.is_stale}
                       className="text-xs"
                     />
+                    {selectedProperty.epc_rating && (
+                      <EPCBadge
+                        rating={selectedProperty.epc_rating}
+                        numericRating={selectedProperty.epc_rating_numeric}
+                        className="text-xs"
+                        showTooltip={false}
+                      />
+                    )}
+                    {selectedProperty.article_4_area && (
+                      <Article4Warning
+                        article4Area={selectedProperty.article_4_area}
+                        conservationArea={selectedProperty.conservation_area}
+                        listedBuildingGrade={selectedProperty.listed_building_grade}
+                        className="text-xs"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -833,7 +899,7 @@ export default function HMOHunterPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Source:</span>
                         <span className="text-slate-900 font-medium">
-                          {selectedProperty.source_type === "council_register" ? "Council Register" : "Public Listing"}
+                          {selectedProperty.source_type === "hmo_register" ? "HMO Register" : "Public Listing"}
                         </span>
                       </div>
                     )}
@@ -888,6 +954,35 @@ export default function HMOHunterPage() {
                     </div>
                   )}
                 </div>
+
+                {/* EPC and Planning Badges */}
+                {(selectedProperty.epc_rating || selectedProperty.article_4_area) && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedProperty.epc_rating && (
+                      <EPCBadge
+                        rating={selectedProperty.epc_rating}
+                        numericRating={selectedProperty.epc_rating_numeric}
+                        certificateUrl={selectedProperty.epc_certificate_url}
+                        expiryDate={selectedProperty.epc_expiry_date}
+                      />
+                    )}
+                    {selectedProperty.article_4_area && (
+                      <Article4Warning
+                        article4Area={selectedProperty.article_4_area}
+                        conservationArea={selectedProperty.conservation_area}
+                        listedBuildingGrade={selectedProperty.listed_building_grade}
+                        planningConstraints={selectedProperty.planning_constraints}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Owner Information Section */}
+                {(selectedProperty.owner_name || selectedProperty.company_name) && (
+                  <div className="mb-4">
+                    <OwnerInformationSection property={selectedProperty} />
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <Button
@@ -1165,6 +1260,51 @@ export default function HMOHunterPage() {
                   )}
                 </div>
               </div>
+
+              {/* EPC & Planning Information */}
+              {(selectedProperty.epc_rating || selectedProperty.article_4_area || selectedProperty.conservation_area) && (
+                <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+                  <h4 className="font-semibold text-slate-900 mb-3">Energy & Planning</h4>
+                  <div className="space-y-3">
+                    {selectedProperty.epc_rating && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">EPC Rating</span>
+                        <EPCBadge
+                          rating={selectedProperty.epc_rating}
+                          numericRating={selectedProperty.epc_rating_numeric}
+                          certificateUrl={selectedProperty.epc_certificate_url}
+                          expiryDate={selectedProperty.epc_expiry_date}
+                        />
+                      </div>
+                    )}
+                    {selectedProperty.article_4_area && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Planning Restrictions</span>
+                        <Article4Warning
+                          article4Area={selectedProperty.article_4_area}
+                          conservationArea={selectedProperty.conservation_area}
+                          listedBuildingGrade={selectedProperty.listed_building_grade}
+                          planningConstraints={selectedProperty.planning_constraints}
+                        />
+                      </div>
+                    )}
+                    {selectedProperty.conservation_area && !selectedProperty.article_4_area && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Conservation Area</span>
+                        <span className="text-sm font-medium text-blue-600">Yes</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Owner Information in Full Details */}
+              {(selectedProperty.owner_name || selectedProperty.company_name) && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-slate-900 mb-3">Owner Information</h4>
+                  <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
+                </div>
+              )}
 
               {/* Description */}
               {selectedProperty.description && (

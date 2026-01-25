@@ -56,6 +56,45 @@ export type Property = {
   rental_yield: number | null
   area_population: number | null
   area_avg_rent: number | null
+  // Phase 3 - Owner/Contact Information
+  owner_name: string | null
+  owner_address: string | null
+  owner_type: "individual" | "company" | "trust" | "government" | "unknown" | null
+  owner_contact_email: string | null
+  owner_contact_phone: string | null
+  // Phase 3 - Company Information (for corporate landlords)
+  company_name: string | null
+  company_number: string | null
+  company_status: string | null
+  company_incorporation_date: string | null
+  directors: Director[] | null
+  // Phase 3 - EPC Data
+  epc_rating: "A" | "B" | "C" | "D" | "E" | "F" | "G" | null
+  epc_rating_numeric: number | null
+  epc_certificate_url: string | null
+  epc_expiry_date: string | null
+  // Phase 3 - Planning Constraints
+  article_4_area: boolean
+  planning_constraints: PlanningConstraint[] | null
+  conservation_area: boolean
+  listed_building_grade: "I" | "II*" | "II" | null
+  // Phase 3 - Enrichment Tracking
+  title_number: string | null
+  title_last_enriched_at: string | null
+  owner_enrichment_source: string | null
+}
+
+export type Director = {
+  name: string
+  role: string
+  appointed_on?: string
+  resigned_on?: string
+}
+
+export type PlanningConstraint = {
+  type: string
+  description: string
+  reference?: string
 }
 
 export type PropertyFilters = {
@@ -70,4 +109,7 @@ export type PropertyFilters = {
   furnished: boolean
   licensedHmoOnly: boolean
   licenceStatus?: "active" | "expired" | "all"
+  // Phase 3 - New filters
+  minEpcRating?: "A" | "B" | "C" | "D" | "E" | null
+  article4Filter?: "include" | "exclude" | "only"
 }

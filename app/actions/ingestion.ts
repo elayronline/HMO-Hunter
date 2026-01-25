@@ -2,8 +2,13 @@
 
 import { IngestionManager } from "@/lib/ingestion/ingestion-manager"
 import { PropertyDataHMOAdapter } from "@/lib/ingestion/adapters/propertydata-hmo"
+import { SearchlandAdapter } from "@/lib/ingestion/adapters/searchland"
 import { StreetDataAdapter } from "@/lib/ingestion/adapters/streetdata"
 import { PaTMaAdapter } from "@/lib/ingestion/adapters/patma"
+import { SearchlandOwnershipAdapter } from "@/lib/ingestion/enrichment/searchland-ownership"
+import { SearchlandEPCAdapter } from "@/lib/ingestion/enrichment/searchland-epc"
+import { SearchlandPlanningAdapter } from "@/lib/ingestion/enrichment/searchland-planning"
+import { CompaniesHouseAdapter } from "@/lib/ingestion/enrichment/companies-house"
 import type { IngestionResult } from "@/lib/types/ingestion"
 
 export async function runIngestion(sourceName?: string): Promise<IngestionResult[]> {
@@ -11,10 +16,17 @@ export async function runIngestion(sourceName?: string): Promise<IngestionResult
 
   // Phase 1: Core HMO Data
   manager.registerPhase1Adapter(new PropertyDataHMOAdapter())
+  manager.registerPhase1Adapter(new SearchlandAdapter())
 
-  // Phase 2: Property Enrichment
+  // Phase 2: Property Enrichment (valuation, market data)
   manager.registerPhase2Adapter(new StreetDataAdapter())
   manager.registerPhase2Adapter(new PaTMaAdapter())
+
+  // Phase 3: Owner/EPC/Planning Enrichment
+  manager.registerPhase3Adapter(new SearchlandOwnershipAdapter())
+  manager.registerPhase3Adapter(new SearchlandEPCAdapter())
+  manager.registerPhase3Adapter(new SearchlandPlanningAdapter())
+  manager.registerPhase3Adapter(new CompaniesHouseAdapter())
 
   return await manager.runIngestion(sourceName)
 }
@@ -33,7 +45,7 @@ export async function getIngestionHistory(): Promise<any[]> {
     {
       id: 2,
       timestamp: new Date(Date.now() - 7200000).toISOString(),
-      source: "Street Data",
+      source: "Searchland",
       status: "success",
       properties_added: 12,
       duration_ms: 2800,
@@ -41,10 +53,18 @@ export async function getIngestionHistory(): Promise<any[]> {
     {
       id: 3,
       timestamp: new Date(Date.now() - 10800000).toISOString(),
-      source: "PaTMa",
+      source: "Searchland EPC",
       status: "success",
-      properties_added: 8,
+      properties_enriched: 25,
       duration_ms: 2100,
+    },
+    {
+      id: 4,
+      timestamp: new Date(Date.now() - 14400000).toISOString(),
+      source: "Companies House",
+      status: "success",
+      properties_enriched: 8,
+      duration_ms: 1500,
     },
   ]
 }

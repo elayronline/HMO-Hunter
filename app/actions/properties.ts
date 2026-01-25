@@ -83,6 +83,24 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       query = query.or(`available_from.is.null,available_from.lte.${today}`)
     }
 
+    // Phase 3 - EPC Rating Filter
+    if (filters?.minEpcRating) {
+      const epcOrder = ["A", "B", "C", "D", "E", "F", "G"]
+      const minIndex = epcOrder.indexOf(filters.minEpcRating)
+      if (minIndex >= 0) {
+        const validRatings = epcOrder.slice(0, minIndex + 1)
+        query = query.in("epc_rating", validRatings)
+      }
+    }
+
+    // Phase 3 - Article 4 Filter
+    if (filters?.article4Filter === "exclude") {
+      query = query.or("article_4_area.eq.false,article_4_area.is.null")
+    } else if (filters?.article4Filter === "only") {
+      query = query.eq("article_4_area", true)
+    }
+    // "include" means no filter - show all properties
+
     const { data, error } = await safeSupabaseQuery(async () => await query)
 
     if (error) {
