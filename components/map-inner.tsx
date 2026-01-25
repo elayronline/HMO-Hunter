@@ -319,6 +319,12 @@ export function MapInner({
     const isReadyToGo = isPotentialHMO && hmoClassification === "ready_to_go"
     const isValueAdd = isPotentialHMO && hmoClassification === "value_add"
 
+    // Check for title owner and licence holder information
+    const hasTitleOwner = !!(property.owner_name || property.company_name || property.company_number)
+    const hasLicenceHolder = !!(property.licensed_hmo || property.licence_status === "active" || property.hmo_status?.includes("Licensed"))
+    const hasCompleteInfo = hasTitleOwner && hasLicenceHolder
+    const hasPartialInfo = hasTitleOwner || hasLicenceHolder
+
     let bgColor: string
     let textColor = "white"
     let borderStyle = "none"
@@ -331,25 +337,64 @@ export function MapInner({
       markerSize = 36
     } else if (isPotentialHMO && showPotentialHMO) {
       if (isReadyToGo) {
-        bgColor = "#22c55e"
-        textColor = "white"
-        borderStyle = "3px solid #16a34a"
-        markerSize = 44
+        // Ready to Go with complete info = BOLD bright green (best opportunities)
+        if (hasCompleteInfo) {
+          bgColor = "#16a34a" // green-600 - darkest/boldest green
+          textColor = "white"
+          borderStyle = "3px solid #15803d" // green-700
+          markerSize = 48 // Largest
+        } else if (hasPartialInfo) {
+          bgColor = "#22c55e" // green-500 - medium green
+          textColor = "white"
+          borderStyle = "3px solid #16a34a"
+          markerSize = 44
+        } else {
+          // No contact info - lighter green
+          bgColor = "#86efac" // green-300 - light green
+          textColor = "#166534" // green-800
+          borderStyle = "2px solid #4ade80"
+          markerSize = 40
+        }
       } else if (isValueAdd) {
-        bgColor = "#4ade80"
-        textColor = "#166534"
-        borderStyle = "3px solid #22c55e"
-        markerSize = 40
+        if (hasCompleteInfo) {
+          bgColor = "#4ade80" // green-400
+          textColor = "#14532d" // green-900
+          borderStyle = "3px solid #22c55e"
+          markerSize = 42
+        } else if (hasPartialInfo) {
+          bgColor = "#86efac" // green-300
+          textColor = "#166534"
+          borderStyle = "2px solid #4ade80"
+          markerSize = 38
+        } else {
+          // No contact info - very light green
+          bgColor = "#bbf7d0" // green-200 - very light
+          textColor = "#166534"
+          borderStyle = "2px solid #86efac"
+          markerSize = 36
+        }
       } else {
         bgColor = "#14b8a6"
         textColor = "white"
         markerSize = 34
       }
     } else if (isPotentialHMOStatus) {
-      bgColor = "#22c55e"
-      textColor = "white"
-      borderStyle = "3px solid #16a34a"
-      markerSize = 42
+      if (hasCompleteInfo) {
+        bgColor = "#16a34a"
+        textColor = "white"
+        borderStyle = "3px solid #15803d"
+        markerSize = 44
+      } else if (hasPartialInfo) {
+        bgColor = "#22c55e"
+        textColor = "white"
+        borderStyle = "3px solid #16a34a"
+        markerSize = 42
+      } else {
+        bgColor = "#86efac"
+        textColor = "#166534"
+        borderStyle = "2px solid #4ade80"
+        markerSize = 38
+      }
     } else if (isLicensed) {
       bgColor = "#0f766e"
       textColor = "white"
@@ -376,11 +421,16 @@ export function MapInner({
       ? property.deal_score.toString()
       : String(property.bedrooms)
 
-    const title = isArticle4
-      ? `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
-      : isPotentialHMO
-        ? `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Deal Score: ${property.deal_score}`
-        : `${property.bedrooms} bed ${property.hmo_status || "property"}`
+    // Enhanced title showing contact info status
+    let title = ""
+    if (isArticle4) {
+      title = `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
+    } else if (isPotentialHMO) {
+      const infoStatus = hasCompleteInfo ? "Complete Info" : hasPartialInfo ? "Partial Info" : "No Contact Info"
+      title = `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Score: ${property.deal_score} (${infoStatus})`
+    } else {
+      title = `${property.bedrooms} bed ${property.hmo_status || "property"}`
+    }
 
     return {
       bgColor,
