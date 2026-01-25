@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight, X, ImageIcon, Map } from "lucide-react"
+import { useState, useMemo } from "react"
+import { ChevronLeft, ChevronRight, X, ImageIcon, Map, MapPin } from "lucide-react"
 
 interface PropertyGalleryProps {
   images?: string[] | null
@@ -11,6 +11,29 @@ interface PropertyGalleryProps {
   primaryImage?: string | null
   fallbackImage?: string
   propertyTitle: string
+  latitude?: number
+  longitude?: number
+}
+
+/**
+ * Check if an image URL is a stock/placeholder image
+ */
+function isStockImage(url: string | null | undefined): boolean {
+  if (!url) return true
+  return url.includes("unsplash.com") ||
+    url.includes("placeholder") ||
+    url.includes("stock") ||
+    url.includes("example.com") ||
+    url.includes("modern-house")
+}
+
+/**
+ * Generate Google Street View URL
+ */
+function getStreetViewUrl(lat: number, lng: number): string {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!apiKey) return ""
+  return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${lat},${lng}&heading=0&pitch=0&fov=90&key=${apiKey}`
 }
 
 export function PropertyGallery({
@@ -19,13 +42,42 @@ export function PropertyGallery({
   primaryImage,
   fallbackImage = "/modern-house-exterior.png",
   propertyTitle,
+  latitude,
+  longitude,
 }: PropertyGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [viewMode, setViewMode] = useState<"photos" | "floorplans">("photos")
 
-  // Combine all media
-  const allImages = images && images.length > 0 ? images : primaryImage ? [primaryImage] : [fallbackImage]
+  // Smart image selection - prioritize real images over stock
+  const allImages = useMemo(() => {
+    const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+    // Get real images (not stock)
+    const realImages = (images || []).filter(img => !isStockImage(img))
+    if (realImages.length > 0) return realImages
+
+    // Try primary image if it's real
+    if (primaryImage && !isStockImage(primaryImage)) return [primaryImage]
+
+    // Use Google Street View if available
+    if (latitude && longitude && googleApiKey) {
+      const streetViewUrl = getStreetViewUrl(latitude, longitude)
+      if (streetViewUrl) return [streetViewUrl]
+    }
+
+    // Fall back to stock images if we have them
+    if (images && images.length > 0) return images
+    if (primaryImage) return [primaryImage]
+
+    // Final fallback
+    return [fallbackImage]
+  }, [images, primaryImage, fallbackImage, latitude, longitude])
+
+  // Check if current image is Street View
+  const isStreetView = allImages[selectedIndex]?.includes("maps.googleapis.com/maps/api/streetview")
+  const isStock = isStockImage(allImages[selectedIndex])
+
   const allFloorPlans = floorPlans || []
 
   const currentMedia = viewMode === "photos" ? allImages : allFloorPlans
@@ -55,9 +107,22 @@ export function PropertyGallery({
           onClick={() => setShowFullscreen(true)}
         />
 
-        {/* Image counter */}
-        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-          {selectedIndex + 1} / {currentMedia.length}
+        {/* Image source badge */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-2">
+          {isStreetView && viewMode === "photos" && (
+            <div className="bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              Street View
+            </div>
+          )}
+          {isStock && !isStreetView && viewMode === "photos" && (
+            <div className="bg-amber-500/80 text-white text-xs px-2 py-1 rounded">
+              Stock Image
+            </div>
+          )}
+          <div className="bg-black/70 text-white text-xs px-2 py-1 rounded">
+            {selectedIndex + 1} / {currentMedia.length}
+          </div>
         </div>
 
         {/* Navigation arrows */}

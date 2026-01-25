@@ -893,6 +893,8 @@ export default function HMOHunterPage() {
                     primaryImage={selectedProperty.primary_image}
                     fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
                     propertyTitle={selectedProperty.title}
+                    latitude={selectedProperty.latitude}
+                    longitude={selectedProperty.longitude}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -927,6 +929,29 @@ export default function HMOHunterPage() {
                         showTooltip={false}
                       />
                     )}
+                    {/* Contact availability indicator */}
+                    {(selectedProperty.owner_contact_phone || selectedProperty.owner_contact_email) ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        Contact Available
+                      </span>
+                    ) : selectedProperty.company_name ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Company Owner
+                      </span>
+                    ) : selectedProperty.owner_name ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Owner Known
+                      </span>
+                    ) : null}
                     {selectedProperty.article_4_area && (
                       <Article4Warning
                         article4Area={selectedProperty.article_4_area}
@@ -1048,6 +1073,8 @@ export default function HMOHunterPage() {
                     primaryImage={selectedProperty.primary_image}
                     fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
                     propertyTitle={selectedProperty.title}
+                    latitude={selectedProperty.latitude}
+                    longitude={selectedProperty.longitude}
                   />
                   <SavePropertyButton
                     propertyId={selectedProperty.id}
@@ -1102,6 +1129,14 @@ export default function HMOHunterPage() {
                         Licensed HMO
                       </div>
                     )}
+                    {(selectedProperty.owner_contact_phone || selectedProperty.owner_contact_email) && (
+                      <div className="flex items-center gap-2 text-sm text-emerald-700">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        Contact Available
+                      </div>
+                    )}
                     {selectedProperty.source_type && (
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Source:</span>
@@ -1130,6 +1165,20 @@ export default function HMOHunterPage() {
                         </a>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Contact Available Banner for all listing types */}
+                {(selectedProperty.owner_contact_phone || selectedProperty.owner_contact_email) &&
+                  selectedProperty.listing_type !== "purchase" && (
+                  <div className="mb-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Owner Contact Available
+                    </div>
+                    <p className="text-xs text-emerald-600 mt-1">See Owner Information section below</p>
                   </div>
                 )}
 
@@ -1370,6 +1419,8 @@ export default function HMOHunterPage() {
                   primaryImage={selectedProperty.primary_image}
                   fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
                   propertyTitle={selectedProperty.title}
+                    latitude={selectedProperty.latitude}
+                    longitude={selectedProperty.longitude}
                 />
               </div>
 

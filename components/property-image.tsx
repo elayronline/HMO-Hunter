@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Home, ImageOff } from "lucide-react"
+import { Home, ImageOff, MapPin } from "lucide-react"
 
 interface PropertyImageProps {
   address: string
@@ -19,12 +19,33 @@ interface PropertyImageProps {
 }
 
 /**
+ * Check if an image URL is a stock/placeholder image
+ */
+function isStockImage(url: string | null | undefined): boolean {
+  if (!url) return true
+  return url.includes("unsplash.com") ||
+    url.includes("placeholder") ||
+    url.includes("stock") ||
+    url.includes("example.com")
+}
+
+/**
+ * Generate Google Street View URL
+ */
+function getStreetViewUrl(lat: number, lng: number, width: number, height: number): string {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!apiKey) return ""
+  return `https://maps.googleapis.com/maps/api/streetview?size=${width}x${height}&location=${lat},${lng}&heading=0&pitch=0&fov=90&key=${apiKey}`
+}
+
+/**
  * Property Image Component
  *
  * Priority order:
- * 1. Existing images from database (if provided)
+ * 1. Real property images from database (not stock/placeholder)
  * 2. Google Street View (if lat/lng and API key available)
- * 3. Placeholder image
+ * 3. Stock images from database (if any)
+ * 4. Placeholder image
  */
 export function PropertyImage({
   address,
@@ -39,30 +60,44 @@ export function PropertyImage({
   priority = false,
 }: PropertyImageProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageSource, setImageSource] = useState<"listing" | "streetview" | "placeholder">("placeholder")
+  const [imageSource, setImageSource] = useState<"listing" | "streetview" | "stock" | "placeholder">("placeholder")
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    // Priority 1: Use existing images if available
+    const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+    // Priority 1: Use real images (not stock) if available
     if (existingImages && existingImages.length > 0) {
-      setImageUrl(existingImages[0])
-      setImageSource("listing")
-      setIsLoading(false)
-      return
+      const realImages = existingImages.filter(img => !isStockImage(img))
+      if (realImages.length > 0) {
+        setImageUrl(realImages[0])
+        setImageSource("listing")
+        setIsLoading(false)
+        return
+      }
     }
 
     // Priority 2: Try Google Street View
-    const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     if (latitude && longitude && googleApiKey) {
-      const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${width}x${height}&location=${latitude},${longitude}&key=${googleApiKey}`
-      setImageUrl(streetViewUrl)
-      setImageSource("streetview")
+      const streetViewUrl = getStreetViewUrl(latitude, longitude, width, height)
+      if (streetViewUrl) {
+        setImageUrl(streetViewUrl)
+        setImageSource("streetview")
+        setIsLoading(false)
+        return
+      }
+    }
+
+    // Priority 3: Fall back to stock images from database
+    if (existingImages && existingImages.length > 0) {
+      setImageUrl(existingImages[0])
+      setImageSource("stock")
       setIsLoading(false)
       return
     }
 
-    // Priority 3: Placeholder
+    // Priority 4: Placeholder
     setImageUrl("/placeholder.jpg")
     setImageSource("placeholder")
     setIsLoading(false)
@@ -115,8 +150,14 @@ export function PropertyImage({
 
       {/* Image source badge */}
       {imageSource === "streetview" && (
-        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
           Street View
+        </div>
+      )}
+      {imageSource === "stock" && (
+        <div className="absolute bottom-2 right-2 bg-amber-500/80 text-white text-xs px-2 py-1 rounded">
+          Stock Image
         </div>
       )}
     </div>
