@@ -101,6 +101,33 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
     // "include" means no filter - show all properties
 
+    // Licence Type Filter
+    if (filters?.licenceTypeFilter && filters.licenceTypeFilter !== "all") {
+      if (filters.licenceTypeFilter === "any_licensed") {
+        // Show only properties with any active licence
+        query = query.eq("licensed_hmo", true)
+      } else if (filters.licenceTypeFilter === "unlicensed") {
+        // Show only properties without licences
+        query = query.or("licensed_hmo.eq.false,licensed_hmo.is.null")
+      } else {
+        // Specific licence type code - need to filter by property_licences table
+        // First get property IDs that have this licence type
+        const { data: licencedPropertyIds } = await supabase
+          .from("property_licences")
+          .select("property_id")
+          .eq("licence_type_code", filters.licenceTypeFilter)
+          .eq("status", "active")
+
+        if (licencedPropertyIds && licencedPropertyIds.length > 0) {
+          const propertyIds = licencedPropertyIds.map(l => l.property_id)
+          query = query.in("id", propertyIds)
+        } else {
+          // No properties have this licence type - return empty
+          return []
+        }
+      }
+    }
+
     // Phase 4 - Potential HMO Filters
     if (filters?.showPotentialHMOs) {
       query = query.eq("is_potential_hmo", true)

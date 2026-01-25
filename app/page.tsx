@@ -52,6 +52,7 @@ import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
 import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
+import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
@@ -77,6 +78,7 @@ export default function HMOHunterPage() {
   const [licensedHmoOnly, setLicensedHmoOnly] = useState(false)
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
+  const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
 
   // Potential HMO filters - show all but highlight opportunities
   const [showPotentialHMOs, setShowPotentialHMOs] = useState(false)
@@ -173,6 +175,7 @@ export default function HMOHunterPage() {
           licensedHmoOnly,
           minEpcRating,
           article4Filter,
+          licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
           showPotentialHMOs,
           hmoClassification: hmoClassificationFilter,
           minDealScore: minDealScore > 0 ? minDealScore : undefined,
@@ -227,6 +230,7 @@ export default function HMOHunterPage() {
     licensedHmoOnly,
     minEpcRating,
     article4Filter,
+    licenceTypeFilter,
     showPotentialHMOs,
     hmoClassificationFilter,
     minDealScore,
@@ -251,6 +255,7 @@ export default function HMOHunterPage() {
         licensedHmoOnly,
         minEpcRating,
         article4Filter,
+        licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
         showPotentialHMOs,
         hmoClassification: hmoClassificationFilter,
         minDealScore: minDealScore > 0 ? minDealScore : undefined,
@@ -621,6 +626,30 @@ export default function HMOHunterPage() {
                       <SelectItem value="include">Include All</SelectItem>
                       <SelectItem value="exclude">Exclude Article 4</SelectItem>
                       <SelectItem value="only">Only Article 4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Licence Type Filter */}
+                <div>
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">Licence Type</label>
+                  <Select
+                    value={licenceTypeFilter}
+                    onValueChange={setLicenceTypeFilter}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200">
+                      <SelectValue placeholder="All Licence Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Licence Types</SelectItem>
+                      <SelectItem value="any_licensed">Any Licensed HMO</SelectItem>
+                      <SelectItem value="unlicensed">Unlicensed Only</SelectItem>
+                      <SelectItem value="---" disabled>───────────────</SelectItem>
+                      {DEFAULT_LICENCE_TYPES.filter(t => t.is_active).map((type) => (
+                        <SelectItem key={type.code} value={type.code}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

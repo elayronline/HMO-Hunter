@@ -160,6 +160,8 @@ export type PropertyFilters = {
   // Phase 3 - New filters
   minEpcRating?: "A" | "B" | "C" | "D" | "E" | null
   article4Filter?: "include" | "exclude" | "only"
+  // Licence Type Filter
+  licenceTypeFilter?: string // "all" | "any_licensed" | "unlicensed" | specific licence type code
   // Phase 4 - Potential HMO filters
   showPotentialHMOs?: boolean
   hmoClassification?: "ready_to_go" | "value_add" | null
