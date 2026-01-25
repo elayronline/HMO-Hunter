@@ -109,6 +109,7 @@ Run these in Supabase SQL Editor in order:
 5. `scripts/006_add_potential_hmo_fields.sql`
 6. `scripts/008_gdpr_compliance_tables.sql`
 7. `scripts/009_add_licence_holder_contact_fields.sql`
+8. `scripts/010_add_licence_types_table.sql`
 
 ---
 
