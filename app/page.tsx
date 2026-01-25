@@ -1164,11 +1164,26 @@ export default function HMOHunterPage() {
                       </div>
                     )}
                     {selectedProperty.licensed_hmo && (
-                      <div className="flex items-center gap-2 text-sm text-teal-700">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Licensed HMO
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-teal-700">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Licensed HMO
+                        </div>
+                        {(selectedProperty.licence_start_date || selectedProperty.licence_end_date) && (
+                          <div className="ml-6 text-xs text-slate-600 space-y-0.5">
+                            {selectedProperty.licence_start_date && (
+                              <div>Start: {new Date(selectedProperty.licence_start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</div>
+                            )}
+                            {selectedProperty.licence_end_date && (
+                              <div className={new Date(selectedProperty.licence_end_date) < new Date() ? "text-red-600" : ""}>
+                                End: {new Date(selectedProperty.licence_end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                {new Date(selectedProperty.licence_end_date) < new Date() && " (Expired)"}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                     {(selectedProperty.owner_contact_phone || selectedProperty.owner_contact_email) && (
@@ -1519,6 +1534,19 @@ export default function HMOHunterPage() {
                         </svg>
                         Licensed HMO
                       </div>
+                      {(selectedProperty.licence_start_date || selectedProperty.licence_end_date) && (
+                        <div className="mt-1 ml-6 text-xs text-slate-600 space-y-0.5">
+                          {selectedProperty.licence_start_date && (
+                            <div>Licence Start: {new Date(selectedProperty.licence_start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</div>
+                          )}
+                          {selectedProperty.licence_end_date && (
+                            <div className={new Date(selectedProperty.licence_end_date) < new Date() ? "text-red-600 font-medium" : ""}>
+                              Licence End: {new Date(selectedProperty.licence_end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                              {new Date(selectedProperty.licence_end_date) < new Date() && " (Expired)"}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
