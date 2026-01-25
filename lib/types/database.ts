@@ -49,6 +49,11 @@ export type Property = {
   licence_end_date: string | null
   licence_status: "active" | "expired" | "pending" | "none" | null
   max_occupants: number | null
+  // Licence Holder Contact (separate from Title Owner)
+  licence_holder_name: string | null
+  licence_holder_email: string | null
+  licence_holder_phone: string | null
+  licence_holder_address: string | null
   // Phase 2 - Enrichment Fields
   uprn: string | null
   year_built: number | null
@@ -82,6 +87,10 @@ export type Property = {
   title_number: string | null
   title_last_enriched_at: string | null
   owner_enrichment_source: string | null
+  // Phase 3 - GDPR Compliance
+  contact_data_added_at: string | null
+  contact_data_source: string | null
+  contact_data_opted_out: boolean
   // Phase 4 - Potential HMO Analysis
   gross_internal_area_sqm: number | null
   floor_area_band: "under_90" | "90_120" | "120_plus" | null
@@ -127,12 +136,13 @@ export type PlanningConstraint = {
 }
 
 export type DealScoreBreakdown = {
-  floorAreaEfficiency: number      // 0-20 points
+  floorAreaEfficiency: number      // 0-15 points
   epcRatingScore: number           // 0-15 points
-  licensingUpside: number          // 0-15 points
+  licensingUpside: number          // 0-10 points
   lettableRoomsScore: number       // 0-15 points
-  complianceScore: number          // 0-15 points
-  yieldScore: number               // 0-20 points
+  complianceScore: number          // 0-10 points
+  yieldScore: number               // 0-15 points
+  contactDataScore: number         // 0-20 points (title owner + licence + contact)
 }
 
 export type PropertyFilters = {

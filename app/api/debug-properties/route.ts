@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   try {
     let query = supabaseAdmin
       .from("properties")
-      .select("id, title, address, postcode, city, latitude, longitude, hmo_status, listing_type, bedrooms, is_stale")
+      .select("id, title, address, postcode, city, latitude, longitude, hmo_status, listing_type, bedrooms, is_stale, owner_name, owner_type, company_name, company_number, epc_rating, owner_contact_phone, owner_contact_email")
 
     if (!includeStale) {
       query = query.eq("is_stale", false)
@@ -40,11 +40,19 @@ export async function GET(request: Request) {
       byCity,
       properties: properties?.slice(0, 20).map(p => ({
         title: p.title?.substring(0, 40),
+        address: p.address,
         city: p.city,
         lat: p.latitude,
         lng: p.longitude,
         hmo_status: p.hmo_status,
         is_stale: p.is_stale,
+        owner_name: p.owner_name,
+        owner_type: p.owner_type,
+        company_name: p.company_name,
+        company_number: p.company_number,
+        epc_rating: p.epc_rating,
+        owner_contact_phone: p.owner_contact_phone,
+        owner_contact_email: p.owner_contact_email,
       })),
     })
   } catch (error) {

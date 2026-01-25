@@ -167,20 +167,31 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       return []
     }
 
+    // GDPR: Filter out contact data for opted-out owners
+    const processedData = (data || []).map((property: any) => {
+      if (property.contact_data_opted_out) {
+        return {
+          ...property,
+          owner_contact_email: null,
+          owner_contact_phone: null,
+        }
+      }
+      return property
+    }) as Property[]
+
     propertiesCache = {
-      data: (data || []) as Property[],
+      data: processedData,
       timestamp: now,
       filters: filterKey,
     }
 
     // Debug: Log coordinate distribution
-    const props = data || []
-    if (props.length > 0) {
-      const lats = props.map((p: any) => p.latitude).filter((v: any) => v != null)
-      const lngs = props.map((p: any) => p.longitude).filter((v: any) => v != null)
-      const nullCoords = props.filter((p: any) => p.latitude == null || p.longitude == null).length
+    if (processedData.length > 0) {
+      const lats = processedData.map((p: any) => p.latitude).filter((v: any) => v != null)
+      const lngs = processedData.map((p: any) => p.longitude).filter((v: any) => v != null)
+      const nullCoords = processedData.filter((p: any) => p.latitude == null || p.longitude == null).length
       console.log("[PropertiesAction] Returned:", {
-        total: props.length,
+        total: processedData.length,
         withCoords: lats.length,
         nullCoords,
         lat: lats.length > 0 ? { min: Math.min(...lats), max: Math.max(...lats) } : "none",
@@ -188,7 +199,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       })
     }
 
-    return (data || []) as Property[]
+    return processedData
   } catch {
     // On any error, return cached data or empty array
     if (propertiesCache) {
@@ -206,6 +217,15 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   if (error) {
     console.error("[v0] Error fetching property:", error)
     return null
+  }
+
+  // GDPR: Filter out contact data for opted-out owners
+  if (data?.contact_data_opted_out) {
+    return {
+      ...data,
+      owner_contact_email: null,
+      owner_contact_phone: null,
+    } as Property
   }
 
   return data as Property
