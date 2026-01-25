@@ -140,3 +140,231 @@ export const OUTPUT_FORMAT = {
   includeDataSource: true,
   format: "json",
 }
+
+// =============================================================================
+// HMO DATA AGGREGATION, ENRICHMENT & INTELLIGENCE SPECIFICATION
+// =============================================================================
+
+/**
+ * Property Resolution Logic
+ * For each input property, resolve using preferred identifiers
+ */
+export const PROPERTY_RESOLUTION = {
+  // Priority order for property resolution
+  resolutionOrder: [
+    { identifier: "UPRN", priority: 1, description: "Unique Property Reference Number - preferred" },
+    { identifier: "address_la_code", priority: 2, description: "Full address + Local Authority code - fallback" },
+    { identifier: "postcode_address", priority: 3, description: "Postcode + partial address - last resort" },
+  ],
+  // Maintain single canonical record per property
+  deduplication: {
+    strategy: "uprn_primary",
+    mergeStrategy: "newest_wins",
+    conflictResolution: "higher_confidence_wins",
+  },
+}
+
+/**
+ * Title Owner Data Requirements
+ * Pull Title Owner (freehold/leasehold) data using approved APIs
+ */
+export const TITLE_OWNER_CONFIG = {
+  requiredFields: [
+    "owner_name",
+    "owner_classification", // Individual | Landlord | Agency | Company
+    "contact_phone",
+    "contact_email",
+    "website",
+  ],
+
+  ownerClassifications: ["Individual", "Landlord", "Agency", "Company"] as const,
+
+  // Primary sources (authoritative)
+  primarySources: [
+    { name: "HM Land Registry", endpoint: "Title Register", type: "official" },
+    { name: "HM Land Registry INSPIRE", endpoint: "INSPIRE Index", type: "official" },
+    { name: "Companies House API", endpoint: "Company Profile", type: "official", for: "corporate_owners" },
+    { name: "VOA Datasets", endpoint: "Valuation Office Agency", type: "official" },
+  ],
+
+  // Enrichment sources (when contact details missing)
+  enrichmentSources: [
+    { name: "Companies House", fields: ["directors", "domains", "SIC_codes"], type: "official" },
+    { name: "Experian", fields: ["contact_details"], type: "commercial" },
+    { name: "Creditsafe", fields: ["contact_details", "credit_info"], type: "commercial" },
+    { name: "DueDil", fields: ["company_intelligence"], type: "commercial" },
+    { name: "Clearbit", fields: ["company_contacts"], type: "commercial", for: "agencies" },
+    { name: "Apollo", fields: ["decision_makers"], type: "commercial", for: "professional_landlords" },
+    { name: "Council Landlord Registers", fields: ["registered_landlords"], type: "official" },
+  ],
+
+  // Enriched field marking
+  enrichedFieldMarking: {
+    source_type: "enriched",
+    verification_required: true,
+  },
+}
+
+/**
+ * HMO Licence Data Requirements
+ */
+export const LICENCE_DATA_CONFIG = {
+  requiredFields: [
+    "licence_holder_name",
+    "licence_holder_contact",
+    "licence_type",
+    "issuing_local_authority",
+    "licence_start_date",
+    "licence_end_date",
+    "licence_status",
+  ],
+
+  licenceTypes: [
+    { type: "mandatory_hmo", description: "Mandatory HMO licence (5+ occupants, 2+ households)" },
+    { type: "additional_hmo", description: "Additional HMO licensing scheme" },
+    { type: "selective", description: "Selective licensing scheme" },
+  ] as const,
+
+  licenceStatuses: ["Active", "Expiring", "Expired"] as const,
+
+  // Approved data sources
+  approvedSources: [
+    { name: "Local Authority HMO Registers", type: "official", reliability: "authoritative" },
+    { name: "Council Open Data APIs", type: "official", reliability: "authoritative" },
+    { name: "data.gov.uk Licensing Datasets", type: "official", reliability: "authoritative" },
+    { name: "FOI Published Datasets", type: "official", reliability: "high" },
+  ],
+}
+
+/**
+ * Licence Intelligence Logic
+ * Automated reasoning for licence analysis
+ */
+export const LICENCE_INTELLIGENCE = {
+  // Licence expiry alert thresholds
+  expiryAlerts: {
+    critical: {
+      threshold_months: 3,
+      alert_level: "critical",
+      triggers: ["licence_expiring", "renewal_opportunity", "agent_landlord_lead"],
+    },
+    warning: {
+      threshold_months: 6,
+      alert_level: "warning",
+      triggers: ["licence_expiring", "renewal_opportunity"],
+    },
+  },
+
+  // Licence type validation rules
+  typeValidation: {
+    mandatory_hmo: {
+      minOccupants: 5,
+      minHouseholds: 2,
+      minStoreys: 3, // For pre-2018 definition
+    },
+    additional_hmo: {
+      // Varies by Local Authority scheme
+      requiresSchemeCheck: true,
+    },
+    selective: {
+      // Area-based, check Local Authority designation
+      requiresAreaCheck: true,
+    },
+  },
+
+  // Risk flags
+  riskFlags: {
+    unlicensed_or_high_risk: {
+      conditions: ["no_licence_exists", "licence_expired"],
+      indicators: ["hmo_use_suspected"],
+      severity: "high",
+    },
+    under_licensed: {
+      conditions: ["licence_type_mismatch", "occupancy_exceeds_licence"],
+      severity: "medium",
+    },
+    compliance_gap: {
+      conditions: ["missing_safety_certificates", "outstanding_enforcement"],
+      severity: "high",
+    },
+  },
+}
+
+/**
+ * Data Provenance Requirements
+ * For EVERY field, store provenance metadata
+ */
+export const PROVENANCE_REQUIREMENTS = {
+  requiredMetadata: [
+    "source_name",      // e.g., "HM Land Registry"
+    "source_type",      // official | commercial | enriched
+    "confidence_score", // high | medium | low
+    "last_updated",     // ISO timestamp
+  ],
+
+  confidenceScores: {
+    high: { min: 0.85, sources: ["official", "authoritative"] },
+    medium: { min: 0.6, sources: ["commercial", "verified"] },
+    low: { min: 0, sources: ["enriched", "inferred"] },
+  },
+
+  sourceTypes: ["official", "commercial", "enriched"] as const,
+}
+
+/**
+ * Unified Property Object Structure
+ * Single canonical output format
+ */
+export const UNIFIED_PROPERTY_SCHEMA = {
+  sections: [
+    "property_identifiers",     // UPRN, address, title_number, etc.
+    "title_owner_details",      // Owner name, classification, contacts
+    "licence_owner_details",    // Licence holder info
+    "licence_metadata",         // Type, dates, status
+    "api_sources_used",         // Provenance trail
+    "missing_data",             // Gaps + recommended APIs
+    "trigger_states",           // Expiry, mismatch, opportunity flags
+  ],
+
+  outputCapabilities: {
+    indexable: true,
+    filterable: true,
+    ui_toggles: true,
+    alerts: true,
+  },
+}
+
+/**
+ * GDPR and Data Constraints
+ */
+export const DATA_CONSTRAINTS = {
+  gdpr: {
+    dataMinimisation: true,
+    lawfulBasis: "legitimate_interest",
+    contactDetailsConditions: [
+      "publicly_available",
+      "professional_landlord",
+      "company_officer",
+      "licensed_hmo_holder",
+    ],
+  },
+
+  rules: [
+    "Never invent data - recommend APIs instead",
+    "Surface contact details only where legally permissible",
+    "Mark all enriched data with verification_required flag",
+    "Maintain full provenance trail for audit",
+  ],
+}
+
+/**
+ * Intelligence Objectives
+ * What users should be able to do
+ */
+export const INTELLIGENCE_OBJECTIVES = [
+  "Instantly assess HMO compliance status",
+  "Track licence expiry risk with automated alerts",
+  "Identify off-market or upcoming HMO opportunities",
+  "Contact the correct decision-maker with confidence",
+  "Understand data provenance and confidence levels",
+]
