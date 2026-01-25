@@ -97,13 +97,100 @@ export abstract class SourceAdapter {
     return postcode.toUpperCase().replace(/\s+/g, " ").trim()
   }
 
-  protected async geocode(address: string, postcode: string): Promise<{ lat: number; lng: number } | null> {
-    // In production, use Google Maps Geocoding API or similar
-    // For now, return mock coordinates in London
-    return {
-      lat: 51.5074 + (Math.random() - 0.5) * 0.1,
-      lng: -0.1278 + (Math.random() - 0.5) * 0.1,
+  // Map postcode prefix to city
+  protected getCityFromPostcode(postcode: string): string {
+    const prefix = postcode.toUpperCase().replace(/\s+/g, "").slice(0, 2)
+    const singlePrefix = prefix.slice(0, 1)
+
+    // UK postcode area to city mapping
+    const postcodeToCity: Record<string, string> = {
+      // London areas
+      "E": "London", "EC": "London", "N": "London", "NW": "London",
+      "SE": "London", "SW": "London", "W": "London", "WC": "London",
+      // Manchester
+      "M": "Manchester",
+      // Birmingham
+      "B": "Birmingham",
+      // Leeds
+      "LS": "Leeds",
+      // Liverpool
+      "L": "Liverpool",
+      // Newcastle
+      "NE": "Newcastle",
+      // Nottingham
+      "NG": "Nottingham",
+      // Sheffield
+      "S": "Sheffield",
+      // Bristol
+      "BS": "Bristol",
+      // Leicester
+      "LE": "Leicester",
+      // Cardiff
+      "CF": "Cardiff",
+      // Edinburgh
+      "EH": "Edinburgh",
+      // Glasgow
+      "G": "Glasgow",
+      // Belfast
+      "BT": "Belfast",
     }
+
+    // Try two-letter prefix first, then single letter
+    return postcodeToCity[prefix] || postcodeToCity[singlePrefix] || "Unknown"
+  }
+
+  // Cache for postcode lookups to avoid repeated API calls
+  private static postcodeCache: Map<string, { lat: number; lng: number }> = new Map()
+
+  protected async geocode(address: string, postcode: string): Promise<{ lat: number; lng: number } | null> {
+    if (!postcode) return null
+
+    const normalizedPostcode = postcode.toUpperCase().replace(/\s+/g, "").trim()
+
+    // Check cache first
+    if (SourceAdapter.postcodeCache.has(normalizedPostcode)) {
+      return SourceAdapter.postcodeCache.get(normalizedPostcode)!
+    }
+
+    try {
+      // Use postcodes.io - free UK postcode geocoding API
+      const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalizedPostcode)}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.status === 200 && data.result) {
+          const coords = {
+            lat: data.result.latitude,
+            lng: data.result.longitude,
+          }
+          // Cache the result
+          SourceAdapter.postcodeCache.set(normalizedPostcode, coords)
+          return coords
+        }
+      }
+
+      // Try with space in postcode (e.g., "N7 6PA")
+      const spacedPostcode = normalizedPostcode.length > 4
+        ? `${normalizedPostcode.slice(0, -3)} ${normalizedPostcode.slice(-3)}`
+        : normalizedPostcode
+
+      const response2 = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(spacedPostcode)}`)
+      if (response2.ok) {
+        const data2 = await response2.json()
+        if (data2.status === 200 && data2.result) {
+          const coords = {
+            lat: data2.result.latitude,
+            lng: data2.result.longitude,
+          }
+          SourceAdapter.postcodeCache.set(normalizedPostcode, coords)
+          return coords
+        }
+      }
+    } catch (error) {
+      console.error(`[Geocode] Error geocoding postcode ${postcode}:`, error)
+    }
+
+    return null
   }
 }
 

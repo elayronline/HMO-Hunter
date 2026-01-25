@@ -50,6 +50,8 @@ import { MainMapView } from "@/components/main-map-view"
 import { EPCBadge } from "@/components/epc-badge"
 import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
+import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
+import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
@@ -76,6 +78,14 @@ export default function HMOHunterPage() {
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
 
+  // Potential HMO filters - show all but highlight opportunities
+  const [showPotentialHMOs, setShowPotentialHMOs] = useState(false)
+  const [hmoClassificationFilter, setHmoClassificationFilter] = useState<"ready_to_go" | "value_add" | null>(null)
+  const [floorAreaBandFilter, setFloorAreaBandFilter] = useState<"under_90" | "90_120" | "120_plus" | null>(null)
+  const [yieldBandFilter, setYieldBandFilter] = useState<"low" | "medium" | "high" | null>(null)
+  const [epcBandFilter, setEpcBandFilter] = useState<"good" | "needs_upgrade" | null>(null)
+  const [minDealScore, setMinDealScore] = useState<number>(0)
+
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
   const [savedExpanded, setSavedExpanded] = useState(true)
@@ -84,6 +94,7 @@ export default function HMOHunterPage() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
+  const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
@@ -162,6 +173,12 @@ export default function HMOHunterPage() {
           licensedHmoOnly,
           minEpcRating,
           article4Filter,
+          showPotentialHMOs,
+          hmoClassification: hmoClassificationFilter,
+          minDealScore: minDealScore > 0 ? minDealScore : undefined,
+          floorAreaBand: floorAreaBandFilter,
+          yieldBand: yieldBandFilter,
+          epcBand: epcBandFilter,
         })
         setProperties(data)
         if (data.length > 0 && !selectedProperty) {
@@ -210,6 +227,12 @@ export default function HMOHunterPage() {
     licensedHmoOnly,
     minEpcRating,
     article4Filter,
+    showPotentialHMOs,
+    hmoClassificationFilter,
+    minDealScore,
+    floorAreaBandFilter,
+    yieldBandFilter,
+    epcBandFilter,
   ])
 
   const handleSearch = async () => {
@@ -228,6 +251,12 @@ export default function HMOHunterPage() {
         licensedHmoOnly,
         minEpcRating,
         article4Filter,
+        showPotentialHMOs,
+        hmoClassification: hmoClassificationFilter,
+        minDealScore: minDealScore > 0 ? minDealScore : undefined,
+        floorAreaBand: floorAreaBandFilter,
+        yieldBand: yieldBandFilter,
+        epcBand: epcBandFilter,
       })
       setProperties(data)
       if (data.length > 0) {
@@ -602,6 +631,118 @@ export default function HMOHunterPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Potential HMO Toggle */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-700">Show Potential HMOs</span>
+                      <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">New</span>
+                    </div>
+                    <Switch
+                      checked={showPotentialHMOs}
+                      onCheckedChange={setShowPotentialHMOs}
+                      className="data-[state=checked]:bg-amber-500"
+                    />
+                  </div>
+
+                  {showPotentialHMOs && (
+                    <div className="space-y-3 pl-2 border-l-2 border-amber-200">
+                      {/* HMO Classification */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Classification</label>
+                        <Select
+                          value={hmoClassificationFilter || "all"}
+                          onValueChange={(value) => setHmoClassificationFilter(value === "all" ? null : value as any)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                            <SelectValue placeholder="All Classifications" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Classifications</SelectItem>
+                            <SelectItem value="ready_to_go">Ready to Go</SelectItem>
+                            <SelectItem value="value_add">Value-Add</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Floor Area Band */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Floor Area</label>
+                        <Select
+                          value={floorAreaBandFilter || "all"}
+                          onValueChange={(value) => setFloorAreaBandFilter(value === "all" ? null : value as any)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                            <SelectValue placeholder="All Sizes" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Sizes</SelectItem>
+                            <SelectItem value="under_90">Under 90 m²</SelectItem>
+                            <SelectItem value="90_120">90-120 m²</SelectItem>
+                            <SelectItem value="120_plus">120+ m²</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Yield Band */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Yield Band</label>
+                        <Select
+                          value={yieldBandFilter || "all"}
+                          onValueChange={(value) => setYieldBandFilter(value === "all" ? null : value as any)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                            <SelectValue placeholder="All Yields" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Yields</SelectItem>
+                            <SelectItem value="high">High (8%+)</SelectItem>
+                            <SelectItem value="medium">Medium (5-8%)</SelectItem>
+                            <SelectItem value="low">Low (&lt;5%)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* EPC Band */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">EPC Status</label>
+                        <Select
+                          value={epcBandFilter || "all"}
+                          onValueChange={(value) => setEpcBandFilter(value === "all" ? null : value as any)}
+                        >
+                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                            <SelectValue placeholder="All EPC" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All EPC Status</SelectItem>
+                            <SelectItem value="good">Compliant (C/D)</SelectItem>
+                            <SelectItem value="needs_upgrade">Needs Upgrade (E/F/G)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Min Deal Score */}
+                      <div>
+                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                          Min Deal Score: {minDealScore > 0 ? minDealScore : "Any"}
+                        </label>
+                        <Slider
+                          value={[minDealScore]}
+                          onValueChange={([value]) => setMinDealScore(value)}
+                          min={0}
+                          max={100}
+                          step={5}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-slate-400 mt-1">
+                          <span>0</span>
+                          <span>100</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -731,18 +872,27 @@ export default function HMOHunterPage() {
             }}
             loading={loading}
             showArticle4Overlay={showArticle4Overlay}
+            showPotentialHMOLayer={showPotentialHMOLayer}
           />
 
           {/* Selected Property Card Overlay */}
           {selectedProperty && (
             <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-72 shadow-2xl bg-white border-slate-200 z-20">
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedProperty(null)}
+                className="absolute -top-2 -right-2 z-30 w-6 h-6 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
               <div className="relative">
                 <SavePropertyButton
                   propertyId={selectedProperty.id}
                   initialSaved={savedPropertyIds.has(selectedProperty.id)}
                 />
               </div>
-              <div className="flex gap-3 p-3">
+              <div className="flex gap-3 p-3 cursor-pointer" onClick={() => setRightPanelOpen(true)}>
                 <div className="w-20 h-20 bg-slate-200 rounded flex-shrink-0 overflow-hidden">
                   <PropertyGallery
                     images={selectedProperty.images}
@@ -769,6 +919,13 @@ export default function HMOHunterPage() {
                       isStale={selectedProperty.is_stale}
                       className="text-xs"
                     />
+                    {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
+                      <PotentialHMOBadge
+                        classification={selectedProperty.hmo_classification}
+                        dealScore={selectedProperty.deal_score ?? undefined}
+                        className="text-xs"
+                      />
+                    )}
                     {selectedProperty.epc_rating && (
                       <EPCBadge
                         rating={selectedProperty.epc_rating}
@@ -793,32 +950,74 @@ export default function HMOHunterPage() {
 
           {/* Map legend */}
           <Card className="absolute bottom-8 left-6 p-4 shadow-xl bg-white border-slate-200 z-20">
-            <div className="font-semibold text-sm mb-3 text-slate-900">Legend</div>
+            <div className="font-semibold text-sm mb-3 text-slate-900">Map Legend</div>
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-teal-600"></div>
-                <span className="text-xs text-slate-700">Standard HMO</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-teal-700"></div>
-                <span className="text-xs text-slate-700">Licensed HMO</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded-full border-2 border-teal-600 bg-white"></div>
-                <span className="text-xs text-slate-700">Potential HMO</span>
-              </div>
-              <div className="border-t border-slate-200 pt-2.5 mt-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-red-400/30 border border-red-500 border-dashed"></div>
-                    <span className="text-xs text-slate-700">Article 4 Area</span>
+              {/* Green - Opportunities outside Article 4 */}
+              <div className="pb-2.5 border-b border-slate-100">
+                <span className="text-xs font-semibold text-green-700 mb-2 block">Opportunities (Outside Article 4)</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-green-600 flex items-center justify-center">
+                      <span className="text-[8px] text-white font-bold">85</span>
+                    </div>
+                    <span className="text-xs text-slate-700">Ready to Go HMO</span>
                   </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
+                    <span className="text-xs text-slate-700">Value-Add HMO</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-full bg-green-500 border-[3px] border-green-600"></div>
+                    <span className="text-xs text-slate-600">Potential HMO Opportunity</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Teal - Standard properties */}
+              <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
+                <span className="text-xs font-medium text-teal-700">Standard Properties</span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-teal-700"></div>
+                  <span className="text-xs text-slate-600">Licensed HMO</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-teal-500"></div>
+                  <span className="text-xs text-slate-600">Standard Property</span>
+                </div>
+              </div>
+
+              {/* Red - Article 4 restricted */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-red-600">Article 4 Restricted</span>
                   <Switch
                     checked={showArticle4Overlay}
                     onCheckedChange={setShowArticle4Overlay}
-                    className="data-[state=checked]:bg-red-500 scale-75"
+                    className="data-[state=checked]:bg-red-400 scale-75"
                   />
                 </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-red-600 border-[3px] border-white shadow-sm"></div>
+                  <span className="text-xs text-slate-600">Property in Article 4</span>
+                </div>
+                {showArticle4Overlay && (
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
+                    <span className="text-xs text-slate-500">Article 4 Zone</span>
+                  </div>
+                )}
+                {showArticle4Overlay && (
+                  <div className="pt-1 mt-1 border-t border-slate-200">
+                    <a
+                      href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
+                    >
+                      Data: planning.data.gov.uk
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -996,6 +1195,13 @@ export default function HMOHunterPage() {
                 {(selectedProperty.owner_name || selectedProperty.company_name) && (
                   <div className="mb-4">
                     <OwnerInformationSection property={selectedProperty} />
+                  </div>
+                )}
+
+                {/* Potential HMO Analysis Section */}
+                {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
+                  <div className="mb-4">
+                    <PotentialHMODetailPanel property={selectedProperty} />
                   </div>
                 )}
 
@@ -1318,6 +1524,14 @@ export default function HMOHunterPage() {
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">Owner Information</h4>
                   <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
+                </div>
+              )}
+
+              {/* Potential HMO Analysis in Full Details */}
+              {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-slate-900 mb-3">HMO Investment Analysis</h4>
+                  <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} />
                 </div>
               )}
 

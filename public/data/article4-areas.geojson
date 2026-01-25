@@ -1,144 +1,23 @@
 {
   "type": "FeatureCollection",
+  "name": "UK Article 4 Directions for HMO (C3 to C4)",
+  "description": "Indicative areas only. Property-level verification required via Searchland API.",
+  "last_updated": "2025-01-25",
   "features": [
     {
       "type": "Feature",
       "properties": {
-        "name": "Islington Borough-wide",
-        "authority": "London Borough of Islington",
-        "effective_date": "2019-01-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
+        "name": "Central London Boroughs",
+        "authority": "Multiple London Boroughs",
+        "effective_date": "Various (2018-2021)",
+        "coverage": "borough-wide",
+        "restrictions": "HMO C3 to C4 conversions restricted",
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-0.145, 51.575], [-0.085, 51.575], [-0.085, 51.52], [-0.145, 51.52], [-0.145, 51.575]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Tower Hamlets Borough-wide",
-        "authority": "London Borough of Tower Hamlets",
-        "effective_date": "2019-04-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.075, 51.535], [0.005, 51.535], [0.005, 51.495], [-0.075, 51.495], [-0.075, 51.535]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Hackney Borough-wide",
-        "authority": "London Borough of Hackney",
-        "effective_date": "2019-06-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.095, 51.575], [-0.025, 51.575], [-0.025, 51.535], [-0.095, 51.535], [-0.095, 51.575]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Southwark Borough-wide",
-        "authority": "London Borough of Southwark",
-        "effective_date": "2020-03-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.115, 51.495], [-0.035, 51.495], [-0.035, 51.435], [-0.115, 51.435], [-0.115, 51.495]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Lambeth Borough-wide",
-        "authority": "London Borough of Lambeth",
-        "effective_date": "2020-06-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.145, 51.485], [-0.085, 51.485], [-0.085, 51.41], [-0.145, 51.41], [-0.145, 51.485]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Lewisham Borough-wide",
-        "authority": "London Borough of Lewisham",
-        "effective_date": "2021-01-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.045, 51.475], [0.02, 51.475], [0.02, 51.415], [-0.045, 51.415], [-0.045, 51.475]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Newham Borough-wide",
-        "authority": "London Borough of Newham",
-        "effective_date": "2019-09-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[0.0, 51.545], [0.075, 51.545], [0.075, 51.5], [0.0, 51.5], [0.0, 51.545]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Waltham Forest Borough-wide",
-        "authority": "London Borough of Waltham Forest",
-        "effective_date": "2020-01-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.045, 51.605], [0.025, 51.605], [0.025, 51.555], [-0.045, 51.555], [-0.045, 51.605]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Camden Borough-wide",
-        "authority": "London Borough of Camden",
-        "effective_date": "2018-10-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.21, 51.565], [-0.115, 51.565], [-0.115, 51.52], [-0.21, 51.52], [-0.21, 51.565]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Haringey Borough-wide",
-        "authority": "London Borough of Haringey",
-        "effective_date": "2019-03-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.145, 51.61], [-0.05, 51.61], [-0.05, 51.565], [-0.145, 51.565], [-0.145, 51.61]]]
+        "coordinates": [[[-0.20, 51.56], [-0.20, 51.44], [0.06, 51.44], [0.06, 51.56], [-0.20, 51.56]]]
       }
     },
     {
@@ -147,40 +26,14 @@
         "name": "Manchester City-wide",
         "authority": "Manchester City Council",
         "effective_date": "2020-07-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-2.32, 53.52], [-2.17, 53.52], [-2.17, 53.44], [-2.32, 53.44], [-2.32, 53.52]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Salford City-wide",
-        "authority": "Salford City Council",
-        "effective_date": "2021-03-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-2.4, 53.52], [-2.28, 53.52], [-2.28, 53.46], [-2.4, 53.46], [-2.4, 53.52]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Leeds City-wide",
-        "authority": "Leeds City Council",
-        "effective_date": "2020-10-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-1.62, 53.84], [-1.48, 53.84], [-1.48, 53.76], [-1.62, 53.76], [-1.62, 53.84]]]
+        "coordinates": [[[-2.30, 53.52], [-2.30, 53.44], [-2.18, 53.44], [-2.18, 53.52], [-2.30, 53.52]]]
       }
     },
     {
@@ -188,55 +41,95 @@
       "properties": {
         "name": "Birmingham City-wide",
         "authority": "Birmingham City Council",
-        "effective_date": "2019-05-01",
+        "effective_date": "2020-06-08",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.96, 52.52], [-1.82, 52.52], [-1.82, 52.44], [-1.96, 52.44], [-1.96, 52.52]]]
+        "coordinates": [[[-1.95, 52.53], [-1.95, 52.44], [-1.83, 52.44], [-1.83, 52.53], [-1.95, 52.53]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Liverpool City-wide",
+        "name": "Leeds - Headingley & Hyde Park",
+        "authority": "Leeds City Council",
+        "effective_date": "2012-02-01",
+        "coverage": "specific-wards",
+        "restrictions": "14 specific wards including Headingley, Hyde Park, Woodhouse",
+        "severity": "high",
+        "verified": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-1.60, 53.83], [-1.60, 53.78], [-1.52, 53.78], [-1.52, 53.83], [-1.60, 53.83]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Liverpool - 11 Wards",
         "authority": "Liverpool City Council",
-        "effective_date": "2020-01-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "effective_date": "2021-06-17",
+        "coverage": "specific-wards",
+        "restrictions": "Anfield, Central, Greenbank, Kensington, Picton, Princess Park, Riverside, Tuebrook, Wavertree, Kirkdale, Church",
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-3.02, 53.44], [-2.9, 53.44], [-2.9, 53.38], [-3.02, 53.38], [-3.02, 53.44]]]
+        "coordinates": [[[-3.02, 53.44], [-3.02, 53.38], [-2.92, 53.38], [-2.92, 53.44], [-3.02, 53.44]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Sheffield City-wide",
+        "name": "Newcastle City Centre",
+        "authority": "Newcastle City Council",
+        "effective_date": "2019-07-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
+        "severity": "high",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-1.66, 55.00], [-1.66, 54.96], [-1.58, 54.96], [-1.58, 55.00], [-1.66, 55.00]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sheffield - West & South-West",
         "authority": "Sheffield City Council",
-        "effective_date": "2020-09-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "effective_date": "2019-09-01",
+        "coverage": "specific-areas",
+        "restrictions": "Broomfield, Sharrow Vale, Tapton Hill areas",
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.52, 53.42], [-1.42, 53.42], [-1.42, 53.36], [-1.52, 53.36], [-1.52, 53.42]]]
+        "coordinates": [[[-1.52, 53.40], [-1.52, 53.36], [-1.44, 53.36], [-1.44, 53.40], [-1.52, 53.40]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Bristol City-wide",
+        "name": "Bristol - Multiple Areas",
         "authority": "Bristol City Council",
         "effective_date": "2020-06-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "coverage": "specific-areas",
+        "restrictions": "Henleaze, Cotham, Redland, Clifton, Lawrence Hill areas",
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-2.65, 51.48], [-2.52, 51.48], [-2.52, 51.42], [-2.65, 51.42], [-2.65, 51.48]]]
+        "coordinates": [[[-2.64, 51.48], [-2.64, 51.43], [-2.55, 51.43], [-2.55, 51.48], [-2.64, 51.48]]]
       }
     },
     {
@@ -244,55 +137,47 @@
       "properties": {
         "name": "Nottingham City-wide",
         "authority": "Nottingham City Council",
-        "effective_date": "2018-04-01",
+        "effective_date": "2012-03-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.2, 52.98], [-1.1, 52.98], [-1.1, 52.92], [-1.2, 52.92], [-1.2, 52.98]]]
+        "coordinates": [[[-1.20, 52.98], [-1.20, 52.92], [-1.12, 52.92], [-1.12, 52.98], [-1.20, 52.98]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Leicester City-wide",
+        "name": "Leicester - 3 Sub-Areas",
         "authority": "Leicester City Council",
-        "effective_date": "2019-08-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "effective_date": "2023-02-17",
+        "coverage": "specific-areas",
+        "restrictions": "West, East, South sub-areas plus five conservation areas",
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.16, 52.66], [-1.06, 52.66], [-1.06, 52.6], [-1.16, 52.6], [-1.16, 52.66]]]
+        "coordinates": [[[-1.17, 52.66], [-1.17, 52.61], [-1.10, 52.61], [-1.10, 52.66], [-1.17, 52.66]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Coventry City-wide",
+        "name": "Coventry City Centre",
         "authority": "Coventry City Council",
         "effective_date": "2020-02-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
+        "severity": "high",
+        "verified": false
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.56, 52.44], [-1.46, 52.44], [-1.46, 52.38], [-1.56, 52.38], [-1.56, 52.44]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Brighton & Hove City-wide",
-        "authority": "Brighton & Hove City Council",
-        "effective_date": "2013-05-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-0.18, 50.86], [-0.08, 50.86], [-0.08, 50.8], [-0.18, 50.8], [-0.18, 50.86]]]
+        "coordinates": [[[-1.55, 52.43], [-1.55, 52.39], [-1.49, 52.39], [-1.49, 52.43], [-1.55, 52.43]]]
       }
     },
     {
@@ -301,12 +186,14 @@
         "name": "Southampton City-wide",
         "authority": "Southampton City Council",
         "effective_date": "2019-11-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.45, 50.94], [-1.36, 50.94], [-1.36, 50.88], [-1.45, 50.88], [-1.45, 50.94]]]
+        "coordinates": [[[-1.44, 50.94], [-1.44, 50.88], [-1.36, 50.88], [-1.36, 50.94], [-1.44, 50.94]]]
       }
     },
     {
@@ -315,12 +202,30 @@
         "name": "Portsmouth City-wide",
         "authority": "Portsmouth City Council",
         "effective_date": "2012-11-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.12, 50.83], [-1.04, 50.83], [-1.04, 50.77], [-1.12, 50.77], [-1.12, 50.83]]]
+        "coordinates": [[[-1.12, 50.84], [-1.12, 50.78], [-1.04, 50.78], [-1.04, 50.84], [-1.12, 50.84]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Reading - Park, Redlands, Katesgrove",
+        "authority": "Reading Borough Council",
+        "effective_date": "2013-08-01",
+        "coverage": "specific-wards",
+        "restrictions": "Park, Redlands, Katesgrove wards + Jesse Terrace only",
+        "severity": "high",
+        "verified": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-1.00, 51.46], [-1.00, 51.44], [-0.95, 51.44], [-0.95, 51.46], [-1.00, 51.46]]]
       }
     },
     {
@@ -329,12 +234,14 @@
         "name": "Oxford City-wide",
         "authority": "Oxford City Council",
         "effective_date": "2012-02-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.3, 51.78], [-1.2, 51.78], [-1.2, 51.72], [-1.3, 51.72], [-1.3, 51.78]]]
+        "coordinates": [[[-1.30, 51.78], [-1.30, 51.72], [-1.22, 51.72], [-1.22, 51.78], [-1.30, 51.78]]]
       }
     },
     {
@@ -343,222 +250,206 @@
         "name": "Cambridge City-wide",
         "authority": "Cambridge City Council",
         "effective_date": "2018-01-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": false
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[0.08, 52.23], [0.16, 52.23], [0.16, 52.18], [0.08, 52.18], [0.08, 52.23]]]
+        "coordinates": [[[0.08, 52.23], [0.08, 52.18], [0.16, 52.18], [0.16, 52.23], [0.08, 52.23]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Reading Borough-wide",
-        "authority": "Reading Borough Council",
-        "effective_date": "2013-08-01",
-        "restrictions": "HMO C3 to C4 conversions restricted borough-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-1.02, 51.48], [-0.94, 51.48], [-0.94, 51.42], [-1.02, 51.42], [-1.02, 51.48]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Newcastle upon Tyne City-wide",
-        "authority": "Newcastle City Council",
-        "effective_date": "2019-07-01",
+        "name": "Brighton & Hove",
+        "authority": "Brighton & Hove City Council",
+        "effective_date": "2013-05-01",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.68, 55.0], [-1.56, 55.0], [-1.56, 54.94], [-1.68, 54.94], [-1.68, 55.0]]]
+        "coordinates": [[[-0.18, 50.86], [-0.18, 50.80], [-0.10, 50.80], [-0.10, 50.86], [-0.18, 50.86]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Sunderland City-wide",
-        "authority": "Sunderland City Council",
-        "effective_date": "2020-11-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-1.42, 54.93], [-1.34, 54.93], [-1.34, 54.88], [-1.42, 54.88], [-1.42, 54.93]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Exeter City-wide",
-        "authority": "Exeter City Council",
-        "effective_date": "2013-09-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-3.56, 50.74], [-3.48, 50.74], [-3.48, 50.7], [-3.56, 50.7], [-3.56, 50.74]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Plymouth City-wide",
-        "authority": "Plymouth City Council",
-        "effective_date": "2019-04-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-4.18, 50.4], [-4.08, 50.4], [-4.08, 50.34], [-4.18, 50.34], [-4.18, 50.4]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Cardiff City-wide",
-        "authority": "Cardiff Council",
-        "effective_date": "2017-02-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-3.24, 51.52], [-3.12, 51.52], [-3.12, 51.44], [-3.24, 51.44], [-3.24, 51.52]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Swansea City-wide",
-        "authority": "Swansea Council",
-        "effective_date": "2018-06-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-3.98, 51.65], [-3.9, 51.65], [-3.9, 51.6], [-3.98, 51.6], [-3.98, 51.65]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Edinburgh City-wide",
-        "authority": "City of Edinburgh Council",
-        "effective_date": "2019-02-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-3.28, 55.98], [-3.12, 55.98], [-3.12, 55.92], [-3.28, 55.92], [-3.28, 55.98]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Glasgow City-wide",
-        "authority": "Glasgow City Council",
-        "effective_date": "2019-12-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-4.32, 55.88], [-4.18, 55.88], [-4.18, 55.82], [-4.32, 55.82], [-4.32, 55.88]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "York City-wide",
+        "name": "York City Centre",
         "authority": "City of York Council",
         "effective_date": "2016-04-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
+        "severity": "high",
+        "verified": false
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[-1.12, 53.98], [-1.04, 53.98], [-1.04, 53.92], [-1.12, 53.92], [-1.12, 53.98]]]
+        "coordinates": [[[-1.11, 53.98], [-1.11, 53.94], [-1.05, 53.94], [-1.05, 53.98], [-1.11, 53.98]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Canterbury District",
+        "name": "Edinburgh",
+        "authority": "City of Edinburgh Council",
+        "effective_date": "2019-02-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO licensing required (Scottish system differs from England)",
+        "severity": "medium",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-3.22, 55.97], [-3.22, 55.93], [-3.15, 55.93], [-3.15, 55.97], [-3.22, 55.97]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Glasgow",
+        "authority": "Glasgow City Council",
+        "effective_date": "2019-12-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO licensing required (Scottish system differs from England)",
+        "severity": "medium",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-4.28, 55.88], [-4.28, 55.84], [-4.22, 55.84], [-4.22, 55.88], [-4.28, 55.88]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cardiff",
+        "authority": "Cardiff Council",
+        "effective_date": "2017-02-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
+        "severity": "high",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-3.21, 51.50], [-3.21, 51.46], [-3.15, 51.46], [-3.15, 51.50], [-3.21, 51.50]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Swansea",
+        "authority": "Swansea Council",
+        "effective_date": "2018-06-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
+        "severity": "high",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-3.96, 51.64], [-3.96, 51.60], [-3.91, 51.60], [-3.91, 51.64], [-3.96, 51.64]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Salford - Inner Areas",
+        "authority": "Salford City Council",
+        "effective_date": "2018-01-01",
+        "coverage": "specific-areas",
+        "restrictions": "Inner areas; expanded November 2024",
+        "severity": "high",
+        "verified": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-2.35, 53.50], [-2.35, 53.47], [-2.28, 53.47], [-2.28, 53.50], [-2.35, 53.50]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Doncaster - Central Wards",
+        "authority": "Doncaster Council",
+        "effective_date": "2019-01-01",
+        "coverage": "specific-wards",
+        "restrictions": "Town, Town Fields, Wheatley, Hexthorpe, Balby, Wheatley Hills, Intake, Belle Vue",
+        "severity": "high",
+        "verified": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-1.15, 53.54], [-1.15, 53.50], [-1.09, 53.50], [-1.09, 53.54], [-1.15, 53.54]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bournemouth",
+        "authority": "BCP Council",
+        "effective_date": "2019-01-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted in specified areas",
+        "severity": "high",
+        "verified": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-1.90, 50.74], [-1.90, 50.71], [-1.84, 50.71], [-1.84, 50.74], [-1.90, 50.74]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Exeter",
+        "authority": "Exeter City Council",
+        "effective_date": "2013-09-01",
+        "coverage": "specific-areas",
+        "restrictions": "HMO C3 to C4 conversions restricted",
+        "severity": "high",
+        "verified": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-3.55, 50.74], [-3.55, 50.71], [-3.49, 50.71], [-3.49, 50.74], [-3.55, 50.74]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Canterbury",
         "authority": "Canterbury City Council",
         "effective_date": "2016-03-01",
+        "coverage": "specific-areas",
         "restrictions": "HMO C3 to C4 conversions restricted in designated areas",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[1.04, 51.3], [1.12, 51.3], [1.12, 51.26], [1.04, 51.26], [1.04, 51.3]]]
+        "coordinates": [[[1.06, 51.29], [1.06, 51.26], [1.10, 51.26], [1.10, 51.29], [1.06, 51.29]]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Bath & North East Somerset",
-        "authority": "Bath & North East Somerset Council",
-        "effective_date": "2013-07-01",
-        "restrictions": "HMO C3 to C4 conversions restricted in Bath area",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-2.4, 51.4], [-2.32, 51.4], [-2.32, 51.36], [-2.4, 51.36], [-2.4, 51.4]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Norwich City-wide",
-        "authority": "Norwich City Council",
-        "effective_date": "2017-11-01",
+        "name": "Wolverhampton City-wide",
+        "authority": "City of Wolverhampton Council",
+        "effective_date": "2017-09-14",
+        "coverage": "city-wide",
         "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
+        "severity": "high",
+        "verified": true
       },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [[[1.26, 52.65], [1.34, 52.65], [1.34, 52.61], [1.26, 52.61], [1.26, 52.65]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Derby City-wide",
-        "authority": "Derby City Council",
-        "effective_date": "2019-06-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-1.52, 52.94], [-1.44, 52.94], [-1.44, 52.9], [-1.52, 52.9], [-1.52, 52.94]]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Stoke-on-Trent City-wide",
-        "authority": "Stoke-on-Trent City Council",
-        "effective_date": "2020-04-01",
-        "restrictions": "HMO C3 to C4 conversions restricted city-wide",
-        "severity": "high"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-2.2, 53.04], [-2.1, 53.04], [-2.1, 52.98], [-2.2, 52.98], [-2.2, 53.04]]]
+        "coordinates": [[[-2.15, 52.60], [-2.15, 52.56], [-2.09, 52.56], [-2.09, 52.60], [-2.15, 52.60]]]
       }
     }
   ]

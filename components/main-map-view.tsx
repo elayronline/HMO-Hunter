@@ -11,6 +11,7 @@ export interface MainMapViewProps {
   onPropertySelect: (property: Property) => void
   loading: boolean
   showArticle4Overlay?: boolean
+  showPotentialHMOLayer?: boolean
   onArticle4AreaClick?: (areaInfo: Article4AreaInfo) => void
 }
 

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
 
-const CACHE_DURATION = 300000 // 5 minutes cache
+const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
 
 // Helper to safely execute Supabase query with rate limit handling
@@ -101,6 +101,46 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
     // "include" means no filter - show all properties
 
+    // Phase 4 - Potential HMO Filters
+    if (filters?.showPotentialHMOs) {
+      query = query.eq("is_potential_hmo", true)
+
+      // HMO Classification filter
+      if (filters?.hmoClassification) {
+        query = query.eq("hmo_classification", filters.hmoClassification)
+      } else {
+        // When showing potential HMOs, exclude "not_suitable" by default
+        query = query.in("hmo_classification", ["ready_to_go", "value_add"])
+      }
+
+      // Min Deal Score filter
+      if (filters?.minDealScore && filters.minDealScore > 0) {
+        query = query.gte("deal_score", filters.minDealScore)
+      }
+
+      // Floor Area Band filter
+      if (filters?.floorAreaBand) {
+        query = query.eq("floor_area_band", filters.floorAreaBand)
+      }
+
+      // Yield Band filter
+      if (filters?.yieldBand) {
+        query = query.eq("yield_band", filters.yieldBand)
+      }
+
+      // EPC Band filter (good = C/D, needs_upgrade = E/F/G)
+      if (filters?.epcBand === "good") {
+        query = query.in("epc_rating", ["A", "B", "C", "D"])
+      } else if (filters?.epcBand === "needs_upgrade") {
+        query = query.in("epc_rating", ["E", "F", "G"])
+      }
+
+      // Ex-Local Authority filter
+      if (filters?.isExLocalAuthority) {
+        query = query.eq("is_ex_local_authority", true)
+      }
+    }
+
     const { data, error } = await safeSupabaseQuery(async () => await query)
 
     if (error) {
@@ -131,6 +171,21 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       data: (data || []) as Property[],
       timestamp: now,
       filters: filterKey,
+    }
+
+    // Debug: Log coordinate distribution
+    const props = data || []
+    if (props.length > 0) {
+      const lats = props.map((p: any) => p.latitude).filter((v: any) => v != null)
+      const lngs = props.map((p: any) => p.longitude).filter((v: any) => v != null)
+      const nullCoords = props.filter((p: any) => p.latitude == null || p.longitude == null).length
+      console.log("[PropertiesAction] Returned:", {
+        total: props.length,
+        withCoords: lats.length,
+        nullCoords,
+        lat: lats.length > 0 ? { min: Math.min(...lats), max: Math.max(...lats) } : "none",
+        lng: lngs.length > 0 ? { min: Math.min(...lngs), max: Math.max(...lngs) } : "none",
+      })
     }
 
     return (data || []) as Property[]

@@ -27,14 +27,29 @@ export class SearchlandAdapter extends SourceAdapter {
       return []
     }
 
+    // HMO-dense postcodes across multiple UK cities
     const postcodes = postcode
       ? [this.normalizePostcode(postcode)]
       : [
-          "N7 6PA",
-          "E2 9PL",
-          "SE5 8TR",
-          "NW5 2HB",
-          "E8 1EJ",
+          // London
+          "N7 6PA", "E2 9PL", "SE5 8TR", "NW5 2HB", "E8 1EJ",
+          "SW9 8PS", "N4 2HA", "E17 4PP",
+          // Manchester
+          "M14 5SX", "M13 9PL", "M20 2WS", "M19 2QP",
+          // Birmingham
+          "B29 6BD", "B16 8UU", "B30 2AA",
+          // Leeds
+          "LS6 3HN", "LS2 9JT", "LS4 2PR",
+          // Liverpool
+          "L15 0EE", "L7 8XZ",
+          // Newcastle
+          "NE2 1XE", "NE6 5LR",
+          // Nottingham
+          "NG7 1QN", "NG9 2JJ",
+          // Sheffield
+          "S10 2TN", "S11 8TP",
+          // Bristol
+          "BS6 5BZ", "BS7 8NB",
         ]
 
     const allListings: PropertyListing[] = []
@@ -67,15 +82,25 @@ export class SearchlandAdapter extends SourceAdapter {
         }
 
         for (const record of data.results) {
-          const coords = await this.geocode(record.address, record.postcode)
+          const coords = await this.geocode(record.address, record.postcode || pc)
 
+          // Skip properties without valid coordinates
+          const lat = coords?.lat || record.latitude
+          const lng = coords?.lng || record.longitude
+
+          if (!lat || !lng) {
+            console.warn(`[Searchland] Skipping property without coordinates: ${record.address}`)
+            continue
+          }
+
+          const propertyPostcode = this.normalizePostcode(record.postcode || pc)
           allListings.push({
             title: `Licensed HMO - ${record.address}`,
             address: record.address,
-            postcode: this.normalizePostcode(record.postcode || pc),
-            city: record.local_authority || "London",
-            latitude: coords?.lat || record.latitude || 51.5074,
-            longitude: coords?.lng || record.longitude || -0.1278,
+            postcode: propertyPostcode,
+            city: record.local_authority || this.getCityFromPostcode(propertyPostcode),
+            latitude: lat,
+            longitude: lng,
             listing_type: "rent",
             property_type: "HMO",
             bedrooms: record.bedrooms || 5,

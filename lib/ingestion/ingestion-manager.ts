@@ -1,5 +1,5 @@
 import type { SourceAdapter, EnrichmentAdapter, IngestionResult } from "@/lib/types/ingestion"
-import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export class IngestionManager {
   private phase1Adapters: SourceAdapter[] = [] // Core HMO data
@@ -74,7 +74,7 @@ export class IngestionManager {
       const listings = await adapter.fetch()
       result.total = listings.length
 
-      const supabase = await createClient()
+      const supabase = supabaseAdmin
       const now = new Date().toISOString()
 
       for (const listing of listings) {
@@ -119,7 +119,6 @@ export class IngestionManager {
             near_tube_station: listing.near_tube_station,
             available_from: listing.available_from,
             source_name: adapter.name,
-            source_type: adapter.type,
             source_url: listing.source_url,
             external_id: listing.external_id,
             last_synced: now,
@@ -190,22 +189,26 @@ export class IngestionManager {
   }
 
   private async runEnrichment() {
-    console.log("[IngestionManager] Starting Phase 2 enrichment...")
+    console.log("[IngestionManager] Starting Phase 2/3 enrichment...")
 
     try {
-      const supabase = await createClient()
+      const supabase = supabaseAdmin
 
-      // Get properties that need enrichment (recently added or updated)
+      // Get all properties that need enrichment or analysis
+      // This includes properties without purchase_price OR without is_potential_hmo set
       const { data: properties } = await supabase
         .from("properties")
-        .select("id, address, postcode, city, property_type, purchase_price, uprn, company_number, epc_rating, owner_name")
-        .is("purchase_price", null)
-        .limit(50) // Enrich in batches
+        .select("id, address, postcode, city, property_type, purchase_price, price_pcm, listing_type, bedrooms, bathrooms, uprn, company_number, epc_rating, owner_name, article_4_area, is_potential_hmo, hmo_status, floor_area")
+        .or("purchase_price.is.null,is_potential_hmo.is.null")
+        .eq("is_stale", false)
+        .limit(100) // Enrich in batches
 
       if (!properties || properties.length === 0) {
         console.log("[IngestionManager] No properties need enrichment")
         return
       }
+
+      console.log(`[IngestionManager] Found ${properties.length} properties to enrich`)
 
       for (const property of properties) {
         const enrichedData: any = {}
@@ -220,10 +223,10 @@ export class IngestionManager {
           }
         }
 
-        // Run all Phase 3 enrichment adapters (Owner/EPC/Planning)
+        // Run all Phase 3 enrichment adapters (Owner/EPC/Planning + Potential HMO Analyzer)
         for (const adapter of this.phase3Adapters) {
           try {
-            const data = await adapter.enrich(property as any)
+            const data = await adapter.enrich({ ...property, ...enrichedData } as any)
             Object.assign(enrichedData, data)
           } catch (error) {
             console.error(`[${adapter.name}] Enrichment failed:`, error)
@@ -232,7 +235,10 @@ export class IngestionManager {
 
         // Update property with enriched data
         if (Object.keys(enrichedData).length > 0) {
-          await supabase.from("properties").update(enrichedData).eq("id", property.id)
+          const { error } = await supabase.from("properties").update(enrichedData).eq("id", property.id)
+          if (error) {
+            console.error(`[IngestionManager] Failed to update property ${property.id}:`, error)
+          }
         }
       }
 
@@ -244,7 +250,7 @@ export class IngestionManager {
 
   private async markStaleProperties() {
     try {
-      const supabase = await createClient()
+      const supabase = supabaseAdmin
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 

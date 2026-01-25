@@ -9,6 +9,7 @@ import { SearchlandOwnershipAdapter } from "@/lib/ingestion/enrichment/searchlan
 import { SearchlandEPCAdapter } from "@/lib/ingestion/enrichment/searchland-epc"
 import { SearchlandPlanningAdapter } from "@/lib/ingestion/enrichment/searchland-planning"
 import { CompaniesHouseAdapter } from "@/lib/ingestion/enrichment/companies-house"
+import { PotentialHMOAnalyzer } from "@/lib/ingestion/enrichment/potential-hmo-analyzer"
 import type { IngestionResult } from "@/lib/types/ingestion"
 
 export async function runIngestion(sourceName?: string): Promise<IngestionResult[]> {
@@ -27,6 +28,9 @@ export async function runIngestion(sourceName?: string): Promise<IngestionResult
   manager.registerPhase3Adapter(new SearchlandEPCAdapter())
   manager.registerPhase3Adapter(new SearchlandPlanningAdapter())
   manager.registerPhase3Adapter(new CompaniesHouseAdapter())
+
+  // Phase 4: Potential HMO Analysis (always run after other enrichments)
+  manager.registerPhase3Adapter(new PotentialHMOAnalyzer())
 
   return await manager.runIngestion(sourceName)
 }

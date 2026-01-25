@@ -82,6 +82,35 @@ export type Property = {
   title_number: string | null
   title_last_enriched_at: string | null
   owner_enrichment_source: string | null
+  // Phase 4 - Potential HMO Analysis
+  gross_internal_area_sqm: number | null
+  floor_area_band: "under_90" | "90_120" | "120_plus" | null
+  room_count: number | null
+  lettable_rooms: number | null
+  current_layout: Record<string, any> | null
+  ceiling_height_compliant: boolean | null
+  hmo_suitability_score: number | null
+  hmo_classification: "ready_to_go" | "value_add" | "not_suitable" | null
+  potential_occupants: number | null
+  requires_mandatory_licensing: boolean | null
+  compliance_complexity: "low" | "medium" | "high" | null
+  meets_space_standards: boolean | null
+  bathroom_ratio_compliant: boolean | null
+  kitchen_size_compliant: boolean | null
+  epc_upgrade_viable: boolean | null
+  epc_upgrade_cost_estimate: number | null
+  epc_improvement_potential: "high" | "medium" | "low" | "none" | null
+  estimated_gross_monthly_rent: number | null
+  estimated_annual_income: number | null
+  yield_band: "low" | "medium" | "high" | null
+  estimated_yield_percentage: number | null
+  deal_score: number | null
+  deal_score_breakdown: DealScoreBreakdown | null
+  is_ex_local_authority: boolean
+  has_value_add_potential: boolean
+  requires_major_structural_work: boolean
+  is_potential_hmo: boolean
+  watchlist_count: number
 }
 
 export type Director = {
@@ -95,6 +124,15 @@ export type PlanningConstraint = {
   type: string
   description: string
   reference?: string
+}
+
+export type DealScoreBreakdown = {
+  floorAreaEfficiency: number      // 0-20 points
+  epcRatingScore: number           // 0-15 points
+  licensingUpside: number          // 0-15 points
+  lettableRoomsScore: number       // 0-15 points
+  complianceScore: number          // 0-15 points
+  yieldScore: number               // 0-20 points
 }
 
 export type PropertyFilters = {
@@ -112,4 +150,12 @@ export type PropertyFilters = {
   // Phase 3 - New filters
   minEpcRating?: "A" | "B" | "C" | "D" | "E" | null
   article4Filter?: "include" | "exclude" | "only"
+  // Phase 4 - Potential HMO filters
+  showPotentialHMOs?: boolean
+  hmoClassification?: "ready_to_go" | "value_add" | null
+  minDealScore?: number
+  floorAreaBand?: "under_90" | "90_120" | "120_plus" | null
+  yieldBand?: "low" | "medium" | "high" | null
+  epcBand?: "good" | "needs_upgrade" | null
+  isExLocalAuthority?: boolean
 }
