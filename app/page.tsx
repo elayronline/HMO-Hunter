@@ -346,13 +346,6 @@ export default function HMOHunterPage() {
           >
             Dashboard
           </button>
-          <button 
-            onClick={() => router.push("/stress-test")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Stress Test
-          </button>
-          <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">About</button>
         </nav>
 
         <div className="flex items-center gap-3">

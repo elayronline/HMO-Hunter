@@ -102,11 +102,6 @@ export default function UserDashboard() {
               <h1 className="text-lg font-semibold text-slate-900">Property Insights Dashboard</h1>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/stress-test">
-                <Button variant="outline" size="sm">
-                  Stress Test
-                </Button>
-              </Link>
               <Button onClick={refreshData} disabled={loading} size="sm" className="bg-teal-600 hover:bg-teal-700">
                 {loading ? (
                   <>
