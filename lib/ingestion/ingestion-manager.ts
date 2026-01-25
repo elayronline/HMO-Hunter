@@ -126,6 +126,14 @@ export class IngestionManager {
             is_stale: false,
             stale_marked_at: null,
             hmo_status: listing.licence_status === "active" ? "Licensed HMO" : "Standard HMO",
+            licensed_hmo: listing.licence_status === "active",
+            // HMO Licence fields
+            licence_id: listing.licence_id,
+            licence_start_date: listing.licence_start_date,
+            licence_end_date: listing.licence_end_date,
+            licence_status: listing.licence_status,
+            max_occupants: listing.max_occupants,
+            uprn: listing.uprn,
             // Phase 3 - Owner/Contact fields
             owner_name: listing.owner_name,
             owner_address: listing.owner_address,
