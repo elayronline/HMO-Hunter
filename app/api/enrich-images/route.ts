@@ -88,8 +88,31 @@ async function searchPropertyImages(
 }
 
 /**
- * Get Street View image URL as fallback
- * Uses address for better accuracy, with heading to face the property
+ * Calculate heading (bearing) from one point to another
+ */
+function calculateHeading(
+  fromLat: number,
+  fromLng: number,
+  toLat: number,
+  toLng: number
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const toDeg = (rad: number) => (rad * 180) / Math.PI
+
+  const dLng = toRad(toLng - fromLng)
+  const lat1 = toRad(fromLat)
+  const lat2 = toRad(toLat)
+
+  const x = Math.sin(dLng) * Math.cos(lat2)
+  const y = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+
+  let heading = toDeg(Math.atan2(x, y))
+  return (heading + 360) % 360 // Normalize to 0-360
+}
+
+/**
+ * Get Street View image URL with precise heading toward the property
+ * Uses metadata to find camera position, then calculates heading to point at the building
  */
 async function getStreetViewImage(
   address: string,
@@ -98,31 +121,39 @@ async function getStreetViewImage(
   longitude: number,
   apiKey: string
 ): Promise<string | null> {
-  // Try with full address first (more accurate than coordinates)
   const fullAddress = `${address}, ${postcode}, UK`
   const encodedAddress = encodeURIComponent(fullAddress)
 
-  // Check if Street View is available at this address
-  const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodedAddress}&key=${apiKey}`
-
   try {
+    // First, get metadata to find the actual Street View camera position
+    const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodedAddress}&source=outdoor&key=${apiKey}`
     const response = await fetch(metadataUrl)
     const metadata = await response.json()
 
-    if (metadata.status === "OK") {
-      // Use address-based Street View with parameters for better property view
-      // fov=90 gives a wider field of view
-      // pitch=10 tilts slightly up to capture more of the building
-      return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${encodedAddress}&fov=90&pitch=10&key=${apiKey}`
+    if (metadata.status === "OK" && metadata.location) {
+      // Calculate heading from camera position to the property coordinates
+      const cameraLat = metadata.location.lat
+      const cameraLng = metadata.location.lng
+
+      // Calculate heading to point camera at the property
+      const heading = calculateHeading(cameraLat, cameraLng, latitude, longitude)
+
+      // Return Street View URL with calculated heading pointing at the property
+      // fov=80 for focused view, pitch=5 tilts slightly up for buildings
+      return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${cameraLat},${cameraLng}&heading=${heading.toFixed(1)}&fov=80&pitch=5&source=outdoor&key=${apiKey}`
     }
 
-    // Fallback to coordinates if address doesn't work
-    const coordMetadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${latitude},${longitude}&key=${apiKey}`
+    // Fallback: try with coordinates directly
+    const coordMetadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${latitude},${longitude}&source=outdoor&key=${apiKey}`
     const coordResponse = await fetch(coordMetadataUrl)
     const coordMetadata = await coordResponse.json()
 
-    if (coordMetadata.status === "OK") {
-      return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${latitude},${longitude}&fov=90&pitch=10&key=${apiKey}`
+    if (coordMetadata.status === "OK" && coordMetadata.location) {
+      const cameraLat = coordMetadata.location.lat
+      const cameraLng = coordMetadata.location.lng
+      const heading = calculateHeading(cameraLat, cameraLng, latitude, longitude)
+
+      return `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${cameraLat},${cameraLng}&heading=${heading.toFixed(1)}&fov=80&pitch=5&source=outdoor&key=${apiKey}`
     }
   } catch (error) {
     console.error("Street View metadata error:", error)
