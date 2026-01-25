@@ -10,6 +10,15 @@ export interface MainMapViewProps {
   selectedProperty: Property | null
   onPropertySelect: (property: Property) => void
   loading: boolean
+  showArticle4Overlay?: boolean
+  onArticle4AreaClick?: (areaInfo: Article4AreaInfo) => void
+}
+
+export interface Article4AreaInfo {
+  name: string
+  authority: string
+  effective_date: string
+  restrictions: string
 }
 
 // Loading placeholder

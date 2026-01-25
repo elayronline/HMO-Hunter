@@ -83,6 +83,7 @@ export default function HMOHunterPage() {
   const [trendsExpanded, setTrendsExpanded] = useState(true)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
+  const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
@@ -729,6 +730,7 @@ export default function HMOHunterPage() {
               setRightPanelOpen(true)
             }}
             loading={loading}
+            showArticle4Overlay={showArticle4Overlay}
           />
 
           {/* Selected Property Card Overlay */}
@@ -804,6 +806,19 @@ export default function HMOHunterPage() {
               <div className="flex items-center gap-2.5">
                 <div className="w-4 h-4 rounded-full border-2 border-teal-600 bg-white"></div>
                 <span className="text-xs text-slate-700">Potential HMO</span>
+              </div>
+              <div className="border-t border-slate-200 pt-2.5 mt-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-red-400/30 border border-red-500 border-dashed"></div>
+                    <span className="text-xs text-slate-700">Article 4 Area</span>
+                  </div>
+                  <Switch
+                    checked={showArticle4Overlay}
+                    onCheckedChange={setShowArticle4Overlay}
+                    className="data-[state=checked]:bg-red-500 scale-75"
+                  />
+                </div>
               </div>
             </div>
           </Card>
