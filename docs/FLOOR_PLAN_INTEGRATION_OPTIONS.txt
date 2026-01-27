@@ -1,0 +1,224 @@
+================================================================================
+                    HMO HUNTER - FLOOR PLAN INTEGRATION OPTIONS
+                              Next Steps & Recommendations
+================================================================================
+
+CURRENT STATUS
+--------------
+- PropertyData API: CONFIGURED (Key: DJOXPZDWT5)
+- Apify API: CONFIGURED (for Rightmove scraping - NOT RECOMMENDED for legal reasons)
+- Floor Plans: Currently not being fetched from any source
+
+================================================================================
+                           RECOMMENDED OPTIONS
+================================================================================
+
+OPTION 1: PROPERTYDATA API (RECOMMENDED - ALREADY CONFIGURED)
+-------------------------------------------------------------
+Website: https://propertydata.co.uk/api
+Cost: Already subscribed
+Legal: YES - Licensed data aggregator
+
+What it provides:
+  - Square footage / floor area data
+  - Property dimensions extracted from agent floor plans
+  - Rental estimates, valuations, sold prices
+  - EPC data, planning applications
+  - 61 API endpoints available
+
+Limitations:
+  - Does NOT provide actual floor plan images
+  - Only provides numerical floor area data
+
+Integration Status: READY TO INTEGRATE
+API Key: DJOXPZDWT5 (already in .env.local)
+
+--------------------------------------------------------------------------------
+
+OPTION 2: EPC FLOOR PLANS (GOVERNMENT DATA - FREE & LEGAL)
+----------------------------------------------------------
+Website: https://epc.opendatacommunities.org/
+Cost: FREE
+Legal: YES - Open Government Licence
+
+What it provides:
+  - Basic floor plan diagrams from EPC certificates
+  - Floor area measurements
+  - Room layouts (simplified)
+  - Available for most UK properties
+
+Limitations:
+  - Basic/simplified floor plans (not marketing quality)
+  - Not all properties have EPC floor plans
+  - Black and white diagrams
+
+Integration Effort: MEDIUM
+Requires: API integration with EPC register
+
+--------------------------------------------------------------------------------
+
+OPTION 3: ZOOPLA/HOMETRACK COMMERCIAL PARTNERSHIP
+-------------------------------------------------
+Contact: Zoopla Data Services / Hometrack
+Cost: Enterprise pricing (estimate £500-2000+/month)
+Legal: YES - Direct commercial agreement
+
+What it provides:
+  - Full floor plan images
+  - All listing data
+  - Historical data
+  - Official data feed
+
+Limitations:
+  - Expensive enterprise pricing
+  - Requires commercial agreement/contract
+  - May have usage restrictions
+
+Integration Effort: HIGH (requires partnership negotiation)
+Contact: https://www.hometrack.com/ or Zoopla business team
+
+--------------------------------------------------------------------------------
+
+OPTION 4: RIGHTMOVE DATA PARTNERSHIP
+------------------------------------
+Contact: Rightmove Partner Services
+Cost: Enterprise pricing (contact for quote)
+Legal: YES - Direct commercial agreement
+
+What it provides:
+  - Full floor plan images
+  - Complete listing data
+  - Real-time updates
+
+Limitations:
+  - Only available to approved partners
+  - Expensive
+  - Strict usage terms
+
+Integration Effort: HIGH (requires partnership application)
+Contact: https://www.rightmove.co.uk/partners/
+
+--------------------------------------------------------------------------------
+
+OPTION 5: ESTATE AGENT DIRECT PARTNERSHIPS
+------------------------------------------
+Approach: Partner with individual estate agents
+Cost: Variable (may be free for mutual benefit)
+Legal: YES - Agents own their floor plans
+
+What it provides:
+  - High-quality marketing floor plans
+  - Direct from source
+  - Can negotiate terms
+
+Limitations:
+  - Requires individual relationships
+  - Limited to partnered agents' listings
+  - Manual/semi-manual process initially
+
+Integration Effort: MEDIUM
+Approach: Build agent portal for floor plan uploads
+
+--------------------------------------------------------------------------------
+
+OPTION 6: FLOOR PLAN GENERATION SERVICE
+---------------------------------------
+Examples: CubiCasa, RoomSketcher, Matterport
+Cost: £5-20 per floor plan or subscription
+Legal: YES - You create/commission the floor plans
+
+What it provides:
+  - Professional floor plans
+  - Consistent quality
+  - 2D and 3D options
+
+Limitations:
+  - Requires someone to create each floor plan
+  - Cost per property
+  - Not automated
+
+Integration Effort: LOW (manual upload system)
+
+================================================================================
+                          RECOMMENDED NEXT STEPS
+================================================================================
+
+IMMEDIATE (This Week):
+1. [x] Integrate PropertyData API for floor area/sq ft data
+2. [ ] Add floor area display to property listings
+3. [ ] Research EPC floor plan availability via API
+
+SHORT TERM (This Month):
+4. [ ] Build EPC floor plan integration (free, legal)
+5. [ ] Create agent portal for floor plan uploads
+6. [ ] Contact Zoopla/Hometrack for commercial pricing
+
+MEDIUM TERM (Next Quarter):
+7. [ ] Evaluate commercial partnership ROI
+8. [ ] Build agent partnership program
+9. [ ] Consider floor plan generation service for key properties
+
+================================================================================
+                              API ENDPOINTS
+================================================================================
+
+PROPERTYDATA API ENDPOINTS (Available Now):
+-------------------------------------------
+Base URL: https://api.propertydata.co.uk/
+
+Relevant endpoints for floor plans/area:
+- /floor-areas - Get floor area for a property
+- /prices - Property price data
+- /rents - Rental estimates
+- /sold-prices - Historical sold prices
+- /planning - Planning applications
+- /epc - Energy Performance Certificate data
+
+Authentication: API key in header
+Documentation: https://propertydata.co.uk/api/documentation
+
+EPC REGISTER API (To Be Integrated):
+------------------------------------
+Base URL: https://epc.opendatacommunities.org/api/v1/
+Endpoints:
+- /domestic/search - Search for EPC certificates
+- /domestic/certificate/{lmk-key} - Get specific certificate
+
+Data includes:
+- Floor area (total and by floor)
+- Property type
+- Construction age
+- Basic floor plan data (some certificates)
+
+================================================================================
+                              LEGAL SUMMARY
+================================================================================
+
+SAFE TO USE:
+- PropertyData API (licensed aggregator)
+- EPC Register (Open Government Licence)
+- Direct partnerships (Rightmove/Zoopla)
+- Agent-provided floor plans
+
+NOT RECOMMENDED (Legal Risk):
+- Apify scrapers for Rightmove/Zoopla
+- Any web scraping of portal sites
+- Copying floor plans without permission
+
+================================================================================
+                         COST COMPARISON
+================================================================================
+
+| Option                  | Monthly Cost    | Floor Plan Images? | Legal? |
+|-------------------------|-----------------|-------------------|--------|
+| PropertyData (current)  | Already paid    | No (sq ft only)   | Yes    |
+| EPC Register            | Free            | Basic diagrams    | Yes    |
+| Zoopla Partnership      | £500-2000+      | Yes (full)        | Yes    |
+| Rightmove Partnership   | £500-2000+      | Yes (full)        | Yes    |
+| Agent Partnerships      | Free-Variable   | Yes (full)        | Yes    |
+| Floor Plan Generation   | £5-20/property  | Yes (created)     | Yes    |
+
+================================================================================
+
+Document created: January 2025
+For: HMO Hunter Application
