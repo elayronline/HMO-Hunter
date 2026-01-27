@@ -52,6 +52,7 @@ import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
 import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
+import { YieldCalculator } from "@/components/yield-calculator"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
@@ -1295,6 +1296,11 @@ export default function HMOHunterPage() {
                   <OwnerInformationSection property={selectedProperty} />
                 </div>
 
+                {/* Yield Calculator - Always show for all listings */}
+                <div className="mb-4">
+                  <YieldCalculator property={selectedProperty} />
+                </div>
+
                 {/* Potential HMO Analysis Section */}
                 {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
                   <div className="mb-4">
@@ -1635,6 +1641,12 @@ export default function HMOHunterPage() {
               <div className="mb-6">
                 <h4 className="font-semibold text-slate-900 mb-3">Title Owner & Licence Holder</h4>
                 <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
+              </div>
+
+              {/* Yield Calculator - Always show for all listings */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-slate-900 mb-3">Investment Returns</h4>
+                <YieldCalculator property={selectedProperty} defaultOpen={true} />
               </div>
 
               {/* Potential HMO Analysis in Full Details */}
