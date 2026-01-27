@@ -21,6 +21,8 @@ interface RightmoveListingResult {
   bedrooms: number
   bathrooms?: number
   images: string[]
+  floorplanImages?: string[]
+  floorplans?: string[]
   agent?: {
     name: string
     phone?: string
@@ -96,9 +98,13 @@ export class RightmoveAdapter implements EnrichmentAdapter {
 
       console.log(`[Rightmove] Matched "${property.address}" to listing ${match.id}`)
 
+      // Extract floor plans from various possible fields
+      const floorPlans = match.floorplanImages || match.floorplans || []
+
       return {
         source_url: match.url,
         images: match.images,
+        floor_plans: floorPlans.length > 0 ? floorPlans : undefined,
         price_pcm: match.price,
         description: match.description || property.description,
       }
@@ -336,7 +342,7 @@ export async function getRightmoveListingUrl(
   address: string,
   postcode: string,
   bedrooms?: number
-): Promise<{ url: string; images: string[]; price?: number } | null> {
+): Promise<{ url: string; images: string[]; floorPlans: string[]; price?: number } | null> {
   const adapter = new RightmoveAdapter()
 
   const mockProperty: PropertyListing = {
@@ -360,6 +366,7 @@ export async function getRightmoveListingUrl(
     return {
       url: enriched.source_url,
       images: enriched.images || [],
+      floorPlans: enriched.floor_plans || [],
       price: enriched.price_pcm,
     }
   }
