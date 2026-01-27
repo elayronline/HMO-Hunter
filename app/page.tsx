@@ -54,6 +54,8 @@ import { OwnerInformationSection } from "@/components/owner-information-section"
 import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
 import { YieldCalculator } from "@/components/yield-calculator"
+import { FloorPlanBadge } from "@/components/floor-plan-badge"
+import { FloorPlanSection } from "@/components/floor-plan-section"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
@@ -92,9 +94,7 @@ export default function HMOHunterPage() {
 
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
-  const [savedExpanded, setSavedExpanded] = useState(true)
   const [recentExpanded, setRecentExpanded] = useState(false)
-  const [trendsExpanded, setTrendsExpanded] = useState(true)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
@@ -102,6 +102,10 @@ export default function HMOHunterPage() {
   const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+
+  // Premium user status - TODO: Replace with actual subscription check
+  // Set to true for development, false for production default
+  const [isPremiumUser, setIsPremiumUser] = useState(true)
 
   const router = useRouter()
   const supabase = createClient()
@@ -348,15 +352,40 @@ export default function HMOHunterPage() {
         <nav className="flex items-center gap-8">
           <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">Home</button>
           <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Properties</button>
-          <button 
+          <button
             onClick={() => router.push("/user-dashboard")}
             className="text-slate-600 hover:text-slate-900 text-sm font-medium"
           >
             Dashboard
           </button>
+          <button
+            onClick={() => router.push("/saved")}
+            className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
+          >
+            <Heart className="w-4 h-4" />
+            Saved
+            {savedProperties.length > 0 && (
+              <span className="bg-teal-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {savedProperties.length}
+              </span>
+            )}
+          </button>
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* DEV: Premium Toggle - Remove in production */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
+            <span className="text-xs text-slate-600">Pro Mode:</span>
+            <Switch
+              checked={isPremiumUser}
+              onCheckedChange={setIsPremiumUser}
+              className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-500 h-5 w-9"
+            />
+            {isPremiumUser && (
+              <span className="text-xs font-bold text-amber-600">PRO</span>
+            )}
+          </div>
+
           <button className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <Bell className="w-5 h-5 text-slate-600" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full"></span>
@@ -657,21 +686,48 @@ export default function HMOHunterPage() {
                   </Select>
                 </div>
 
-                {/* Potential HMO Toggle */}
+                {/* Potential HMO Toggle - Pro Feature */}
                 <div className="pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-slate-700">Show Potential HMOs</span>
-                      <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">New</span>
+                      <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
                     </div>
-                    <Switch
-                      checked={showPotentialHMOs}
-                      onCheckedChange={setShowPotentialHMOs}
-                      className="data-[state=checked]:bg-amber-500"
-                    />
+                    {isPremiumUser ? (
+                      <Switch
+                        checked={showPotentialHMOs}
+                        onCheckedChange={setShowPotentialHMOs}
+                        className="data-[state=checked]:bg-amber-500"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Locked</span>
+                        <div className="relative">
+                          <Switch
+                            checked={false}
+                            disabled
+                            className="opacity-50 cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {showPotentialHMOs && (
+                  {!isPremiumUser && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3 mb-3">
+                      <p className="text-xs text-amber-800 mb-2">
+                        Unlock HMO investment analysis with Pro
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs"
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    </div>
+                  )}
+
+                  {showPotentialHMOs && isPremiumUser && (
                     <div className="space-y-3 pl-2 border-l-2 border-amber-200">
                       {/* HMO Classification */}
                       <div>
@@ -772,55 +828,6 @@ export default function HMOHunterPage() {
             )}
           </div>
 
-          {/* Saved Properties */}
-          <div className="p-4 border-b border-slate-200">
-            <button
-              onClick={() => setSavedExpanded(!savedExpanded)}
-              className="flex items-center justify-between w-full mb-4"
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-teal-600" />
-                <span className="font-semibold text-sm text-slate-900">Saved Properties</span>
-              </div>
-              {savedExpanded ? (
-                <ChevronUp className="w-4 h-4 text-slate-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              )}
-            </button>
-
-            {savedExpanded && (
-              <div className="space-y-2">
-                {savedProperties.length === 0 ? (
-                  <div className="text-xs text-slate-500 text-center py-4">
-                    {user ? "No saved properties yet" : "Login to save properties"}
-                  </div>
-                ) : (
-                  savedProperties.slice(0, 4).map((savedProp) => (
-                    <div
-                      key={savedProp.id}
-                      onClick={() => {
-                        setSelectedProperty(savedProp.property)
-                        setRightPanelOpen(true)
-                      }}
-                      className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 transition-colors cursor-pointer"
-                    >
-                      <div className="w-10 h-10 bg-slate-200 rounded flex-shrink-0">
-                        <img
-                          src={savedProp.property.image_url || "/cozy-suburban-house.png"}
-                          alt="Property"
-                          className="w-full h-full object-cover rounded"
-                        />
-                      </div>
-                      <span className="text-xs text-slate-700 flex-1">{savedProp.property.title}</span>
-                      <Heart className="w-4 h-4 text-teal-600 fill-teal-600 flex-shrink-0" />
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Recent Searches */}
           <div className="p-4 border-b border-slate-200">
             <button
@@ -839,48 +846,6 @@ export default function HMOHunterPage() {
             </button>
           </div>
 
-          {/* Market Trends */}
-          <div className="p-4">
-            <button
-              onClick={() => setTrendsExpanded(!trendsExpanded)}
-              className="flex items-center justify-between w-full mb-4"
-            >
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-teal-600" />
-                <span className="font-semibold text-sm text-slate-900">Market Trends</span>
-              </div>
-              {trendsExpanded ? (
-                <ChevronUp className="w-4 h-4 text-slate-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              )}
-            </button>
-
-            {trendsExpanded && (
-              <div className="space-y-2">
-                <svg viewBox="0 0 240 80" className="w-full h-16">
-                  <path
-                    d="M0,50 Q30,30 60,40 T120,35 T180,30 T240,25"
-                    fill="none"
-                    stroke="rgb(13 148 136)"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M0,55 Q30,40 60,45 T120,42 T180,38 T240,35"
-                    fill="none"
-                    stroke="rgb(20 184 166)"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M0,60 Q30,45 60,52 T120,50 T180,48 T240,45"
-                    fill="none"
-                    stroke="rgb(94 234 212)"
-                    strokeWidth="2.5"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
         </aside>
         )}
 
@@ -951,6 +916,7 @@ export default function HMOHunterPage() {
                         classification={selectedProperty.hmo_classification}
                         dealScore={selectedProperty.deal_score ?? undefined}
                         className="text-xs"
+                        isPremium={isPremiumUser}
                       />
                     )}
                     {selectedProperty.epc_rating && (
@@ -992,6 +958,12 @@ export default function HMOHunterPage() {
                         className="text-xs"
                       />
                     )}
+                    <FloorPlanBadge
+                      hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
+                      hasEpcFloorPlan={!!selectedProperty.epc_certificate_url}
+                      epcCertificateUrl={selectedProperty.epc_certificate_url}
+                      className="text-xs"
+                    />
                   </div>
                 </div>
               </div>
@@ -1270,27 +1242,31 @@ export default function HMOHunterPage() {
                   )}
                 </div>
 
-                {/* EPC and Planning Badges */}
-                {(selectedProperty.epc_rating || selectedProperty.article_4_area) && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedProperty.epc_rating && (
-                      <EPCBadge
-                        rating={selectedProperty.epc_rating}
-                        numericRating={selectedProperty.epc_rating_numeric}
-                        certificateUrl={selectedProperty.epc_certificate_url}
-                        expiryDate={selectedProperty.epc_expiry_date}
-                      />
-                    )}
-                    {selectedProperty.article_4_area && (
-                      <Article4Warning
-                        article4Area={selectedProperty.article_4_area}
-                        conservationArea={selectedProperty.conservation_area}
-                        listedBuildingGrade={selectedProperty.listed_building_grade}
-                        planningConstraints={selectedProperty.planning_constraints}
-                      />
-                    )}
-                  </div>
-                )}
+                {/* EPC, Planning, and Floor Plan Badges */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedProperty.epc_rating && (
+                    <EPCBadge
+                      rating={selectedProperty.epc_rating}
+                      numericRating={selectedProperty.epc_rating_numeric}
+                      certificateUrl={selectedProperty.epc_certificate_url}
+                      expiryDate={selectedProperty.epc_expiry_date}
+                    />
+                  )}
+                  {selectedProperty.article_4_area && (
+                    <Article4Warning
+                      article4Area={selectedProperty.article_4_area}
+                      conservationArea={selectedProperty.conservation_area}
+                      listedBuildingGrade={selectedProperty.listed_building_grade}
+                      planningConstraints={selectedProperty.planning_constraints}
+                    />
+                  )}
+                  <FloorPlanBadge
+                    hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
+                    hasEpcFloorPlan={!!selectedProperty.epc_certificate_url}
+                    epcCertificateUrl={selectedProperty.epc_certificate_url}
+                    variant="full"
+                  />
+                </div>
 
                 {/* Owner Information Section - Always show, component handles "no data" state */}
                 <div className="mb-4">
@@ -1302,10 +1278,19 @@ export default function HMOHunterPage() {
                   <YieldCalculator property={selectedProperty} isPremium={true} />
                 </div>
 
-                {/* Potential HMO Analysis Section */}
+                {/* Floor Plans Section */}
+                <div className="mb-4">
+                  <FloorPlanSection
+                    floorPlans={selectedProperty.floor_plans}
+                    epcCertificateUrl={selectedProperty.epc_certificate_url}
+                    propertyTitle={selectedProperty.title}
+                  />
+                </div>
+
+                {/* Potential HMO Analysis Section - Pro Feature */}
                 {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
                   <div className="mb-4">
-                    <PotentialHMODetailPanel property={selectedProperty} />
+                    <PotentialHMODetailPanel property={selectedProperty} isPremium={isPremiumUser} />
                   </div>
                 )}
 
@@ -1601,42 +1586,49 @@ export default function HMOHunterPage() {
                 </div>
               </div>
 
-              {/* EPC & Planning Information */}
-              {(selectedProperty.epc_rating || selectedProperty.article_4_area || selectedProperty.conservation_area) && (
-                <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-                  <h4 className="font-semibold text-slate-900 mb-3">Energy & Planning</h4>
-                  <div className="space-y-3">
-                    {selectedProperty.epc_rating && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">EPC Rating</span>
-                        <EPCBadge
-                          rating={selectedProperty.epc_rating}
-                          numericRating={selectedProperty.epc_rating_numeric}
-                          certificateUrl={selectedProperty.epc_certificate_url}
-                          expiryDate={selectedProperty.epc_expiry_date}
-                        />
-                      </div>
-                    )}
-                    {selectedProperty.article_4_area && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Planning Restrictions</span>
-                        <Article4Warning
-                          article4Area={selectedProperty.article_4_area}
-                          conservationArea={selectedProperty.conservation_area}
-                          listedBuildingGrade={selectedProperty.listed_building_grade}
-                          planningConstraints={selectedProperty.planning_constraints}
-                        />
-                      </div>
-                    )}
-                    {selectedProperty.conservation_area && !selectedProperty.article_4_area && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Conservation Area</span>
-                        <span className="text-sm font-medium text-blue-600">Yes</span>
-                      </div>
-                    )}
+              {/* EPC, Planning & Floor Plan Information */}
+              <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+                <h4 className="font-semibold text-slate-900 mb-3">Energy, Planning & Floor Plan</h4>
+                <div className="space-y-3">
+                  {selectedProperty.epc_rating && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">EPC Rating</span>
+                      <EPCBadge
+                        rating={selectedProperty.epc_rating}
+                        numericRating={selectedProperty.epc_rating_numeric}
+                        certificateUrl={selectedProperty.epc_certificate_url}
+                        expiryDate={selectedProperty.epc_expiry_date}
+                      />
+                    </div>
+                  )}
+                  {selectedProperty.article_4_area && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Planning Restrictions</span>
+                      <Article4Warning
+                        article4Area={selectedProperty.article_4_area}
+                        conservationArea={selectedProperty.conservation_area}
+                        listedBuildingGrade={selectedProperty.listed_building_grade}
+                        planningConstraints={selectedProperty.planning_constraints}
+                      />
+                    </div>
+                  )}
+                  {selectedProperty.conservation_area && !selectedProperty.article_4_area && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Conservation Area</span>
+                      <span className="text-sm font-medium text-blue-600">Yes</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Floor Plan</span>
+                    <FloorPlanBadge
+                      hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
+                      hasEpcFloorPlan={!!selectedProperty.epc_certificate_url}
+                      epcCertificateUrl={selectedProperty.epc_certificate_url}
+                      variant="full"
+                    />
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Owner Information in Full Details - Always show */}
               <div className="mb-6">
@@ -1650,11 +1642,11 @@ export default function HMOHunterPage() {
                 <YieldCalculator property={selectedProperty} defaultOpen={true} isPremium={true} />
               </div>
 
-              {/* Potential HMO Analysis in Full Details */}
+              {/* Potential HMO Analysis in Full Details - Pro Feature */}
               {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">HMO Investment Analysis</h4>
-                  <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} />
+                  <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
                 </div>
               )}
 
@@ -1667,62 +1659,14 @@ export default function HMOHunterPage() {
               )}
 
               {/* Floor Plans Section */}
-              {(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0) || selectedProperty.epc_certificate_url ? (
-                <div className="mb-6">
-                  <h4 className="font-semibold text-slate-900 mb-3">Floor Plans</h4>
-
-                  {/* Show floor plan images if available */}
-                  {selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0 && (
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      {selectedProperty.floor_plans.map((floorPlan, index) => (
-                        <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
-                          {floorPlan.toLowerCase().endsWith(".pdf") ? (
-                            <a
-                              href={floorPlan}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex flex-col items-center justify-center p-8 bg-slate-50 hover:bg-slate-100 transition-colors"
-                            >
-                              <FileText className="w-12 h-12 text-slate-400 mb-2" />
-                              <span className="text-sm text-slate-600">View PDF Floor Plan {index + 1}</span>
-                            </a>
-                          ) : (
-                            <img
-                              src={floorPlan || "/placeholder.svg"}
-                              alt={`Floor plan ${index + 1}`}
-                              className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(floorPlan, "_blank")}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Show EPC floor plan link */}
-                  {selectedProperty.epc_certificate_url && (
-                    <a
-                      href={selectedProperty.epc_certificate_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                    >
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <FileText className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-green-800">View EPC Floor Plan</div>
-                        <div className="text-xs text-green-600">Official Energy Performance Certificate with floor plan diagram</div>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-green-500" />
-                    </a>
-                  )}
-
-                  {selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0 && (
-                    <p className="text-xs text-slate-500 mt-2 italic">Floor plans sourced from the original listing</p>
-                  )}
-                </div>
-              ) : null}
+              <div className="mb-6">
+                <h4 className="font-semibold text-slate-900 mb-3">Floor Plans</h4>
+                <FloorPlanSection
+                  floorPlans={selectedProperty.floor_plans}
+                  epcCertificateUrl={selectedProperty.epc_certificate_url}
+                  propertyTitle={selectedProperty.title}
+                />
+              </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-200">

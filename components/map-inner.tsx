@@ -45,6 +45,7 @@ export function MapInner({
         zoom: selectedCity.zoom,
         pixelRatio: window.devicePixelRatio || 1,
         antialias: true,
+        attributionControl: false, // Hide MapLibre attribution
       })
 
       map.addControl(new maplibregl.NavigationControl(), "top-right")

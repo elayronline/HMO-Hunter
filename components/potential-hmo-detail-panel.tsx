@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp, TrendingUp, Wrench, Home, Ruler, Bath, Utensils, Zap, PoundSterling, BarChart3, Users, FileCheck } from "lucide-react"
+import { ChevronDown, ChevronUp, TrendingUp, Wrench, Home, Ruler, Bath, Utensils, Zap, PoundSterling, BarChart3, Users, FileCheck, Lock, Crown } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import type { Property, DealScoreBreakdown } from "@/lib/types/database"
 
 interface PotentialHMODetailPanelProps {
   property: Property
   defaultOpen?: boolean
+  isPremium?: boolean
 }
 
 const classificationConfig = {
@@ -57,7 +59,7 @@ const epcImprovementLabels = {
   none: "Already optimal (A/B)",
 }
 
-export function PotentialHMODetailPanel({ property, defaultOpen = false }: PotentialHMODetailPanelProps) {
+export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremium = false }: PotentialHMODetailPanelProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   if (!property.is_potential_hmo || !property.hmo_classification) {
@@ -68,6 +70,72 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false }: Poten
   const Icon = config.icon
 
   const breakdown = property.deal_score_breakdown as DealScoreBreakdown | null
+
+  // Non-premium users see locked state
+  if (!isPremium) {
+    return (
+      <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <div className="font-semibold text-amber-800 flex items-center gap-2">
+                  HMO Investment Analysis
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full">
+                    <Crown className="w-3 h-3" />
+                    PRO
+                  </span>
+                </div>
+                <div className="text-xs text-amber-600">Unlock detailed deal scoring & compliance data</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Blurred preview */}
+          <div className="relative">
+            <div className="blur-sm pointer-events-none opacity-60">
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-500">Deal Score</div>
+                  <div className="text-lg font-bold text-slate-400">••/100</div>
+                </div>
+                <div className="bg-white/50 rounded-lg p-3">
+                  <div className="text-xs text-slate-500">Est. Yield</div>
+                  <div className="text-lg font-bold text-slate-400">•.•%</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-2 bg-slate-200 rounded w-full"></div>
+                <div className="h-2 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-2 bg-slate-200 rounded w-5/6"></div>
+              </div>
+            </div>
+
+            {/* Lock overlay */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-amber-600" />
+                </div>
+                <Button
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+                <p className="text-xs text-amber-700 mt-2">
+                  Get deal scores, yield analysis & compliance checks
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    )
+  }
 
   return (
     <Card className={`${config.bgColor} ${config.borderColor} border overflow-hidden`}>

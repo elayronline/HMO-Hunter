@@ -5,16 +5,13 @@ import Link from "next/link"
 import {
   Building2,
   Calendar,
-  Check,
   ChevronDown,
   ChevronUp,
   ExternalLink,
   FileText,
-  Loader2,
   Mail,
   MapPin,
   Phone,
-  Search,
   Shield,
   User,
   Users,
@@ -62,33 +59,6 @@ export function OwnerInformationSection({
   defaultOpen = false,
 }: OwnerInformationSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
-  const [licenceRequestSent, setLicenceRequestSent] = useState(false)
-  const [licenceRequestLoading, setLicenceRequestLoading] = useState(false)
-
-  const handleLicenceInfoRequest = async () => {
-    setLicenceRequestLoading(true)
-    try {
-      const response = await fetch("/api/info-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          propertyId: property.id,
-          propertyAddress: property.address,
-          postcode: property.postcode,
-          city: property.city,
-          requestType: "licence_holder",
-        }),
-      })
-
-      if (response.ok) {
-        setLicenceRequestSent(true)
-      }
-    } catch (error) {
-      console.error("Failed to send info request:", error)
-    } finally {
-      setLicenceRequestLoading(false)
-    }
-  }
 
   // Title Owner data checks
   const hasTitleOwnerName = property.owner_name || property.company_name
@@ -326,7 +296,7 @@ export function OwnerInformationSection({
               </div>
 
               {/* Licence Holder Contact Buttons */}
-              {hasLicenceHolderContact ? (
+              {hasLicenceHolderContact && (
                 <div className="grid grid-cols-1 gap-2 pt-2 border-t border-teal-200">
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Licence Holder</p>
                   <div className="flex flex-wrap gap-2">
@@ -351,34 +321,6 @@ export function OwnerInformationSection({
                       </a>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-teal-200">
-                  {licenceRequestSent ? (
-                    <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm font-medium">Request sent! We'll find this contact.</span>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full border-teal-300 text-teal-700 hover:bg-teal-100"
-                      onClick={handleLicenceInfoRequest}
-                      disabled={licenceRequestLoading}
-                    >
-                      {licenceRequestLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Requesting...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="h-4 w-4 mr-2" />
-                          Request Licence Holder Contact
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
               )}
             </>

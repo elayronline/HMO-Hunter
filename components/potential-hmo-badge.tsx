@@ -7,12 +7,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { TrendingUp, Wrench, XCircle } from "lucide-react"
+import { TrendingUp, Wrench, XCircle, Lock, Crown } from "lucide-react"
 
 interface PotentialHMOBadgeProps {
   classification: "ready_to_go" | "value_add" | "not_suitable" | null
   dealScore?: number
   className?: string
+  isPremium?: boolean
 }
 
 const classificationConfig = {
@@ -40,6 +41,7 @@ export function PotentialHMOBadge({
   classification,
   dealScore,
   className = "",
+  isPremium = false,
 }: PotentialHMOBadgeProps) {
   if (!classification || classification === "not_suitable") {
     return null
@@ -47,6 +49,37 @@ export function PotentialHMOBadge({
 
   const config = classificationConfig[classification]
   const Icon = config.icon
+
+  // Non-premium users see a locked badge
+  if (!isPremium) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`bg-amber-100 text-amber-700 border-amber-300 ${className} flex items-center gap-1 cursor-pointer`}>
+              <Lock className="w-3 h-3" />
+              <span className="blur-[2px]">HMO</span>
+              <Crown className="w-3 h-3 text-amber-500" />
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-center">
+              <p className="font-medium flex items-center gap-1 justify-center">
+                <Crown className="w-4 h-4 text-amber-500" />
+                Pro Feature
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Upgrade to Pro to see HMO investment analysis
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Deal scores, yield projections & compliance data
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
 
   return (
     <TooltipProvider>

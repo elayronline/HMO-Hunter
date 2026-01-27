@@ -130,19 +130,18 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
     // Phase 4 - Potential HMO Filters
     if (filters?.showPotentialHMOs) {
-      query = query.eq("is_potential_hmo", true)
+      // When toggle is ON: show ALL properties (potential HMOs + licensed + unlicensed)
+      // The additional filters below only apply to narrow down results if specified
 
-      // HMO Classification filter
+      // HMO Classification filter - only filter if specifically selected
       if (filters?.hmoClassification) {
         query = query.eq("hmo_classification", filters.hmoClassification)
-      } else {
-        // When showing potential HMOs, exclude "not_suitable" by default
-        query = query.in("hmo_classification", ["ready_to_go", "value_add"])
       }
 
-      // Min Deal Score filter
+      // Min Deal Score filter - only applies to potential HMOs but doesn't exclude others
       if (filters?.minDealScore && filters.minDealScore > 0) {
-        query = query.gte("deal_score", filters.minDealScore)
+        // Show properties that either meet the deal score OR are not potential HMOs
+        query = query.or(`deal_score.gte.${filters.minDealScore},is_potential_hmo.eq.false,is_potential_hmo.is.null`)
       }
 
       // Floor Area Band filter
@@ -166,6 +165,9 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       if (filters?.isExLocalAuthority) {
         query = query.eq("is_ex_local_authority", true)
       }
+    } else {
+      // When toggle is OFF: exclude potential HMOs, show only licensed/unlicensed
+      query = query.or("is_potential_hmo.eq.false,is_potential_hmo.is.null")
     }
 
     const { data, error } = await safeSupabaseQuery(async () => await query)
