@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Calculator, TrendingUp, ChevronDown, ChevronUp } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Calculator, TrendingUp, ChevronDown, ChevronUp, Lock, Crown } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import type { Property } from "@/lib/types/database"
 
 interface YieldCalculatorProps {
   property: Property
   defaultOpen?: boolean
+  isPremium?: boolean
 }
 
 // Default assumptions
@@ -16,13 +17,13 @@ const DEFAULT_ASSUMPTIONS = {
   voidRate: 5,
   managementFee: 10,
   maintenanceReserve: 5,
-  fixedCosts: 1700, // Insurance + licensing
+  fixedCosts: 1700,
   annualRentGrowth: 3,
   annualValueGrowth: 4,
 }
 
-export function YieldCalculator({ property, defaultOpen = false }: YieldCalculatorProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+export function YieldCalculator({ property, defaultOpen = false, isPremium = false }: YieldCalculatorProps) {
+  const [isEnabled, setIsEnabled] = useState(isPremium && defaultOpen)
   const [customMonthlyRent, setCustomMonthlyRent] = useState<number | null>(null)
   const [customPurchasePrice, setCustomPurchasePrice] = useState<number | null>(null)
 
@@ -67,7 +68,7 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
     }
   }, [annualGross])
 
-  // Calculate projections (net income only for rentals, ROI for purchases)
+  // Calculate projections
   const projections = useMemo(() => {
     if (monthlyRent <= 0) return null
 
@@ -84,7 +85,6 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
       if (i === 5) y5Net = cumulative
     }
 
-    // For purchase listings, calculate ROI
     if (!isRental && purchasePrice > 0) {
       const y1Yield = (y1Net / purchasePrice) * 100
       const y3Return = y3Net + (purchasePrice * Math.pow(1 + DEFAULT_ASSUMPTIONS.annualValueGrowth / 100, 3) - purchasePrice)
@@ -96,7 +96,6 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
       }
     }
 
-    // For rentals, just cumulative net income
     return {
       y1: { net: Math.round(y1Net) },
       y3: { net: Math.round(y3Net) },
@@ -108,33 +107,56 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
   const needsInput = isRental ? monthlyRent <= 0 : (monthlyRent <= 0 || purchasePrice <= 0)
 
   return (
-    <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white/50 transition-colors"
-      >
+    <div className="rounded-xl overflow-hidden border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg">
+      {/* Header */}
+      <div className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Calculator className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-medium text-emerald-700">Yield Calculator</span>
+          <div className="p-1.5 bg-white/20 rounded-lg">
+            <Calculator className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-white">Yield Calculator</span>
+              <span className="px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-semibold text-white flex items-center gap-1">
+                <Crown className="w-3 h-3" />
+                PRO
+              </span>
+            </div>
+            {canCalculate && projections && (
+              <span className="text-xs text-white/80">
+                {isRental
+                  ? `£${projections.y1.net.toLocaleString()}/yr net`
+                  : `${projections.y1.yield}% yield`
+                }
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          {canCalculate && projections && (
-            <span className="text-xs font-semibold text-emerald-600">
-              {isRental
-                ? `£${projections.y1.net.toLocaleString()}/yr net`
-                : `${projections.y1.yield}% yield`
-              }
-            </span>
+          {!isPremium && (
+            <Lock className="w-4 h-4 text-white/60" />
           )}
-          {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={setIsEnabled}
+            disabled={!isPremium}
+            className={!isPremium ? "opacity-50 cursor-not-allowed" : ""}
+          />
         </div>
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="px-3 pb-3 space-y-2 border-t border-emerald-100">
+      {/* Content */}
+      {!isPremium ? (
+        <div className="px-4 py-6 text-center">
+          <Lock className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+          <p className="text-sm font-medium text-slate-700">Premium Feature</p>
+          <p className="text-xs text-slate-500 mt-1">Upgrade to access yield projections</p>
+        </div>
+      ) : isEnabled ? (
+        <div className="px-3 py-3 space-y-2">
           {/* Input section for missing data */}
           {needsInput && (
-            <div className="pt-2 flex gap-2">
+            <div className="flex gap-2">
               {monthlyRent <= 0 && (
                 <div className="flex-1">
                   <Input
@@ -163,59 +185,59 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
           {canCalculate && projections && (
             <>
               {/* Key figures row */}
-              <div className="pt-2 flex gap-3 text-xs">
-                <div className="flex-1 bg-white rounded p-2 text-center">
+              <div className="flex gap-2 text-xs">
+                <div className="flex-1 bg-white rounded-lg p-2 text-center shadow-sm">
                   <div className="text-slate-500">Monthly</div>
-                  <div className="font-semibold text-slate-900">£{monthlyRent.toLocaleString()}</div>
+                  <div className="font-bold text-slate-900">£{monthlyRent.toLocaleString()}</div>
                 </div>
-                <div className="flex-1 bg-white rounded p-2 text-center">
+                <div className="flex-1 bg-white rounded-lg p-2 text-center shadow-sm">
                   <div className="text-slate-500">{rooms} rooms</div>
-                  <div className="font-semibold text-slate-900">£{rentPerRoom}/rm</div>
+                  <div className="font-bold text-slate-900">£{rentPerRoom}/rm</div>
                 </div>
-                <div className="flex-1 bg-white rounded p-2 text-center">
+                <div className="flex-1 bg-white rounded-lg p-2 text-center shadow-sm">
                   <div className="text-slate-500">Annual Net</div>
-                  <div className="font-semibold text-emerald-600">£{costs.net.toLocaleString()}</div>
+                  <div className="font-bold text-amber-600">£{costs.net.toLocaleString()}</div>
                 </div>
               </div>
 
               {/* Projections */}
-              <div className="bg-white rounded p-2">
+              <div className="bg-white rounded-lg p-2 shadow-sm">
                 <div className="flex items-center gap-1 mb-2">
-                  <TrendingUp className="w-3 h-3 text-emerald-500" />
-                  <span className="text-xs font-medium text-slate-700">
+                  <TrendingUp className="w-3 h-3 text-amber-500" />
+                  <span className="text-xs font-semibold text-slate-700">
                     {isRental ? "Net Income Projections" : "Return Projections"}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-emerald-50 rounded p-2">
+                  <div className="bg-amber-50 rounded-lg p-2">
                     <div className="text-[10px] text-slate-500">1 Year</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-emerald-600">£{projections.y1.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-amber-600">£{projections.y1.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-emerald-600">{projections.y1.yield}%</div>
+                        <div className="text-sm font-bold text-amber-600">{projections.y1.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y1.net.toLocaleString()}</div>
                       </>
                     )}
                   </div>
-                  <div className="bg-emerald-50 rounded p-2">
+                  <div className="bg-amber-50 rounded-lg p-2">
                     <div className="text-[10px] text-slate-500">3 Years</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-emerald-600">£{projections.y3.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-amber-600">£{projections.y3.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-emerald-600">{projections.y3.yield}%</div>
+                        <div className="text-sm font-bold text-amber-600">{projections.y3.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y3.total?.toLocaleString()}</div>
                       </>
                     )}
                   </div>
-                  <div className="bg-emerald-100 rounded p-2 border border-emerald-200">
+                  <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg p-2 border border-amber-300">
                     <div className="text-[10px] text-slate-500">5 Years</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-emerald-700">£{projections.y5.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-amber-700">£{projections.y5.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-emerald-700">{projections.y5.yield}%</div>
+                        <div className="text-sm font-bold text-amber-700">{projections.y5.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y5.total?.toLocaleString()}</div>
                       </>
                     )}
@@ -223,32 +245,27 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
                 </div>
               </div>
 
-              {/* Costs breakdown - compact */}
-              <div className="text-[10px] text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5 pt-1">
-                <span>Gross: £{annualGross.toLocaleString()}</span>
-                <span>Voids {DEFAULT_ASSUMPTIONS.voidRate}%</span>
-                <span>Mgmt {DEFAULT_ASSUMPTIONS.managementFee}%</span>
-                <span>Maint {DEFAULT_ASSUMPTIONS.maintenanceReserve}%</span>
-                <span>Fixed £{DEFAULT_ASSUMPTIONS.fixedCosts}</span>
-              </div>
-
               {/* Methodology explanation */}
-              <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100 mt-1">
+              <div className="text-[10px] text-slate-400 italic px-1">
                 {isRental
-                  ? `Cumulative net income after deducting voids, management, maintenance & fixed costs. Assumes ${DEFAULT_ASSUMPTIONS.annualRentGrowth}% annual rent growth.`
-                  : `ROI includes net rental income + ${DEFAULT_ASSUMPTIONS.annualValueGrowth}% annual capital appreciation. Net yield based on purchase price.`
+                  ? `Net income after ${DEFAULT_ASSUMPTIONS.voidRate}% voids, ${DEFAULT_ASSUMPTIONS.managementFee}% mgmt, ${DEFAULT_ASSUMPTIONS.maintenanceReserve}% maint, £${DEFAULT_ASSUMPTIONS.fixedCosts} fixed. ${DEFAULT_ASSUMPTIONS.annualRentGrowth}% annual growth.`
+                  : `ROI = net income + ${DEFAULT_ASSUMPTIONS.annualValueGrowth}% capital growth. Costs: ${DEFAULT_ASSUMPTIONS.voidRate}% voids, ${DEFAULT_ASSUMPTIONS.managementFee}% mgmt, ${DEFAULT_ASSUMPTIONS.maintenanceReserve}% maint.`
                 }
               </div>
             </>
           )}
 
           {!canCalculate && !needsInput && (
-            <div className="pt-2 text-xs text-slate-500 text-center">
+            <div className="py-4 text-xs text-slate-500 text-center">
               Enter rent data to calculate
             </div>
           )}
         </div>
+      ) : (
+        <div className="px-4 py-4 text-center text-xs text-slate-500">
+          Toggle on to view yield projections
+        </div>
       )}
-    </Card>
+    </div>
   )
 }

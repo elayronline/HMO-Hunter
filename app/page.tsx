@@ -1296,9 +1296,9 @@ export default function HMOHunterPage() {
                   <OwnerInformationSection property={selectedProperty} />
                 </div>
 
-                {/* Yield Calculator - Always show for all listings */}
+                {/* Yield Calculator - Premium feature */}
                 <div className="mb-4">
-                  <YieldCalculator property={selectedProperty} />
+                  <YieldCalculator property={selectedProperty} isPremium={true} />
                 </div>
 
                 {/* Potential HMO Analysis Section */}
@@ -1644,9 +1644,9 @@ export default function HMOHunterPage() {
               </div>
 
               {/* Yield Calculator - Always show for all listings */}
+              {/* Yield Calculator - Premium feature */}
               <div className="mb-6">
-                <h4 className="font-semibold text-slate-900 mb-3">Investment Returns</h4>
-                <YieldCalculator property={selectedProperty} defaultOpen={true} />
+                <YieldCalculator property={selectedProperty} defaultOpen={true} isPremium={true} />
               </div>
 
               {/* Potential HMO Analysis in Full Details */}
