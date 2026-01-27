@@ -221,7 +221,7 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
                 {property.potential_occupants || property.lettable_rooms || property.bedrooms} occupants
               </div>
               <div className="text-xs text-slate-500 mt-1">
-                {property.requires_mandatory_licensing ? "Mandatory licensing required" : "Standard HMO licence"}
+                {property.requires_mandatory_licensing ? "Mandatory licensing required" : "Unlicensed HMO"}
               </div>
             </div>
           </div>

@@ -42,7 +42,7 @@ export async function seedSampleIngestionData() {
       price_pcm: 2800,
       listing_type: "rent",
       property_type: "HMO",
-      hmo_status: "Standard HMO",
+      hmo_status: "Unlicensed HMO",
       bedrooms: 4,
       bathrooms: 2,
       is_furnished: true,

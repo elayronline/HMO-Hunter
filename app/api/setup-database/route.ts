@@ -16,7 +16,7 @@ export async function POST() {
     console.log("[Setup] Seeding sample properties...")
 
     // Sample properties with proper coordinates - using only base columns
-    // hmo_status can be: "Licensed HMO", "Standard HMO", "Potential HMO"
+    // hmo_status can be: "Licensed HMO", "Unlicensed HMO", "Potential HMO"
     const sampleProperties = [
       // London - Potential HMOs (opportunities)
       { title: "Investment Property - Stratford", address: "45 Stratford High Street", postcode: "E15 2PJ", city: "London", latitude: 51.5423, longitude: -0.0034, purchase_price: 385000, listing_type: "purchase", property_type: "House", hmo_status: "Potential HMO", bedrooms: 5, bathrooms: 2, is_stale: false },

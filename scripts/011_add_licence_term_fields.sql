@@ -9,7 +9,7 @@ ALTER TABLE properties ADD COLUMN IF NOT EXISTS licensed_hmo BOOLEAN DEFAULT FAL
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'properties' AND column_name = 'hmo_status') THEN
-    ALTER TABLE properties ADD COLUMN hmo_status TEXT CHECK (hmo_status IN ('Standard HMO', 'Licensed HMO', 'Potential HMO'));
+    ALTER TABLE properties ADD COLUMN hmo_status TEXT CHECK (hmo_status IN ('Unlicensed HMO', 'Licensed HMO', 'Potential HMO'));
   END IF;
 END $$;
 

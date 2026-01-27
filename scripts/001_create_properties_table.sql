@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.properties (
   longitude DECIMAL(11, 8) NOT NULL,
   price_pcm DECIMAL(10, 2) NOT NULL,
   property_type TEXT NOT NULL CHECK (property_type IN ('HMO', 'Flat', 'House', 'Studio')),
-  hmo_type TEXT CHECK (hmo_type IN ('Standard HMO', 'Licensed HMO', 'Potential HMO')),
+  hmo_type TEXT CHECK (hmo_type IN ('Unlicensed HMO', 'Licensed HMO', 'Potential HMO')),
   bedrooms INTEGER NOT NULL,
   bathrooms INTEGER NOT NULL,
   has_garden BOOLEAN DEFAULT false,

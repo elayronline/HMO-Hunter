@@ -59,7 +59,7 @@ export async function runNativeIngestion(batchSize: number = 50, delayMs: number
       // Add PropertyData fields if available
       if (insights.propertyData?.hmoLicence) {
         const licence = insights.propertyData.hmoLicence
-        updateData.hmo_status = licence.status === "active" ? "Licensed HMO" : "Standard HMO"
+        updateData.hmo_status = licence.status === "active" ? "Licensed HMO" : "Unlicensed HMO"
         if (licence.numberOfBedrooms) updateData.bedrooms = licence.numberOfBedrooms
         if (licence.maxOccupancy) updateData.max_tenants = licence.maxOccupancy
       }

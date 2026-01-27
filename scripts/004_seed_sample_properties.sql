@@ -35,7 +35,7 @@ INSERT INTO public.properties (
   -0.1428,
   5200.00,
   'House',
-  'Standard HMO',
+  'Unlicensed HMO',
   8,
   3,
   false,
@@ -98,7 +98,7 @@ INSERT INTO public.properties (
   -0.1195,
   4800.00,
   'Flat',
-  'Standard HMO',
+  'Unlicensed HMO',
   6,
   2,
   false,
@@ -119,12 +119,12 @@ INSERT INTO public.properties (
   near_tube_station, available_from
 ) VALUES
 ('North London House', '78 Finsbury Park Road', 'N4 2JX', 'London', 51.5642, -0.1065, 3900, 'House', 'Licensed HMO', 5, 2, true, true, true, true, true, CURRENT_DATE),
-('East End Flat', '234 Bethnal Green Road', 'E2 0AA', 'London', 51.5273, -0.0559, 3500, 'Flat', 'Standard HMO', 4, 1, false, true, false, true, true, CURRENT_DATE),
+('East End Flat', '234 Bethnal Green Road', 'E2 0AA', 'London', 51.5273, -0.0559, 3500, 'Flat', 'Unlicensed HMO', 4, 1, false, true, false, true, true, CURRENT_DATE),
 ('West London Property', '56 Shepherd Bush Road', 'W6 7PH', 'London', 51.5033, -0.2217, 4100, 'House', 'Potential HMO', 6, 2, true, true, true, true, true, CURRENT_DATE),
 ('South London Share', '145 Clapham High Street', 'SW4 7SS', 'London', 51.4618, -0.1384, 3700, 'Flat', 'Licensed HMO', 5, 2, false, true, true, true, true, CURRENT_DATE),
-('Greenwich House', '92 Greenwich Park Street', 'SE10 8QY', 'London', 51.4826, 0.0077, 3600, 'House', 'Standard HMO', 5, 2, true, true, false, true, false, CURRENT_DATE),
+('Greenwich House', '92 Greenwich Park Street', 'SE10 8QY', 'London', 51.4826, 0.0077, 3600, 'House', 'Unlicensed HMO', 5, 2, true, true, false, true, false, CURRENT_DATE),
 ('Hackney Apartment', '167 Mare Street', 'E8 3RH', 'London', 51.5456, -0.0553, 4000, 'Flat', 'Licensed HMO', 6, 2, false, true, true, true, true, CURRENT_DATE),
-('Islington Property', '88 Upper Street', 'N1 0NP', 'London', 51.5416, -0.1030, 4300, 'House', 'Standard HMO', 7, 3, true, true, true, true, true, CURRENT_DATE),
+('Islington Property', '88 Upper Street', 'N1 0NP', 'London', 51.5416, -0.1030, 4300, 'House', 'Unlicensed HMO', 7, 3, true, true, true, true, true, CURRENT_DATE),
 ('Brixton House Share', '203 Brixton Hill', 'SW2 1RB', 'London', 51.4514, -0.1167, 3800, 'House', 'Potential HMO', 5, 2, true, true, true, true, true, CURRENT_DATE),
 ('Shoreditch Loft', '45 Great Eastern Street', 'EC2A 3EP', 'London', 51.5254, -0.0831, 5000, 'Flat', 'Licensed HMO', 6, 2, false, true, false, true, true, CURRENT_DATE),
 ('Notting Hill House', '78 Portobello Road', 'W11 2DZ', 'London', 51.5165, -0.2053, 5500, 'House', 'Licensed HMO', 8, 3, true, true, true, true, true, CURRENT_DATE);

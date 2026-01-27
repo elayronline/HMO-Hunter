@@ -125,7 +125,7 @@ export class IngestionManager {
             last_seen_at: now,
             is_stale: false,
             stale_marked_at: null,
-            hmo_status: listing.licence_status === "active" ? "Licensed HMO" : "Standard HMO",
+            hmo_status: listing.licence_status === "active" ? "Licensed HMO" : "Unlicensed HMO",
             licensed_hmo: listing.licence_status === "active",
             // HMO Licence fields
             licence_id: listing.licence_id,

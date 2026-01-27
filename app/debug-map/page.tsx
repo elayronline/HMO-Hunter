@@ -97,7 +97,7 @@ export default function DebugMapPage() {
               const colors: Record<string, string> = {
                 "Licensed HMO": "#0f766e",
                 "Potential HMO": "#22c55e",
-                "Standard HMO": "#14b8a6",
+                "Unlicensed HMO": "#14b8a6",
               }
               const color = colors[prop.hmo_status] || "#6b7280"
 

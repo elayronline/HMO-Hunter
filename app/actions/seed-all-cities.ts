@@ -11,7 +11,7 @@ const STREET_NAMES = [
   "New Road", "Main Street", "Springfield Road", "Castle Street", "West Street"
 ]
 
-const HMO_TYPES = ["Licensed HMO", "Potential HMO", "Standard HMO"]
+const HMO_TYPES = ["Licensed HMO", "Potential HMO", "Unlicensed HMO"]
 
 // Average rent per room by city (monthly)
 const CITY_RENT_RANGES: Record<string, [number, number]> = {
