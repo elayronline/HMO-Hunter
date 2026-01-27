@@ -115,9 +115,7 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
       >
         <div className="flex items-center gap-2">
           <Calculator className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-medium text-emerald-700">
-            {isRental ? "Income Calculator" : "Yield Calculator"}
-          </span>
+          <span className="text-sm font-medium text-emerald-700">Yield Calculator</span>
         </div>
         <div className="flex items-center gap-2">
           {canCalculate && projections && (
