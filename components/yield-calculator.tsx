@@ -107,9 +107,9 @@ export function YieldCalculator({ property, defaultOpen = false, isPremium = fal
   const needsInput = isRental ? monthlyRent <= 0 : (monthlyRent <= 0 || purchasePrice <= 0)
 
   return (
-    <div className="rounded-xl overflow-hidden border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg">
+    <div className="rounded-xl overflow-hidden border-2 border-purple-300 bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 shadow-lg">
       {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-between">
+      <div className="px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-white/20 rounded-lg">
             <Calculator className="w-4 h-4 text-white" />
@@ -148,7 +148,7 @@ export function YieldCalculator({ property, defaultOpen = false, isPremium = fal
       {/* Content */}
       {!isPremium ? (
         <div className="px-4 py-6 text-center">
-          <Lock className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+          <Lock className="w-8 h-8 text-purple-400 mx-auto mb-2" />
           <p className="text-sm font-medium text-slate-700">Premium Feature</p>
           <p className="text-xs text-slate-500 mt-1">Upgrade to access yield projections</p>
         </div>
@@ -196,48 +196,48 @@ export function YieldCalculator({ property, defaultOpen = false, isPremium = fal
                 </div>
                 <div className="flex-1 bg-white rounded-lg p-2 text-center shadow-sm">
                   <div className="text-slate-500">Annual Net</div>
-                  <div className="font-bold text-amber-600">£{costs.net.toLocaleString()}</div>
+                  <div className="font-bold text-purple-600">£{costs.net.toLocaleString()}</div>
                 </div>
               </div>
 
               {/* Projections */}
               <div className="bg-white rounded-lg p-2 shadow-sm">
                 <div className="flex items-center gap-1 mb-2">
-                  <TrendingUp className="w-3 h-3 text-amber-500" />
+                  <TrendingUp className="w-3 h-3 text-purple-500" />
                   <span className="text-xs font-semibold text-slate-700">
                     {isRental ? "Net Income Projections" : "Return Projections"}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-amber-50 rounded-lg p-2">
+                  <div className="bg-purple-50 rounded-lg p-2">
                     <div className="text-[10px] text-slate-500">1 Year</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-amber-600">£{projections.y1.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-purple-600">£{projections.y1.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-amber-600">{projections.y1.yield}%</div>
+                        <div className="text-sm font-bold text-purple-600">{projections.y1.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y1.net.toLocaleString()}</div>
                       </>
                     )}
                   </div>
-                  <div className="bg-amber-50 rounded-lg p-2">
+                  <div className="bg-purple-50 rounded-lg p-2">
                     <div className="text-[10px] text-slate-500">3 Years</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-amber-600">£{projections.y3.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-purple-600">£{projections.y3.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-amber-600">{projections.y3.yield}%</div>
+                        <div className="text-sm font-bold text-purple-600">{projections.y3.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y3.total?.toLocaleString()}</div>
                       </>
                     )}
                   </div>
-                  <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg p-2 border border-amber-300">
+                  <div className="bg-gradient-to-br from-purple-100 to-indigo-100 rounded-lg p-2 border border-purple-300">
                     <div className="text-[10px] text-slate-500">5 Years</div>
                     {isRental ? (
-                      <div className="text-sm font-bold text-amber-700">£{projections.y5.net.toLocaleString()}</div>
+                      <div className="text-sm font-bold text-purple-700">£{projections.y5.net.toLocaleString()}</div>
                     ) : (
                       <>
-                        <div className="text-sm font-bold text-amber-700">{projections.y5.yield}%</div>
+                        <div className="text-sm font-bold text-purple-700">{projections.y5.yield}%</div>
                         <div className="text-[10px] text-slate-500">£{projections.y5.total?.toLocaleString()}</div>
                       </>
                     )}
