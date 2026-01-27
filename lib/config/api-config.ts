@@ -84,6 +84,23 @@ export const apiConfig = {
     },
   },
 
+  // Kamma API (HMO Licensing Compliance)
+  kamma: {
+    apiKey: process.env.KAMMA_API_KEY,
+    groupId: process.env.KAMMA_GROUP_ID,
+    baseUrl: process.env.KAMMA_BASE_URL || "https://kamma.api.kammadata.com",
+    enabled: !!process.env.KAMMA_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
+    },
+    endpoints: {
+      licensingCheck: "/api/properties/licensing-check",
+      determinationCheck: "/api/properties/determination-check",
+      epcCheck: "/api/properties/epc-check",
+    },
+  },
+
   // Google Maps (Optional - Street View fallback)
   googleMaps: {
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -136,6 +153,10 @@ export function validateApiConfig(): {
 
   if (!apiConfig.companiesHouse.enabled) {
     warnings.push("Companies House API not configured. Corporate landlord details will be unavailable. Add COMPANIES_HOUSE_API_KEY for company lookups.")
+  }
+
+  if (!apiConfig.kamma.enabled) {
+    warnings.push("Kamma API not configured. HMO licensing compliance data will be unavailable. Add KAMMA_API_KEY for licensing checks.")
   }
 
   if (!apiConfig.googleMaps.enabled) {
@@ -202,6 +223,12 @@ export function getApiStatus() {
         name: "Google Street View",
         status: apiConfig.googleMaps.enabled ? "connected" : "not_configured",
         description: "Fallback property images",
+      },
+      kamma: {
+        enabled: apiConfig.kamma.enabled,
+        name: "Kamma API",
+        status: apiConfig.kamma.enabled ? "connected" : "not_configured",
+        description: "HMO licensing compliance and determination checks",
       },
     },
     mockMode: apiConfig.useMockData,
