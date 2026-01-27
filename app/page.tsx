@@ -23,6 +23,7 @@ import {
   Home,
   ShoppingCart,
   X,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -1665,37 +1666,63 @@ export default function HMOHunterPage() {
                 </div>
               )}
 
-              {/* Floor Plans Section - only show if floor plans exist */}
-              {selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0 && (
+              {/* Floor Plans Section */}
+              {(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0) || selectedProperty.epc_certificate_url ? (
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">Floor Plans</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedProperty.floor_plans.map((floorPlan, index) => (
-                      <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
-                        {floorPlan.toLowerCase().endsWith(".pdf") ? (
-                          <a
-                            href={floorPlan}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-col items-center justify-center p-8 bg-slate-50 hover:bg-slate-100 transition-colors"
-                          >
-                            <FileText className="w-12 h-12 text-slate-400 mb-2" />
-                            <span className="text-sm text-slate-600">View PDF Floor Plan {index + 1}</span>
-                          </a>
-                        ) : (
-                          <img
-                            src={floorPlan || "/placeholder.svg"}
-                            alt={`Floor plan ${index + 1}`}
-                            className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => window.open(floorPlan, "_blank")}
-                          />
-                        )}
+
+                  {/* Show floor plan images if available */}
+                  {selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0 && (
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      {selectedProperty.floor_plans.map((floorPlan, index) => (
+                        <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
+                          {floorPlan.toLowerCase().endsWith(".pdf") ? (
+                            <a
+                              href={floorPlan}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex flex-col items-center justify-center p-8 bg-slate-50 hover:bg-slate-100 transition-colors"
+                            >
+                              <FileText className="w-12 h-12 text-slate-400 mb-2" />
+                              <span className="text-sm text-slate-600">View PDF Floor Plan {index + 1}</span>
+                            </a>
+                          ) : (
+                            <img
+                              src={floorPlan || "/placeholder.svg"}
+                              alt={`Floor plan ${index + 1}`}
+                              className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(floorPlan, "_blank")}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Show EPC floor plan link */}
+                  {selectedProperty.epc_certificate_url && (
+                    <a
+                      href={selectedProperty.epc_certificate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-green-600" />
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2 italic">Floor plans sourced from the original listing</p>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-green-800">View EPC Floor Plan</div>
+                        <div className="text-xs text-green-600">Official Energy Performance Certificate with floor plan diagram</div>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-green-500" />
+                    </a>
+                  )}
+
+                  {selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-2 italic">Floor plans sourced from the original listing</p>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-200">
