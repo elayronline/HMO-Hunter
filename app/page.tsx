@@ -106,6 +106,7 @@ export default function HMOHunterPage() {
   // Premium user status - TODO: Replace with actual subscription check
   // Set to true for development, false for production default
   const [isPremiumUser, setIsPremiumUser] = useState(true)
+  const [analyticsTab, setAnalyticsTab] = useState<"roi" | "localMix">("roi")
 
   const router = useRouter()
   const supabase = createClient()
@@ -286,34 +287,96 @@ export default function HMOHunterPage() {
     router.push("/auth/login")
   }
 
-  const calculateAveragePrice = () => {
+  const getMonthlyRent = (p: Property): number => {
+    if (p.price_pcm && p.price_pcm > 0) return p.price_pcm
+    if (p.estimated_gross_monthly_rent && p.estimated_gross_monthly_rent > 0) return p.estimated_gross_monthly_rent
+    if (p.estimated_rent_per_room && p.estimated_rent_per_room > 0) {
+      const rooms = p.lettable_rooms || p.bedrooms || 1
+      return p.estimated_rent_per_room * rooms
+    }
+    if (p.area_avg_rent && p.area_avg_rent > 0) return p.area_avg_rent
+    return 0
+  }
+
+  const calculateAverageMetric = () => {
     if (properties.length === 0) return 0
     const total = properties.reduce((sum, p) => {
       if (listingType === "purchase") {
-        return sum + (p.purchase_price || 0)
+        return sum + getMonthlyRent(p)
       }
-      return sum + (p.price_pcm || 0) / p.bedrooms
+      const rent = getMonthlyRent(p)
+      const rooms = p.bedrooms || 1
+      return sum + rent / rooms
     }, 0)
     return Math.round(total / properties.length)
   }
 
   const calculatePropertyMix = () => {
     const total = properties.length
-    if (total === 0) return { hmo: 0, other: 0 }
-    const hmoCount = properties.filter((p) => p.property_type === "HMO").length
-    return {
-      hmo: Math.round((hmoCount / total) * 100),
-      other: Math.round(((total - hmoCount) / total) * 100),
+    if (total === 0) return []
+    const counts: Record<string, number> = {}
+    for (const p of properties) {
+      const type = p.property_type || "Other"
+      counts[type] = (counts[type] || 0) + 1
     }
+    const colors: Record<string, string> = {
+      HMO: "rgb(13 148 136)",
+      Flat: "rgb(99 102 241)",
+      House: "rgb(245 158 11)",
+    }
+    return Object.entries(counts)
+      .map(([type, count]) => ({
+        type,
+        count,
+        percent: Math.round((count / total) * 100),
+        color: colors[type] || "rgb(148 163 184)",
+      }))
+      .sort((a, b) => b.count - a.count)
   }
 
   const calculateROI = (property: Property) => {
-    if (property.listing_type === "purchase" && property.purchase_price && property.estimated_rent_per_room) {
-      const annualIncome = property.estimated_rent_per_room * property.bedrooms * 12
-      const roi = (annualIncome / property.purchase_price) * 100
+    if (property.rental_yield && property.rental_yield > 0) {
+      return property.rental_yield.toFixed(1)
+    }
+    const rent = getMonthlyRent(property)
+    const price = property.purchase_price || property.estimated_value || 0
+    if (rent > 0 && price > 0) {
+      const annualIncome = rent * 12
+      const roi = (annualIncome / price) * 100
       return roi.toFixed(1)
     }
     return "N/A"
+  }
+
+  const getComparableProperties = (selected: Property): Property[] => {
+    const scored = properties
+      .filter((p) => p.id !== selected.id && p.listing_type === selected.listing_type)
+      .map((p) => {
+        let score = 0
+        if (p.city && selected.city && p.city === selected.city) score += 3
+        if (p.bedrooms === selected.bedrooms) score += 2
+        else if (Math.abs(p.bedrooms - selected.bedrooms) === 1) score += 1
+        if (selected.listing_type === "purchase") {
+          const selPrice = selected.purchase_price || selected.estimated_value || 0
+          const pPrice = p.purchase_price || p.estimated_value || 0
+          if (selPrice > 0 && pPrice > 0) {
+            const ratio = pPrice / selPrice
+            if (ratio >= 0.8 && ratio <= 1.2) score += 2
+            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
+          }
+        } else {
+          const selRent = getMonthlyRent(selected)
+          const pRent = getMonthlyRent(p)
+          if (selRent > 0 && pRent > 0) {
+            const ratio = pRent / selRent
+            if (ratio >= 0.8 && ratio <= 1.2) score += 2
+            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
+          }
+        }
+        return { property: p, score }
+      })
+    scored.sort((a, b) => b.score - a.score)
+    return scored.slice(0, 3).map((s) => s.property)
   }
 
   return (
@@ -1324,107 +1387,151 @@ export default function HMOHunterPage() {
                 </div>
 
                 <div className="flex gap-2 mb-4 border-b border-slate-200">
-                  <button className="px-4 py-2 text-sm font-medium text-teal-600 border-b-2 border-teal-600">
+                  <button
+                    onClick={() => setAnalyticsTab("roi")}
+                    className={`px-4 py-2 text-sm font-medium ${analyticsTab === "roi" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-600 hover:text-slate-900"}`}
+                  >
                     {selectedProperty.listing_type === "purchase" ? "ROI Analysis" : "Price Per Room"}
                   </button>
-                  <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                  <button
+                    onClick={() => setAnalyticsTab("localMix")}
+                    className={`px-4 py-2 text-sm font-medium ${analyticsTab === "localMix" ? "text-teal-600 border-b-2 border-teal-600" : "text-slate-600 hover:text-slate-900"}`}
+                  >
                     Local Property Mix
                   </button>
                 </div>
 
-                <div className="flex gap-4 mb-6">
-                  <div className="flex-1">
-                    <div className="text-xs text-slate-600 mb-2">
-                      {selectedProperty.listing_type === "purchase" ? "Est. Monthly Income" : "Price Per Room"}
-                    </div>
-                    <div className="h-32 flex items-end gap-8">
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-teal-600 rounded-t" style={{ height: "80%" }}></div>
-                        <span className="text-xs text-slate-700">
-                          {selectedProperty.listing_type === "purchase"
-                            ? `£${((selectedProperty.estimated_rent_per_room || 0) * selectedProperty.bedrooms).toLocaleString()}`
-                            : `£${Math.round((selectedProperty.price_pcm || 0) / selectedProperty.bedrooms)}`}
-                        </span>
-                        <span className="text-xs text-slate-500">Selected property</span>
-                      </div>
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-slate-300 rounded-t" style={{ height: "70%" }}></div>
-                        <span className="text-xs text-slate-700">£{calculateAveragePrice().toLocaleString()}</span>
-                        <span className="text-xs text-slate-500">Area average</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="text-xs text-slate-600 mb-2">Local Property Mix</div>
-                    <div className="relative w-32 h-32 mx-auto">
-                      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="20" />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="none"
-                          stroke="rgb(13 148 136)"
-                          strokeWidth="20"
-                          strokeDasharray="251.2"
-                          strokeDashoffset={251.2 - (251.2 * calculatePropertyMix().hmo) / 100}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-slate-900">{calculatePropertyMix().hmo}%</div>
-                          <div className="text-xs text-slate-500">HMO</div>
+                <div className="mb-6">
+                  {analyticsTab === "roi" ? (() => {
+                    const selectedValue = selectedProperty.listing_type === "purchase"
+                      ? getMonthlyRent(selectedProperty)
+                      : (selectedProperty.bedrooms > 0 ? Math.round(getMonthlyRent(selectedProperty) / selectedProperty.bedrooms) : 0)
+                    const averageValue = calculateAverageMetric()
+                    const maxValue = Math.max(selectedValue, averageValue, 1)
+                    const selectedHeight = Math.round((selectedValue / maxValue) * 100)
+                    const averageHeight = Math.round((averageValue / maxValue) * 100)
+                    return (
+                      <div className="flex-1">
+                        <div className="text-xs text-slate-600 mb-2">
+                          {selectedProperty.listing_type === "purchase" ? "Est. Monthly Income" : "Price Per Room"}
+                        </div>
+                        <div className="h-32 flex items-end gap-8">
+                          <div className="flex-1 flex flex-col items-center gap-2">
+                            <div className="w-full bg-teal-600 rounded-t" style={{ height: `${selectedHeight}%` }}></div>
+                            <span className="text-xs text-slate-700">£{selectedValue.toLocaleString()}</span>
+                            <span className="text-xs text-slate-500">Selected property</span>
+                          </div>
+                          <div className="flex-1 flex flex-col items-center gap-2">
+                            <div className="w-full bg-slate-300 rounded-t" style={{ height: `${averageHeight}%` }}></div>
+                            <span className="text-xs text-slate-700">£{averageValue.toLocaleString()}</span>
+                            <span className="text-xs text-slate-500">Area average</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-teal-600"></div>
-                        <span className="text-xs text-slate-600">HMO</span>
-                      </div>
-                    </div>
-                  </div>
+                    )
+                  })() : (
+                    (() => {
+                      const mix = calculatePropertyMix()
+                      const circumference = 251.2
+                      let offset = 0
+                      const topType = mix[0]
+                      return (
+                        <div className="flex-1">
+                          <div className="text-xs text-slate-600 mb-2">Local Property Mix</div>
+                          <div className="relative w-32 h-32 mx-auto">
+                            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" strokeWidth="20" />
+                              {mix.map((segment) => {
+                                const dashLength = (circumference * segment.percent) / 100
+                                const dashOffset = offset
+                                offset += dashLength
+                                return (
+                                  <circle
+                                    key={segment.type}
+                                    cx="50"
+                                    cy="50"
+                                    r="40"
+                                    fill="none"
+                                    stroke={segment.color}
+                                    strokeWidth="20"
+                                    strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                                    strokeDashoffset={-dashOffset}
+                                  />
+                                )
+                              })}
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-slate-900">{topType?.percent ?? 0}%</div>
+                                <div className="text-xs text-slate-500">{topType?.type ?? ""}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                            {mix.map((segment) => (
+                              <div key={segment.type} className="flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: segment.color }}></div>
+                                <span className="text-xs text-slate-600">{segment.type} ({segment.percent}%)</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()
+                  )}
                 </div>
 
                 <div>
                   <div className="text-xs font-medium text-slate-700 mb-3">Property Comparison</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {properties.slice(0, 3).map((prop, i) => (
-                      <div key={prop.id} className="flex justify-center">
-                        <div className="w-12 h-12 bg-slate-200 rounded overflow-hidden">
-                          <img
-                            src={prop.primary_image || prop.images?.[0] || `/house-${i + 1}.jpg`}
-                            alt={`Property ${i + 1}`}
-                            className="w-full h-full object-cover rounded"
-                          />
+                  {(() => {
+                    const comparables = getComparableProperties(selectedProperty)
+                    if (comparables.length === 0) {
+                      return (
+                        <div className="text-xs text-slate-500 text-center py-4">
+                          No comparable properties found in the current results.
                         </div>
+                      )
+                    }
+                    return (
+                      <div className="grid grid-cols-4 gap-2">
+                        <div />
+                        {comparables.map((prop, i) => (
+                          <div key={prop.id} className="flex justify-center">
+                            <div className="w-12 h-12 bg-slate-200 rounded overflow-hidden">
+                              <img
+                                src={prop.primary_image || prop.images?.[0] || `/house-${i + 1}.jpg`}
+                                alt={`Property ${i + 1}`}
+                                className="w-full h-full object-cover rounded"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        <div className="text-xs text-slate-600 py-2">
+                          {selectedProperty.listing_type === "purchase" ? "Price" : "Rent/Room"}
+                        </div>
+                        {comparables.map((prop) => (
+                          <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center">
+                            £
+                            {selectedProperty.listing_type === "purchase"
+                              ? Math.round((prop.purchase_price || prop.estimated_value || 0) / 1000) + "k"
+                              : Math.round(getMonthlyRent(prop) / (prop.bedrooms || 1))}
+                          </div>
+                        ))}
+                        <div className="text-xs text-slate-600 py-2 bg-slate-50">ROI</div>
+                        {comparables.map((prop) => (
+                          <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center bg-slate-50">
+                            {calculateROI(prop)}%
+                          </div>
+                        ))}
+                        <div className="text-xs text-slate-600 py-2">Bedrooms</div>
+                        {comparables.map((prop) => (
+                          <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center">
+                            {prop.bedrooms}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <div className="text-xs text-slate-600 py-2">
-                      {selectedProperty.listing_type === "purchase" ? "Price" : "Rent/Room"}
-                    </div>
-                    {properties.slice(0, 3).map((prop) => (
-                      <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center">
-                        £
-                        {selectedProperty.listing_type === "purchase"
-                          ? Math.round((prop.purchase_price || 0) / 1000) + "k"
-                          : Math.round((prop.price_pcm || 0) / prop.bedrooms)}
-                      </div>
-                    ))}
-                    <div className="text-xs text-slate-600 py-2 bg-slate-50">ROI</div>
-                    {properties.slice(0, 3).map((prop) => (
-                      <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center bg-slate-50">
-                        {calculateROI(prop)}%
-                      </div>
-                    ))}
-                    <div className="text-xs text-slate-600 py-2">Bedrooms</div>
-                    {properties.slice(0, 3).map((prop) => (
-                      <div key={prop.id} className="text-xs font-medium text-slate-900 py-2 text-center">
-                        {prop.bedrooms}
-                      </div>
-                    ))}
-                  </div>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
