@@ -62,16 +62,11 @@ export function OwnerInformationSection({
   defaultOpen = false,
 }: OwnerInformationSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
-  const [titleRequestSent, setTitleRequestSent] = useState(false)
-  const [titleRequestLoading, setTitleRequestLoading] = useState(false)
   const [licenceRequestSent, setLicenceRequestSent] = useState(false)
   const [licenceRequestLoading, setLicenceRequestLoading] = useState(false)
 
-  const handleInfoRequest = async (requestType: "title_owner" | "licence_holder") => {
-    const setLoading = requestType === "title_owner" ? setTitleRequestLoading : setLicenceRequestLoading
-    const setSent = requestType === "title_owner" ? setTitleRequestSent : setLicenceRequestSent
-
-    setLoading(true)
+  const handleLicenceInfoRequest = async () => {
+    setLicenceRequestLoading(true)
     try {
       const response = await fetch("/api/info-request", {
         method: "POST",
@@ -81,23 +76,22 @@ export function OwnerInformationSection({
           propertyAddress: property.address,
           postcode: property.postcode,
           city: property.city,
-          requestType,
+          requestType: "licence_holder",
         }),
       })
 
       if (response.ok) {
-        setSent(true)
+        setLicenceRequestSent(true)
       }
     } catch (error) {
       console.error("Failed to send info request:", error)
     } finally {
-      setLoading(false)
+      setLicenceRequestLoading(false)
     }
   }
 
   // Title Owner data checks
   const hasTitleOwnerName = property.owner_name || property.company_name
-  const hasTitleOwnerContact = property.owner_contact_email || property.owner_contact_phone
   const isCompany = property.owner_type === "company" || property.company_number
 
   // Licence Holder data checks
@@ -177,59 +171,19 @@ export function OwnerInformationSection({
           )}
 
           {/* Title Owner Contact Buttons */}
-          {hasTitleOwnerContact ? (
+          {property.owner_contact_email && (
             <div className="grid grid-cols-1 gap-2 pt-2 border-t border-blue-200">
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Title Owner</p>
               <div className="flex flex-wrap gap-2">
-                {property.owner_contact_phone && (
-                  <a
-                    href={`tel:${property.owner_contact_phone}`}
-                    onClick={() => logContactAccess(property.id, property.owner_name, "phone", "call", "title_owner")}
-                    className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
-                  >
-                    <Phone className="h-4 w-4" />
-                    <span>{property.owner_contact_phone}</span>
-                  </a>
-                )}
-                {property.owner_contact_email && (
-                  <a
-                    href={`mailto:${property.owner_contact_email}`}
-                    onClick={() => logContactAccess(property.id, property.owner_name, "email", "email", "title_owner")}
-                    className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
-                  >
-                    <Mail className="h-4 w-4" />
-                    <span className="truncate">{property.owner_contact_email}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="pt-2 border-t border-blue-200">
-              {titleRequestSent ? (
-                <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
-                  <Check className="h-4 w-4" />
-                  <span className="text-sm font-medium">Request sent! We'll find this contact.</span>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
-                  onClick={() => handleInfoRequest("title_owner")}
-                  disabled={titleRequestLoading}
+                <a
+                  href={`mailto:${property.owner_contact_email}`}
+                  onClick={() => logContactAccess(property.id, property.owner_name, "email", "email", "title_owner")}
+                  className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
                 >
-                  {titleRequestLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Requesting...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Request Title Owner Contact
-                    </>
-                  )}
-                </Button>
-              )}
+                  <Mail className="h-4 w-4" />
+                  <span className="truncate">{property.owner_contact_email}</span>
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -409,7 +363,7 @@ export function OwnerInformationSection({
                     <Button
                       variant="outline"
                       className="w-full border-teal-300 text-teal-700 hover:bg-teal-100"
-                      onClick={() => handleInfoRequest("licence_holder")}
+                      onClick={handleLicenceInfoRequest}
                       disabled={licenceRequestLoading}
                     >
                       {licenceRequestLoading ? (
