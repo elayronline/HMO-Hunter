@@ -233,6 +233,14 @@ export function YieldCalculator({ property, defaultOpen = false }: YieldCalculat
                 <span>Maint {DEFAULT_ASSUMPTIONS.maintenanceReserve}%</span>
                 <span>Fixed £{DEFAULT_ASSUMPTIONS.fixedCosts}</span>
               </div>
+
+              {/* Methodology explanation */}
+              <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100 mt-1">
+                {isRental
+                  ? `Cumulative net income after deducting voids, management, maintenance & fixed costs. Assumes ${DEFAULT_ASSUMPTIONS.annualRentGrowth}% annual rent growth.`
+                  : `ROI includes net rental income + ${DEFAULT_ASSUMPTIONS.annualValueGrowth}% annual capital appreciation. Net yield based on purchase price.`
+                }
+              </div>
             </>
           )}
 
