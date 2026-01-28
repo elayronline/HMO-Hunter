@@ -84,22 +84,22 @@ export const apiConfig = {
     },
   },
 
-  // Kamma API v2 (HMO Licensing Compliance)
-  // Docs: https://kamma.api.kammadata.com/docs/
+  // Kamma API v3 (HMO Licensing Compliance)
+  // Docs: https://apiv3-sandbox.kammadata.com/v3/docs
   kamma: {
     apiKey: process.env.KAMMA_API_KEY,
-    serviceKey: process.env.KAMMA_SERVICE_KEY || process.env.KAMMA_GROUP_ID,
+    serviceKey: process.env.KAMMA_SERVICE_KEY,
     groupId: process.env.KAMMA_GROUP_ID,
-    baseUrl: process.env.KAMMA_BASE_URL || "https://kamma.api.kammadata.com",
-    enabled: !!process.env.KAMMA_API_KEY && !!process.env.KAMMA_SERVICE_KEY,
+    baseUrl: process.env.KAMMA_BASE_URL || "https://apiv3-sandbox.kammadata.com",
+    enabled: !!process.env.KAMMA_API_KEY && !!process.env.KAMMA_SERVICE_KEY && !!process.env.KAMMA_GROUP_ID,
     rateLimit: {
       requestsPerMinute: 60,
       requestsPerDay: 10000,
     },
     endpoints: {
-      licensingCheck: "/api/properties/licensing-check",
-      determinationCheck: "/api/properties/determination-check",
-      epcCheck: "/api/properties/epc-check",
+      determinationCheck: "/v3/determinations/check",
+      properties: "/v3/properties",
+      licences: "/v3/licences",
     },
   },
 
