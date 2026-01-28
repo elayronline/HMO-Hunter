@@ -853,11 +853,68 @@ export function PropertyDetailCard({
         <CollapsibleSection
           title="Floor Plan"
           icon={LayoutGrid}
-          badge={property.floor_plans?.length ? `${property.floor_plans.length} available` : "Not available"}
-          badgeVariant={property.floor_plans?.length ? "success" : "default"}
+          badge={
+            (property.epc_certificate_url && property.epc_certificate_url !== "not_available") ||
+            property.floor_plans?.length
+              ? "Available"
+              : "Not available"
+          }
+          badgeVariant={
+            (property.epc_certificate_url && property.epc_certificate_url !== "not_available") ||
+            property.floor_plans?.length
+              ? "success"
+              : "default"
+          }
         >
           <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            {property.floor_plans && property.floor_plans.length > 0 ? (
+            {/* EPC Floor Plan (from gov.uk certificate) */}
+            {property.epc_certificate_url && property.epc_certificate_url !== "not_available" ? (
+              <div className="space-y-3">
+                <a
+                  href={property.epc_certificate_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 hover:border-emerald-400 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                    <LayoutGrid className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-slate-700 block">
+                      EPC Floor Plan
+                    </span>
+                    <span className="text-xs text-emerald-600">
+                      Official gov.uk certificate
+                    </span>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                </a>
+
+                {/* Additional floor plans from listing if any */}
+                {property.floor_plans && property.floor_plans.length > 0 && (
+                  <>
+                    <p className="text-xs text-slate-400 px-1">Additional floor plans:</p>
+                    {property.floor_plans.map((plan, idx) => (
+                      <a
+                        key={idx}
+                        href={plan}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200 hover:border-teal-300 hover:from-teal-50 hover:to-emerald-50 transition-all duration-200 group"
+                      >
+                        <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                          <LayoutGrid className="w-4 h-4 text-teal-600" />
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-slate-700">
+                          Listing Floor Plan {idx + 1}
+                        </span>
+                        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                      </a>
+                    ))}
+                  </>
+                )}
+              </div>
+            ) : property.floor_plans && property.floor_plans.length > 0 ? (
               <div className="space-y-2">
                 {property.floor_plans.map((plan, idx) => (
                   <a
@@ -881,7 +938,7 @@ export function PropertyDetailCard({
               <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
                 <LayoutGrid className="w-10 h-10 mb-2 opacity-40" />
                 <p className="font-semibold text-slate-500">No floor plan available</p>
-                <p className="text-sm">Check the full listing for more details</p>
+                <p className="text-sm">This property has no EPC certificate with a floor plan on record</p>
               </div>
             )}
           </div>

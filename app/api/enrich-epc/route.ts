@@ -34,6 +34,132 @@ interface EPCSearchResponse {
   rows: EPCCertificate[]
 }
 
+interface GovUKCertificate {
+  address: string
+  certificateId: string
+  url: string
+}
+
+/**
+ * Fetch certificate IDs from gov.uk website for a postcode
+ * This is needed because the EPC API lmk-key differs from gov.uk certificate IDs
+ */
+async function fetchGovUKCertificates(postcode: string): Promise<GovUKCertificate[]> {
+  try {
+    const encodedPostcode = encodeURIComponent(postcode.trim())
+    const url = `https://find-energy-certificate.service.gov.uk/find-a-certificate/search-by-postcode?postcode=${encodedPostcode}`
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; HMO-Hunter/1.0)",
+        "Accept": "text/html",
+      },
+    })
+
+    if (!response.ok) {
+      console.error(`[EPC] Gov.uk fetch error: ${response.status}`)
+      return []
+    }
+
+    const html = await response.text()
+
+    // Parse certificate links from the HTML
+    // Format: <a href="/energy-certificate/XXXX">\n  Address\n</a>
+    // Note: The address is on a separate line, so we use [\s\S] to match across lines
+    const certificates: GovUKCertificate[] = []
+    const regex = /href="\/energy-certificate\/(\d{4}-\d{4}-\d{4}-\d{4}-\d{4})"[^>]*>[\s\n]*([^<]+)/g
+    let match
+
+    while ((match = regex.exec(html)) !== null) {
+      const certificateId = match[1].trim()
+      const address = match[2].trim()
+
+      if (address && certificateId) {
+        certificates.push({
+          address,
+          certificateId,
+          url: `https://find-energy-certificate.service.gov.uk/energy-certificate/${certificateId}`,
+        })
+      }
+    }
+
+    return certificates
+  } catch (error) {
+    console.error("[EPC] Gov.uk fetch error:", error)
+    return []
+  }
+}
+
+/**
+ * Find matching gov.uk certificate for a property address
+ * Returns the direct certificate URL if found, null otherwise
+ */
+function findMatchingGovUKCertificate(
+  propertyAddress: string,
+  certificates: GovUKCertificate[]
+): GovUKCertificate | null {
+  if (!certificates.length) return null
+
+  // Normalize address for comparison
+  const normalize = (addr: string) =>
+    addr.toLowerCase()
+      .replace(/[,.']/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const normalizedProperty = normalize(propertyAddress)
+
+  // Extract the key identifier (flat number + building number, or just building number)
+  const extractKey = (addr: string) => {
+    const normalized = normalize(addr)
+    // Match "flat X, Y address" or "Y address"
+    const flatMatch = normalized.match(/^flat\s+([a-z0-9]+)\s+(\d+)/)
+    if (flatMatch) {
+      return `flat ${flatMatch[1]} ${flatMatch[2]}`
+    }
+    // Match just building number at start
+    const numMatch = normalized.match(/^(\d+[a-z]?)/)
+    return numMatch ? numMatch[1] : null
+  }
+
+  const propertyKey = extractKey(normalizedProperty)
+
+  // Score each certificate
+  let bestMatch: { cert: GovUKCertificate; score: number } | null = null
+
+  for (const cert of certificates) {
+    const normalizedCert = normalize(cert.address)
+    const certKey = extractKey(normalizedCert)
+    let score = 0
+
+    // Exact match after normalization
+    if (normalizedCert === normalizedProperty) {
+      score = 100
+    }
+    // One contains the other (handles city name differences)
+    else if (normalizedCert.includes(normalizedProperty) || normalizedProperty.includes(normalizedCert)) {
+      score = 90
+    }
+    // Key matches (flat + number or just number)
+    else if (propertyKey && certKey && propertyKey === certKey) {
+      // Verify street name has some overlap
+      const propWords = normalizedProperty.split(" ")
+      const certWords = normalizedCert.split(" ")
+      // Check if any significant word matches
+      const commonWords = propWords.filter(w => w.length > 3 && certWords.includes(w))
+      if (commonWords.length > 0) {
+        score = 80
+      }
+    }
+
+    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { cert, score }
+    }
+  }
+
+  return bestMatch && bestMatch.score >= 80 ? bestMatch.cert : null
+}
+
 /**
  * Search EPC certificates by postcode
  */
@@ -105,17 +231,10 @@ function epcRatingToNumeric(rating: string): number {
   return ratings[rating?.toUpperCase()] || 0
 }
 
-/**
- * Generate EPC certificate URL for viewing floor plan
- * Uses postcode search URL since lmk-key format differs from gov.uk certificate IDs
- */
-function getEPCCertificateUrl(postcode: string, address: string): string {
-  const encodedPostcode = encodeURIComponent(postcode.trim())
-  return `https://find-energy-certificate.service.gov.uk/find-a-certificate/search-by-postcode?postcode=${encodedPostcode}`
-}
 
 /**
- * Match property address to EPC certificate
+ * Match property address to EPC certificate from API data
+ * Returns null if no confident match found (no fallback)
  */
 function findMatchingCertificate(
   address: string,
@@ -132,32 +251,57 @@ function findMatchingCertificate(
 
   const normalizedPropertyAddress = normalizeAddress(address)
 
-  // Try to find exact or close match
+  // Extract building/flat identifier
+  const extractIdentifier = (addr: string) => {
+    const normalized = normalizeAddress(addr)
+    // Match "flat X Y" pattern
+    const flatMatch = normalized.match(/^flat\s+([a-z0-9]+)\s+(\d+)/)
+    if (flatMatch) return `flat ${flatMatch[1]} ${flatMatch[2]}`
+    // Match just building number
+    const numMatch = normalized.match(/^(\d+[a-z]?)/)
+    return numMatch ? numMatch[1] : null
+  }
+
+  const propertyId = extractIdentifier(normalizedPropertyAddress)
+  const propertyWords = normalizedPropertyAddress.split(" ").filter(w => w.length > 2)
+
+  // Score each certificate
+  let bestMatch: { cert: EPCCertificate; score: number } | null = null
+
   for (const cert of certificates) {
     const certAddress = normalizeAddress(
       [cert.address1, cert.address2, cert.address3].filter(Boolean).join(" ")
     )
+    const certId = extractIdentifier(certAddress)
+    const certWords = certAddress.split(" ").filter(w => w.length > 2)
+    let score = 0
 
-    // Check if addresses match closely
-    if (certAddress.includes(normalizedPropertyAddress) ||
-        normalizedPropertyAddress.includes(certAddress) ||
-        certAddress === normalizedPropertyAddress) {
-      return cert
+    // Exact match
+    if (certAddress === normalizedPropertyAddress) {
+      score = 100
+    }
+    // One contains the other
+    else if (certAddress.includes(normalizedPropertyAddress) ||
+             normalizedPropertyAddress.includes(certAddress)) {
+      score = 90
+    }
+    // Identifier matches
+    else if (propertyId && certId && propertyId === certId) {
+      // Count common significant words
+      const commonWords = propertyWords.filter(w => certWords.includes(w))
+      if (commonWords.length >= 2) {
+        score = 80
+      } else if (commonWords.length >= 1) {
+        score = 70
+      }
     }
 
-    // Check if house number matches
-    const propertyNumber = normalizedPropertyAddress.match(/^(\d+[a-z]?)/)?.[1]
-    const certNumber = certAddress.match(/^(\d+[a-z]?)/)?.[1]
-
-    if (propertyNumber && certNumber && propertyNumber === certNumber) {
-      return cert
+    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { cert, score }
     }
   }
 
-  // If no match found, return the most recent certificate
-  return certificates.sort((a, b) =>
-    new Date(b["lodgement-date"]).getTime() - new Date(a["lodgement-date"]).getTime()
-  )[0]
+  return bestMatch && bestMatch.score >= 70 ? bestMatch.cert : null
 }
 
 /**
@@ -175,6 +319,7 @@ export async function POST(request: Request) {
     const limit = Math.min(body.limit || 20, 100)
     const city = body.city
     const propertyId = body.propertyId
+    const reset = body.reset === true  // Clear existing URLs and re-fetch
 
     const apiKey = process.env.EPC_API_KEY
     const email = process.env.EPC_API_EMAIL
@@ -197,6 +342,22 @@ export async function POST(request: Request) {
 
     log.push("Starting EPC data enrichment...")
 
+    // If reset mode, clear existing "not_available" URLs for re-validation
+    if (reset) {
+      log.push("Reset mode: clearing 'not_available' entries for re-validation...")
+      const { error: resetError, count } = await supabaseAdmin
+        .from("properties")
+        .update({ epc_certificate_url: null })
+        .eq("is_stale", false)
+        .eq("epc_certificate_url", "not_available")
+
+      if (resetError) {
+        log.push(`  Warning: Reset failed: ${resetError.message}`)
+      } else {
+        log.push(`  Cleared ${count || 0} entries for re-validation`)
+      }
+    }
+
     // Fetch properties needing EPC data
     let query = supabaseAdmin
       .from("properties")
@@ -209,7 +370,8 @@ export async function POST(request: Request) {
       if (city) {
         query = query.eq("city", city)
       }
-      // Get properties without EPC data
+      // Get properties without valid EPC URL
+      // Normal mode: only process properties without any EPC data
       query = query.is("epc_certificate_url", null)
       query = query.limit(limit)
     }
@@ -250,20 +412,42 @@ export async function POST(request: Request) {
 
     log.push(`Grouped into ${postcodeGroups.size} postcodes`)
 
+    // Track floor plan stats
+    const withFloorPlan: string[] = []
+    const noFloorPlan: string[] = []
+
     // Process each postcode
     for (const [postcode, props] of postcodeGroups) {
       try {
         log.push(`Searching EPC for postcode: ${postcode}`)
 
+        // Fetch EPC data from API
         const certificates = await searchEPCByPostcode(postcode, apiKey, email)
 
         if (certificates.length === 0) {
           log.push(`  No EPC certificates found for ${postcode}`)
-          props.forEach(p => failed.push(p.address))
+          // Mark properties as checked but no floor plan available
+          for (const property of props) {
+            const { error: updateError } = await supabaseAdmin
+              .from("properties")
+              .update({
+                epc_certificate_url: "not_available",
+              })
+              .eq("id", property.id)
+
+            if (!updateError) {
+              noFloorPlan.push(property.address)
+            }
+            failed.push(property.address)
+          }
           continue
         }
 
-        log.push(`  Found ${certificates.length} EPC certificates`)
+        log.push(`  Found ${certificates.length} EPC certificates from API`)
+
+        // Fetch gov.uk certificates to get direct floor plan URLs
+        const govUKCerts = await fetchGovUKCertificates(postcode)
+        log.push(`  Found ${govUKCerts.length} certificates on gov.uk`)
 
         // Match each property to a certificate
         for (const property of props) {
@@ -285,13 +469,25 @@ export async function POST(request: Request) {
               }
             }
 
+            // Find matching gov.uk certificate for direct floor plan link
+            const govUKMatch = findMatchingGovUKCertificate(property.address, govUKCerts)
+            const certificateUrl = govUKMatch?.url || "not_available"
+
+            if (govUKMatch) {
+              withFloorPlan.push(property.address)
+              log.push(`  Found floor plan: ${property.address} -> ${govUKMatch.certificateId}`)
+            } else {
+              noFloorPlan.push(property.address)
+              log.push(`  No floor plan match on gov.uk for: ${property.address}`)
+            }
+
             // Update property
             const { error: updateError } = await supabaseAdmin
               .from("properties")
               .update({
                 epc_rating: epcRating,
                 epc_rating_numeric: epcRatingToNumeric(epcRating),
-                epc_certificate_url: getEPCCertificateUrl(property.postcode, property.address),
+                epc_certificate_url: certificateUrl,
                 epc_expiry_date: matchedCert["lodgement-date"]
                   ? new Date(new Date(matchedCert["lodgement-date"]).getTime() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
                   : null,
@@ -312,13 +508,19 @@ export async function POST(request: Request) {
               updated.push(property.address)
             }
           } else {
-            log.push(`  No matching certificate for: ${property.address}`)
+            log.push(`  No matching EPC certificate for: ${property.address}`)
+            // Mark as checked but no data available
+            await supabaseAdmin
+              .from("properties")
+              .update({ epc_certificate_url: "not_available" })
+              .eq("id", property.id)
+            noFloorPlan.push(property.address)
             failed.push(property.address)
           }
         }
 
-        // Rate limit - 1 request per second as per API guidelines
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Rate limit - be nice to both APIs
+        await new Promise(resolve => setTimeout(resolve, 1500))
 
       } catch (error) {
         log.push(`  Error processing ${postcode}: ${error}`)
@@ -328,6 +530,7 @@ export async function POST(request: Request) {
 
     log.push("")
     log.push(`Completed: ${updated.length} enriched, ${failed.length} failed`)
+    log.push(`Floor plans: ${withFloorPlan.length} available, ${noFloorPlan.length} not available`)
 
     return NextResponse.json({
       success: true,
@@ -335,10 +538,16 @@ export async function POST(request: Request) {
       log,
       updated,
       failed,
+      floorPlans: {
+        available: withFloorPlan,
+        notAvailable: noFloorPlan,
+      },
       summary: {
         processed: properties.length,
         enriched: updated.length,
         failed: failed.length,
+        floorPlansFound: withFloorPlan.length,
+        floorPlansNotFound: noFloorPlan.length,
       },
     })
 
