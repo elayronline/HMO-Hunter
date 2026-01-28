@@ -725,31 +725,28 @@ export function PropertyDetailCard({
         >
           <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
             {property.floor_plans && property.floor_plans.length > 0 ? (
-              <div className="space-y-3">
-                {property.floor_plans.slice(0, 2).map((plan, idx) => (
+              <div className="space-y-2">
+                {property.floor_plans.map((plan, idx) => (
                   <a
                     key={idx}
                     href={plan}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl overflow-hidden group cursor-pointer border border-slate-200"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200 hover:border-teal-300 hover:from-teal-50 hover:to-emerald-50 transition-all duration-200 group"
                   >
-                    <img
-                      src={plan}
-                      alt={`Floor plan ${idx + 1}`}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4">
-                      <span className="bg-white/95 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold text-slate-700 shadow-lg">
-                        Click to enlarge
-                      </span>
+                    <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                      <LayoutGrid className="w-4 h-4 text-teal-600" />
                     </div>
+                    <span className="flex-1 text-sm font-medium text-slate-700">
+                      Floor Plan {idx + 1}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
                   </a>
                 ))}
               </div>
             ) : (
-              <div className="aspect-[4/3] bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
-                <LayoutGrid className="w-14 h-14 mb-3 opacity-40" />
+              <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
+                <LayoutGrid className="w-10 h-10 mb-2 opacity-40" />
                 <p className="font-semibold text-slate-500">No floor plan available</p>
                 <p className="text-sm">Check the full listing for more details</p>
               </div>

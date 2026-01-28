@@ -107,9 +107,11 @@ function epcRatingToNumeric(rating: string): number {
 
 /**
  * Generate EPC certificate URL for viewing floor plan
+ * Uses postcode search URL since lmk-key format differs from gov.uk certificate IDs
  */
-function getEPCCertificateUrl(lmkKey: string): string {
-  return `https://find-energy-certificate.service.gov.uk/energy-certificate/${lmkKey}`
+function getEPCCertificateUrl(postcode: string, address: string): string {
+  const encodedPostcode = encodeURIComponent(postcode.trim())
+  return `https://find-energy-certificate.service.gov.uk/find-a-certificate/search-by-postcode?postcode=${encodedPostcode}`
 }
 
 /**
@@ -289,7 +291,7 @@ export async function POST(request: Request) {
               .update({
                 epc_rating: epcRating,
                 epc_rating_numeric: epcRatingToNumeric(epcRating),
-                epc_certificate_url: getEPCCertificateUrl(matchedCert["lmk-key"]),
+                epc_certificate_url: getEPCCertificateUrl(property.postcode, property.address),
                 epc_expiry_date: matchedCert["lodgement-date"]
                   ? new Date(new Date(matchedCert["lodgement-date"]).getTime() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
                   : null,
