@@ -53,7 +53,6 @@ import { createClient } from "@/lib/supabase/client"
 import type { Property } from "@/lib/types/database"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
-import { BookViewingButton } from "@/components/book-viewing-button"
 import { DEFAULT_CITY, type UKCity } from "@/lib/data/uk-cities"
 import { CitySearchAutocomplete } from "@/components/city-search-autocomplete"
 import { MainMapView } from "@/components/main-map-view"
@@ -1542,18 +1541,6 @@ export default function HMOHunterPage() {
                     initialSaved={savedPropertyIds.has(selectedProperty.id)}
                   />
                 </div>
-                {selectedProperty.listing_type === "purchase" ? (
-                  <Button className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
-                    Contact Seller
-                  </Button>
-                ) : (
-                  <BookViewingButton
-                    address={selectedProperty.address}
-                    postcode={selectedProperty.postcode}
-                    bedrooms={selectedProperty.bedrooms}
-                    className="flex-1"
-                  />
-                )}
               </div>
             </div>
           </div>
