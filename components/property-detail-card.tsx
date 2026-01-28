@@ -28,6 +28,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   XCircle,
   Sofa,
   LayoutGrid,
@@ -35,6 +36,8 @@ import {
   Crown,
   Copy,
   Check,
+  Scale,
+  Info,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -715,6 +718,136 @@ export function PropertyDetailCard({
             </div>
           </CollapsibleSection>
         )}
+
+        {/* Licensing Requirements Section - Kamma Data */}
+        <CollapsibleSection
+          title="Licensing Requirements"
+          icon={Scale}
+          badge={
+            property.compliance_complexity === "high" ? "High Complexity" :
+            property.compliance_complexity === "medium" ? "Medium Complexity" :
+            "Low Complexity"
+          }
+          badgeVariant={
+            property.compliance_complexity === "high" ? "danger" :
+            property.compliance_complexity === "medium" ? "warning" :
+            "success"
+          }
+        >
+          <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            {/* Compliance Overview */}
+            <div className={cn(
+              "flex items-start gap-3 p-3 rounded-xl border",
+              property.compliance_complexity === "high" ? "bg-red-50 border-red-200" :
+              property.compliance_complexity === "medium" ? "bg-amber-50 border-amber-200" :
+              "bg-emerald-50 border-emerald-200"
+            )}>
+              {property.compliance_complexity === "high" ? (
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+              ) : property.compliance_complexity === "medium" ? (
+                <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              )}
+              <div>
+                <p className={cn(
+                  "font-medium",
+                  property.compliance_complexity === "high" ? "text-red-800" :
+                  property.compliance_complexity === "medium" ? "text-amber-800" :
+                  "text-emerald-800"
+                )}>
+                  {property.compliance_complexity === "high" ? "Multiple licensing schemes may apply" :
+                   property.compliance_complexity === "medium" ? "Licensing may be required" :
+                   "Standard regulations apply"}
+                </p>
+                <p className={cn(
+                  "text-sm mt-1",
+                  property.compliance_complexity === "high" ? "text-red-600" :
+                  property.compliance_complexity === "medium" ? "text-amber-600" :
+                  "text-emerald-600"
+                )}>
+                  {property.requires_mandatory_licensing
+                    ? "This area has mandatory HMO licensing for larger properties"
+                    : "Check council requirements before letting as an HMO"}
+                </p>
+              </div>
+            </div>
+
+            {/* Article 4 Warning */}
+            {property.article_4_area && (
+              <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
+                <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-purple-800">Article 4 Direction Applies</p>
+                  <p className="text-sm text-purple-600">
+                    Planning permission required to change property use to HMO
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Reference Guide */}
+            <div className="pt-3 border-t border-slate-100">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Licensing Thresholds</p>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-sm text-slate-700">Mandatory</span>
+                  </div>
+                  <span className="text-sm text-slate-500">5+ people, 2+ households</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-sm text-slate-700">Additional</span>
+                  </div>
+                  <span className="text-sm text-slate-500">3+ people, 2+ households</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-sm text-slate-700">Selective</span>
+                  </div>
+                  <span className="text-sm text-slate-500">All private rentals in area</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Planning Constraints from Kamma */}
+            {property.planning_constraints && property.planning_constraints.length > 0 && (
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-3">Active Schemes in Area</p>
+                <div className="space-y-2">
+                  {property.planning_constraints
+                    .filter(c => c.type.startsWith("kamma_"))
+                    .map((constraint, idx) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border",
+                          constraint.type === "kamma_mandatory" ? "bg-red-50 border-red-200" :
+                          constraint.type === "kamma_additional" ? "bg-amber-50 border-amber-200" :
+                          "bg-blue-50 border-blue-200"
+                        )}
+                      >
+                        <Shield className={cn(
+                          "w-4 h-4",
+                          constraint.type === "kamma_mandatory" ? "text-red-600" :
+                          constraint.type === "kamma_additional" ? "text-amber-600" :
+                          "text-blue-600"
+                        )} />
+                        <span className="text-sm font-medium text-slate-700">
+                          {constraint.description}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
 
         {/* Floor Plan Section */}
         <CollapsibleSection

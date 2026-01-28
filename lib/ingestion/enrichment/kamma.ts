@@ -2,9 +2,9 @@ import { EnrichmentAdapter, type PropertyListing } from "@/lib/types/ingestion"
 import { apiConfig } from "@/lib/config/api-config"
 
 /**
- * Kamma API V3 Response Types
+ * Kamma API V3 Response Types - Exported for UI components
  */
-interface KammaV3Scheme {
+export interface KammaV3Scheme {
   scheme_id: string
   type: "mandatory" | "additional" | "selective"
   occupants?: number
@@ -17,7 +17,7 @@ interface KammaV3Scheme {
   link?: string
 }
 
-interface KammaV3Planning {
+export interface KammaV3Planning {
   article4?: {
     applies: boolean
     name?: string
@@ -26,7 +26,7 @@ interface KammaV3Planning {
   }[]
 }
 
-interface KammaV3AdviceText {
+export interface KammaV3AdviceText {
   scheme: {
     current: string
     mandatory: string
@@ -41,7 +41,7 @@ interface KammaV3AdviceText {
   }
 }
 
-interface KammaV3DeterminationResponse {
+export interface KammaV3DeterminationResponse {
   advice_text: KammaV3AdviceText
   current_schemes: KammaV3Scheme[] | null
   future_schemes: KammaV3Scheme[] | null
@@ -50,6 +50,24 @@ interface KammaV3DeterminationResponse {
     code: number
     message: string
   }
+}
+
+/**
+ * Parsed Kamma data for UI display
+ */
+export interface KammaLicensingData {
+  schemes: KammaV3Scheme[]
+  adviceText: {
+    current: string
+    mandatory: string
+    additional: string
+    selective: string
+  }
+  article4: boolean
+  complexityLevel: "low" | "medium" | "high"
+  requiresMandatory: boolean
+  requiresAdditional: boolean
+  requiresSelective: boolean
 }
 
 /**
@@ -190,46 +208,95 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
     const result: Partial<PropertyListing> = {}
 
     // Check for Article 4 directions from planning data
+    let hasArticle4 = false
     if (data.planning?.article4 && data.planning.article4.length > 0) {
-      const hasArticle4 = data.planning.article4.some(a4 => a4.applies === true)
-      result.article_4_area = hasArticle4
+      hasArticle4 = data.planning.article4.some(a4 => a4.applies === true)
     } else if (data.advice_text?.planning?.article4) {
       // Fallback: check advice text for Article 4 mention
-      result.article_4_area = !data.advice_text.planning.article4.toLowerCase().includes("no active article 4")
+      hasArticle4 = !data.advice_text.planning.article4.toLowerCase().includes("no active article 4")
     }
+    result.article_4_area = hasArticle4
 
-    // Parse current licensing schemes as planning constraints
-    if (data.current_schemes && data.current_schemes.length > 0) {
-      result.planning_constraints = data.current_schemes.map(scheme => ({
-        type: scheme.type,
+    // Parse current licensing schemes
+    const schemes = data.current_schemes || []
+    const hasMandatory = schemes.some(s => s.type === "mandatory")
+    const hasAdditional = schemes.some(s => s.type === "additional")
+    const hasSelective = schemes.some(s => s.type === "selective")
+
+    // Calculate compliance complexity
+    let complexity: "low" | "medium" | "high" = "low"
+    if (hasArticle4 && schemes.length >= 2) {
+      complexity = "high"
+    } else if (hasMandatory && (hasAdditional || hasSelective)) {
+      complexity = "high"
+    } else if (hasMandatory || hasArticle4) {
+      complexity = "medium"
+    } else if (hasAdditional || hasSelective) {
+      complexity = "medium"
+    }
+    result.compliance_complexity = complexity
+
+    // Store schemes as planning constraints with full metadata
+    if (schemes.length > 0) {
+      result.planning_constraints = schemes.map(scheme => ({
+        type: `kamma_${scheme.type}`,
         description: `${scheme.type.charAt(0).toUpperCase() + scheme.type.slice(1)} HMO Licensing`,
-        authority: "Local Authority",
-        date_identified: scheme.date_start || undefined,
-        metadata: {
-          scheme_id: scheme.scheme_id,
-          occupants_threshold: scheme.occupants,
-          households_threshold: scheme.households,
-          is_advised: scheme.is_advised,
-          end_date: scheme.date_end,
-          link: scheme.link,
-        }
+        reference: scheme.scheme_id,
       }))
-
-      // Determine if property requires mandatory licensing
-      const hasMandatory = data.current_schemes.some(s => s.type === "mandatory" && s.is_advised)
-      const hasAdditional = data.current_schemes.some(s => s.type === "additional" && s.is_advised)
 
       if (hasMandatory) {
         result.requires_mandatory_licensing = true
       }
-
-      // Store licensing advice text for display
-      if (data.advice_text?.scheme?.current) {
-        result.compliance_complexity = data.advice_text.scheme.current
-      }
     }
 
     return result
+  }
+
+  /**
+   * Parse full Kamma data for UI display
+   */
+  static parseForUI(data: KammaV3DeterminationResponse): KammaLicensingData {
+    const schemes = data.current_schemes || []
+
+    // Check for Article 4
+    let hasArticle4 = false
+    if (data.planning?.article4 && data.planning.article4.length > 0) {
+      hasArticle4 = data.planning.article4.some(a4 => a4.applies === true)
+    } else if (data.advice_text?.planning?.article4) {
+      hasArticle4 = !data.advice_text.planning.article4.toLowerCase().includes("no active article 4")
+    }
+
+    // Determine scheme requirements
+    const hasMandatory = schemes.some(s => s.type === "mandatory")
+    const hasAdditional = schemes.some(s => s.type === "additional")
+    const hasSelective = schemes.some(s => s.type === "selective")
+
+    // Calculate complexity
+    let complexity: "low" | "medium" | "high" = "low"
+    if (hasArticle4 && schemes.length >= 2) {
+      complexity = "high"
+    } else if (hasMandatory && (hasAdditional || hasSelective)) {
+      complexity = "high"
+    } else if (hasMandatory || hasArticle4) {
+      complexity = "medium"
+    } else if (hasAdditional || hasSelective) {
+      complexity = "medium"
+    }
+
+    return {
+      schemes,
+      adviceText: {
+        current: data.advice_text?.scheme?.current || "",
+        mandatory: data.advice_text?.scheme?.mandatory || "",
+        additional: data.advice_text?.scheme?.additional || "",
+        selective: data.advice_text?.scheme?.selective || "",
+      },
+      article4: hasArticle4,
+      complexityLevel: complexity,
+      requiresMandatory: hasMandatory,
+      requiresAdditional: hasAdditional,
+      requiresSelective: hasSelective,
+    }
   }
 }
 
