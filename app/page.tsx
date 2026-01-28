@@ -65,6 +65,7 @@ import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel
 import { YieldCalculator } from "@/components/yield-calculator"
 import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
+import { BroadbandBadge } from "@/components/broadband-badge"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
@@ -92,6 +93,7 @@ export default function HMOHunterPage() {
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
   const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
+  const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
 
   // Potential HMO filters - show all but highlight opportunities
   const [showPotentialHMOs, setShowPotentialHMOs] = useState(false)
@@ -199,6 +201,8 @@ export default function HMOHunterPage() {
           floorAreaBand: floorAreaBandFilter,
           yieldBand: yieldBandFilter,
           epcBand: epcBandFilter,
+          hasFiber: broadbandFilter === "fiber" ? true : undefined,
+          minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
         })
         setProperties(data)
         if (data.length > 0 && !selectedProperty) {
@@ -254,6 +258,7 @@ export default function HMOHunterPage() {
     floorAreaBandFilter,
     yieldBandFilter,
     epcBandFilter,
+    broadbandFilter,
   ])
 
   const handleSearch = async () => {
@@ -279,6 +284,8 @@ export default function HMOHunterPage() {
         floorAreaBand: floorAreaBandFilter,
         yieldBand: yieldBandFilter,
         epcBand: epcBandFilter,
+        hasFiber: broadbandFilter === "fiber" ? true : undefined,
+        minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
       })
       setProperties(data)
       if (data.length > 0) {
@@ -745,6 +752,25 @@ export default function HMOHunterPage() {
                   </Select>
                 </div>
 
+                {/* Broadband Filter */}
+                <div>
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">Broadband</label>
+                  <Select
+                    value={broadbandFilter}
+                    onValueChange={(value) => setBroadbandFilter(value as any)}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Properties</SelectItem>
+                      <SelectItem value="fiber">Full Fiber Only</SelectItem>
+                      <SelectItem value="superfast">Superfast+ (30Mbps+)</SelectItem>
+                      <SelectItem value="any">Any Broadband</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Licence Type Filter */}
                 <div>
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Licence Type</label>
@@ -1008,6 +1034,15 @@ export default function HMOHunterPage() {
                         numericRating={selectedProperty.epc_rating_numeric}
                         className="text-xs"
                         showTooltip={false}
+                      />
+                    )}
+                    {(selectedProperty.has_fiber !== null || selectedProperty.has_superfast !== null) && (
+                      <BroadbandBadge
+                        hasFiber={selectedProperty.has_fiber}
+                        hasSuperfast={selectedProperty.has_superfast}
+                        maxDownload={selectedProperty.broadband_max_down}
+                        size="sm"
+                        showSpeed={false}
                       />
                     )}
                     {/* Contact availability indicator */}
@@ -1349,6 +1384,15 @@ export default function HMOHunterPage() {
                     epcCertificateUrl={selectedProperty.epc_certificate_url}
                     variant="full"
                   />
+                  {(selectedProperty.has_fiber !== null || selectedProperty.has_superfast !== null) && (
+                    <BroadbandBadge
+                      hasFiber={selectedProperty.has_fiber}
+                      hasSuperfast={selectedProperty.has_superfast}
+                      maxDownload={selectedProperty.broadband_max_down}
+                      ultrafastDown={selectedProperty.broadband_ultrafast_down}
+                      superfastDown={selectedProperty.broadband_superfast_down}
+                    />
+                  )}
                 </div>
 
                 {/* Owner Information Section - Always show, component handles "no data" state */}
@@ -2071,6 +2115,58 @@ export default function HMOHunterPage() {
                       variant="full"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Broadband & Connectivity */}
+              <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+                <h4 className="font-semibold text-slate-900 mb-3">Broadband & Connectivity</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Connection Type</span>
+                    <BroadbandBadge
+                      hasFiber={selectedProperty.has_fiber}
+                      hasSuperfast={selectedProperty.has_superfast}
+                      maxDownload={selectedProperty.broadband_max_down}
+                      maxUpload={selectedProperty.broadband_max_up}
+                      ultrafastDown={selectedProperty.broadband_ultrafast_down}
+                      superfastDown={selectedProperty.broadband_superfast_down}
+                      lastChecked={selectedProperty.broadband_last_checked}
+                      showSpeed={true}
+                    />
+                  </div>
+                  {selectedProperty.broadband_max_down && selectedProperty.broadband_max_down > 0 && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Max Download</span>
+                        <span className="text-sm font-medium text-slate-900">
+                          {selectedProperty.broadband_max_down >= 1000
+                            ? `${(selectedProperty.broadband_max_down / 1000).toFixed(1)} Gbps`
+                            : `${Math.round(selectedProperty.broadband_max_down)} Mbps`}
+                        </span>
+                      </div>
+                      {selectedProperty.broadband_max_up && selectedProperty.broadband_max_up > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Max Upload</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {selectedProperty.broadband_max_up >= 1000
+                              ? `${(selectedProperty.broadband_max_up / 1000).toFixed(1)} Gbps`
+                              : `${Math.round(selectedProperty.broadband_max_up)} Mbps`}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedProperty.has_fiber === false && selectedProperty.has_superfast === false && (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                      No fiber or superfast broadband available at this property. Only basic broadband.
+                    </p>
+                  )}
+                  {selectedProperty.has_fiber === null && selectedProperty.has_superfast === null && (
+                    <p className="text-xs text-slate-500 italic">
+                      Broadband availability not yet checked for this property.
+                    </p>
+                  )}
                 </div>
               </div>
 

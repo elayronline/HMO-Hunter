@@ -120,6 +120,18 @@ export type Property = {
   requires_major_structural_work: boolean
   is_potential_hmo: boolean
   watchlist_count: number
+  // Phase 5 - Broadband/Connectivity Data
+  broadband_basic_down: number | null
+  broadband_basic_up: number | null
+  broadband_superfast_down: number | null
+  broadband_superfast_up: number | null
+  broadband_ultrafast_down: number | null
+  broadband_ultrafast_up: number | null
+  broadband_max_down: number | null
+  broadband_max_up: number | null
+  has_fiber: boolean | null
+  has_superfast: boolean | null
+  broadband_last_checked: string | null
 }
 
 export type Director = {
@@ -170,4 +182,7 @@ export type PropertyFilters = {
   yieldBand?: "low" | "medium" | "high" | null
   epcBand?: "good" | "needs_upgrade" | null
   isExLocalAuthority?: boolean
+  // Phase 5 - Broadband filters
+  hasFiber?: boolean
+  minBroadbandSpeed?: number
 }

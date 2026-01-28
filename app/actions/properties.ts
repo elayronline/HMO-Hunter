@@ -101,6 +101,14 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
     // "include" means no filter - show all properties
 
+    // Phase 5 - Broadband Filter
+    if (filters?.hasFiber === true) {
+      query = query.eq("has_fiber", true)
+    }
+    if (filters?.minBroadbandSpeed && filters.minBroadbandSpeed > 0) {
+      query = query.gte("broadband_max_down", filters.minBroadbandSpeed)
+    }
+
     // Licence Type Filter
     if (filters?.licenceTypeFilter && filters.licenceTypeFilter !== "all") {
       if (filters.licenceTypeFilter === "any_licensed") {

@@ -101,6 +101,17 @@ export const apiConfig = {
     },
   },
 
+  // Ofcom Broadband Coverage API (Free)
+  ofcom: {
+    apiKey: process.env.OFCOM_API_KEY,
+    baseUrl: "https://api-proxy.ofcom.org.uk/broadband/coverage",
+    enabled: !!process.env.OFCOM_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
+    },
+  },
+
   // Google Maps (Optional - Street View fallback)
   googleMaps: {
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -157,6 +168,10 @@ export function validateApiConfig(): {
 
   if (!apiConfig.kamma.enabled) {
     warnings.push("Kamma API not configured. HMO licensing compliance data will be unavailable. Add KAMMA_API_KEY for licensing checks.")
+  }
+
+  if (!apiConfig.ofcom.enabled) {
+    warnings.push("Ofcom API not configured. Broadband/fiber availability data will be unavailable. Add OFCOM_API_KEY for connectivity info.")
   }
 
   if (!apiConfig.googleMaps.enabled) {
@@ -229,6 +244,12 @@ export function getApiStatus() {
         name: "Kamma API",
         status: apiConfig.kamma.enabled ? "connected" : "not_configured",
         description: "HMO licensing compliance and determination checks",
+      },
+      ofcom: {
+        enabled: apiConfig.ofcom.enabled,
+        name: "Ofcom Broadband API",
+        status: apiConfig.ofcom.enabled ? "connected" : "not_configured",
+        description: "Broadband and fiber availability data",
       },
     },
     mockMode: apiConfig.useMockData,

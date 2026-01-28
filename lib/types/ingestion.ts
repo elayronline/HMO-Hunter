@@ -65,6 +65,18 @@ export interface PropertyListing {
   title_number?: string
   title_last_enriched_at?: string
   owner_enrichment_source?: string
+  // Phase 5 - Broadband/Connectivity Data
+  broadband_basic_down?: number
+  broadband_basic_up?: number
+  broadband_superfast_down?: number
+  broadband_superfast_up?: number
+  broadband_ultrafast_down?: number
+  broadband_ultrafast_up?: number
+  broadband_max_down?: number
+  broadband_max_up?: number
+  has_fiber?: boolean
+  has_superfast?: boolean
+  broadband_last_checked?: string
 }
 
 export interface IngestionSource {
