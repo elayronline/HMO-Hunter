@@ -49,7 +49,6 @@ import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
 import { EPCBadge } from "@/components/epc-badge"
 import { BroadbandBadge } from "@/components/broadband-badge"
-import { BookViewingButton } from "@/components/book-viewing-button"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES & INTERFACES
@@ -438,18 +437,11 @@ export function PropertyDetailCard({
 
         {/* Primary CTA Buttons */}
         <div className="relative p-5 pt-3 flex gap-3">
-          {property.listing_type === "purchase" ? (
+          {property.listing_type === "purchase" && (
             <Button className="flex-1 h-12 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 hover:from-teal-600 hover:via-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-lg shadow-teal-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/40 hover:scale-[1.02]">
               <Phone className="w-4 h-4 mr-2" />
               Contact Seller
             </Button>
-          ) : (
-            <BookViewingButton
-              address={property.address}
-              postcode={property.postcode}
-              bedrooms={property.bedrooms}
-              className="flex-1 h-12 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 hover:from-teal-600 hover:via-emerald-600 hover:to-cyan-600 text-white font-semibold shadow-lg shadow-teal-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-teal-500/40 hover:scale-[1.02]"
-            />
           )}
           <Button
             variant="outline"

@@ -84,12 +84,14 @@ export const apiConfig = {
     },
   },
 
-  // Kamma API (HMO Licensing Compliance)
+  // Kamma API v2 (HMO Licensing Compliance)
+  // Docs: https://kamma.api.kammadata.com/docs/
   kamma: {
     apiKey: process.env.KAMMA_API_KEY,
+    serviceKey: process.env.KAMMA_SERVICE_KEY || process.env.KAMMA_GROUP_ID,
     groupId: process.env.KAMMA_GROUP_ID,
     baseUrl: process.env.KAMMA_BASE_URL || "https://kamma.api.kammadata.com",
-    enabled: !!process.env.KAMMA_API_KEY,
+    enabled: !!process.env.KAMMA_API_KEY && !!process.env.KAMMA_SERVICE_KEY,
     rateLimit: {
       requestsPerMinute: 60,
       requestsPerDay: 10000,

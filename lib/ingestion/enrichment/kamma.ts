@@ -83,33 +83,28 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
   type = "enrichment_api" as const
 
   private apiKey: string
-  private groupId: string
+  private serviceKey: string
   private baseUrl: string
 
-  constructor(apiKey?: string, baseUrl?: string, groupId?: string) {
+  constructor(apiKey?: string, baseUrl?: string, serviceKey?: string) {
     super()
     this.apiKey = apiKey || apiConfig.kamma?.apiKey || ""
-    this.groupId = groupId || apiConfig.kamma?.groupId || ""
+    this.serviceKey = serviceKey || apiConfig.kamma?.serviceKey || apiConfig.kamma?.groupId || ""
     this.baseUrl = baseUrl || apiConfig.kamma?.baseUrl || "https://kamma.api.kammadata.com"
   }
 
   /**
-   * Get headers for Kamma API requests
-   * Uses X-SSO-API-Key and X-SSO-Service-Key headers
+   * Get headers for Kamma API v2 requests
+   * Docs: https://kamma.api.kammadata.com/docs/
+   * Required headers: X-SSO-API-Key, X-SSO-Service-Key
    */
   private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
+    return {
       "X-SSO-API-Key": this.apiKey,
+      "X-SSO-Service-Key": this.serviceKey,
       "Content-Type": "application/json",
       "Accept": "application/json",
     }
-
-    // Group ID may be used as the service key
-    if (this.groupId) {
-      headers["X-SSO-Service-Key"] = this.groupId
-    }
-
-    return headers
   }
 
   /**
