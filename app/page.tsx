@@ -65,6 +65,7 @@ import { YieldCalculator } from "@/components/yield-calculator"
 import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
 import { BroadbandBadge } from "@/components/broadband-badge"
+import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
@@ -82,14 +83,14 @@ export default function HMOHunterPage() {
 
   const [selectedCity, setSelectedCity] = useState<UKCity>(DEFAULT_CITY)
 
-  const [priceRange, setPriceRange] = useState([1000, 10000])
+  const [priceRange, setPriceRange] = useState([500, 15000])
   const priceRangeKey = priceRange.join(",")
   const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House"])
   const propertyTypesKey = propertyTypes.join(",")
-  const [availableNow, setAvailableNow] = useState(true)
-  const [studentFriendly, setStudentFriendly] = useState(true)
+  const [availableNow, setAvailableNow] = useState(false)
+  const [studentFriendly, setStudentFriendly] = useState(false)
   const [petFriendly, setPetFriendly] = useState(false)
-  const [furnished, setFurnished] = useState(true)
+  const [furnished, setFurnished] = useState(false)
   const [licensedHmoOnly, setLicensedHmoOnly] = useState(false)
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
@@ -125,9 +126,9 @@ export default function HMOHunterPage() {
 
   useEffect(() => {
     if (listingType === "purchase") {
-      setPriceRange([200000, 600000])
+      setPriceRange([100000, 1000000])
     } else {
-      setPriceRange([1000, 10000])
+      setPriceRange([500, 15000])
     }
   }, [listingType])
 
@@ -572,8 +573,8 @@ export default function HMOHunterPage() {
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      min={listingType === "purchase" ? 200000 : 1000}
-                      max={listingType === "purchase" ? 600000 : 10000}
+                      min={listingType === "purchase" ? 100000 : 0}
+                      max={listingType === "purchase" ? 1000000 : 20000}
                       step={listingType === "purchase" ? 5000 : 100}
                       className="mb-3"
                     />
@@ -1022,6 +1023,14 @@ export default function HMOHunterPage() {
                         showTooltip={false}
                       />
                     )}
+                    {(selectedProperty.gross_internal_area_sqm || selectedProperty.floor_area_band) && (
+                      <EpcFloorAreaBadge
+                        floorAreaSqm={selectedProperty.gross_internal_area_sqm}
+                        floorAreaBand={selectedProperty.floor_area_band}
+                        className="text-xs"
+                        showTooltip={false}
+                      />
+                    )}
                     {(selectedProperty.has_fiber !== null || selectedProperty.has_superfast !== null) && (
                       <BroadbandBadge
                         hasFiber={selectedProperty.has_fiber}
@@ -1064,8 +1073,7 @@ export default function HMOHunterPage() {
                     )}
                     <FloorPlanBadge
                       hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
-                      hasEpcFloorPlan={!!selectedProperty.epc_certificate_url}
-                      epcCertificateUrl={selectedProperty.epc_certificate_url}
+                      floorPlanCount={selectedProperty.floor_plans?.length || 0}
                       className="text-xs"
                     />
                   </div>
@@ -1110,16 +1118,12 @@ export default function HMOHunterPage() {
                   </div>
                 </div>
 
-                {/* Teal - Standard properties */}
+                {/* Teal - Licensed HMOs */}
                 <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
-                  <span className="text-xs font-medium text-teal-700">Standard Properties</span>
+                  <span className="text-xs font-medium text-teal-700">Licensed HMOs</span>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-teal-700"></div>
                     <span className="text-xs text-slate-600">Licensed HMO</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-teal-500"></div>
-                    <span className="text-xs text-slate-600">Standard Property</span>
                   </div>
                 </div>
 
@@ -1396,49 +1400,83 @@ export default function HMOHunterPage() {
                 </div>
               </div>
 
-              {/* EPC, Planning & Floor Plan Information */}
-              <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-                <h4 className="font-semibold text-slate-900 mb-3">Energy, Planning & Floor Plan</h4>
+              {/* EPC Certificate Section */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-slate-900 mb-3">EPC Certificate</h4>
                 <div className="space-y-3">
                   {selectedProperty.epc_rating && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">EPC Rating</span>
+                      <span className="text-sm text-slate-600">Energy Rating</span>
                       <EPCBadge
                         rating={selectedProperty.epc_rating}
                         numericRating={selectedProperty.epc_rating_numeric}
-                        certificateUrl={selectedProperty.epc_certificate_url}
-                        expiryDate={selectedProperty.epc_expiry_date}
                       />
                     </div>
                   )}
-                  {selectedProperty.article_4_area && (
+                  {(selectedProperty.gross_internal_area_sqm || selectedProperty.floor_area_band) && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Planning Restrictions</span>
-                      <Article4Warning
-                        article4Area={selectedProperty.article_4_area}
-                        conservationArea={selectedProperty.conservation_area}
-                        listedBuildingGrade={selectedProperty.listed_building_grade}
-                        planningConstraints={selectedProperty.planning_constraints}
-                      />
+                      <span className="text-sm text-slate-600">Floor Area</span>
+                      <span className="text-sm font-bold text-slate-900">
+                        {selectedProperty.gross_internal_area_sqm
+                          ? `${Math.round(selectedProperty.gross_internal_area_sqm)}m² (${Math.round(selectedProperty.gross_internal_area_sqm * 10.764)} sq ft)`
+                          : selectedProperty.floor_area_band === "120_plus" ? "120m²+"
+                          : selectedProperty.floor_area_band === "90_120" ? "90-120m²"
+                          : "<90m²"
+                        }
+                      </span>
                     </div>
                   )}
-                  {selectedProperty.conservation_area && !selectedProperty.article_4_area && (
+                  {selectedProperty.epc_expiry_date && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Conservation Area</span>
-                      <span className="text-sm font-medium text-blue-600">Yes</span>
+                      <span className="text-sm text-slate-600">Certificate Expiry</span>
+                      <span className={`text-sm font-medium ${new Date(selectedProperty.epc_expiry_date) < new Date() ? "text-red-600" : "text-slate-900"}`}>
+                        {new Date(selectedProperty.epc_expiry_date).toLocaleDateString("en-GB")}
+                      </span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Floor Plan</span>
-                    <FloorPlanBadge
-                      hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
-                      hasEpcFloorPlan={!!selectedProperty.epc_certificate_url}
-                      epcCertificateUrl={selectedProperty.epc_certificate_url}
-                      variant="full"
-                    />
-                  </div>
+                  {selectedProperty.epc_certificate_url && (
+                    <a
+                      href={selectedProperty.epc_certificate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 font-medium"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View Full EPC Certificate
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {!selectedProperty.epc_rating && !selectedProperty.epc_certificate_url && (
+                    <p className="text-sm text-slate-500 italic">No EPC data available for this property</p>
+                  )}
                 </div>
               </div>
+
+              {/* Planning Restrictions Section */}
+              {(selectedProperty.article_4_area || selectedProperty.conservation_area) && (
+                <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <h4 className="font-semibold text-slate-900 mb-3">Planning Restrictions</h4>
+                  <div className="space-y-3">
+                    {selectedProperty.article_4_area && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Article 4 Direction</span>
+                        <Article4Warning
+                          article4Area={selectedProperty.article_4_area}
+                          conservationArea={selectedProperty.conservation_area}
+                          listedBuildingGrade={selectedProperty.listed_building_grade}
+                          planningConstraints={selectedProperty.planning_constraints}
+                        />
+                      </div>
+                    )}
+                    {selectedProperty.conservation_area && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Conservation Area</span>
+                        <span className="text-sm font-medium text-amber-700">Yes</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Broadband & Connectivity */}
               <div className="mb-6 p-4 bg-slate-50 rounded-lg">
@@ -1523,9 +1561,9 @@ export default function HMOHunterPage() {
               {/* Floor Plans Section */}
               <div className="mb-6">
                 <h4 className="font-semibold text-slate-900 mb-3">Floor Plans</h4>
+                <p className="text-sm text-slate-500 mb-3">Floor plan images from the property listing</p>
                 <FloorPlanSection
                   floorPlans={selectedProperty.floor_plans}
-                  epcCertificateUrl={selectedProperty.epc_certificate_url}
                   propertyTitle={selectedProperty.title}
                 />
               </div>

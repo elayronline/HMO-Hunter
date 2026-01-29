@@ -3,7 +3,6 @@
 import { useState } from "react"
 import {
   FileText,
-  ExternalLink,
   Maximize2,
   X,
   ChevronLeft,
@@ -14,15 +13,14 @@ import {
 import { Button } from "@/components/ui/button"
 
 interface FloorPlanSectionProps {
+  /** Array of floor plan image URLs from the listing */
   floorPlans?: string[] | null
-  epcCertificateUrl?: string | null
   propertyTitle: string
   className?: string
 }
 
 export function FloorPlanSection({
   floorPlans,
-  epcCertificateUrl,
   propertyTitle,
   className = "",
 }: FloorPlanSectionProps) {
@@ -32,10 +30,8 @@ export function FloorPlanSection({
 
   const validFloorPlans = (floorPlans || []).filter(fp => fp && fp.length > 0)
   const hasFloorPlanImages = validFloorPlans.length > 0
-  const hasEpcFloorPlan = !!epcCertificateUrl
-  const hasAnyFloorPlan = hasFloorPlanImages || hasEpcFloorPlan
 
-  if (!hasAnyFloorPlan) {
+  if (!hasFloorPlanImages) {
     return (
       <div className={`p-4 bg-slate-50 border border-slate-200 rounded-lg ${className}`}>
         <div className="flex items-center gap-3 text-slate-500">
@@ -43,8 +39,8 @@ export function FloorPlanSection({
             <ImageOff className="w-5 h-5 text-slate-400" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600">No Floor Plan Available</p>
-            <p className="text-xs text-slate-400">Floor plan not provided for this listing</p>
+            <p className="text-sm font-medium text-slate-600">No Floor Plan Images</p>
+            <p className="text-xs text-slate-400">Floor plan images not provided in the listing</p>
           </div>
         </div>
       </div>
@@ -66,21 +62,11 @@ export function FloorPlanSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-white" />
-            <span className="text-white font-bold text-sm uppercase tracking-wide">Floor Plans</span>
+            <span className="text-white font-bold text-sm uppercase tracking-wide">Floor Plan Images</span>
           </div>
-          <div className="flex items-center gap-2">
-            {hasFloorPlanImages && (
-              <span className="bg-white/20 text-white text-xs px-2 py-1 rounded">
-                {validFloorPlans.length} {validFloorPlans.length === 1 ? "plan" : "plans"}
-              </span>
-            )}
-            {hasEpcFloorPlan && (
-              <span className="bg-blue-500/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                <FileText className="w-3 h-3" />
-                EPC
-              </span>
-            )}
-          </div>
+          <span className="bg-white/20 text-white text-xs px-2 py-1 rounded">
+            {validFloorPlans.length} {validFloorPlans.length === 1 ? "image" : "images"}
+          </span>
         </div>
       </div>
 
@@ -192,37 +178,6 @@ export function FloorPlanSection({
           </div>
         )}
 
-        {/* EPC Floor Plan Link */}
-        {hasEpcFloorPlan && (
-          <a
-            href={epcCertificateUrl!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`
-              flex items-center gap-3 p-4 rounded-lg transition-colors
-              ${hasFloorPlanImages
-                ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
-                : "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 hover:from-blue-100 hover:to-indigo-100"
-              }
-            `}
-          >
-            <div className={`p-2 rounded-lg ${hasFloorPlanImages ? "bg-blue-100" : "bg-blue-200"}`}>
-              <FileText className={`w-5 h-5 ${hasFloorPlanImages ? "text-blue-500" : "text-blue-600"}`} />
-            </div>
-            <div className="flex-1">
-              <div className={`font-medium ${hasFloorPlanImages ? "text-blue-700 text-sm" : "text-blue-800"}`}>
-                {hasFloorPlanImages ? "View EPC Certificate Floor Plan" : "View Official EPC Floor Plan"}
-              </div>
-              <div className={`text-xs ${hasFloorPlanImages ? "text-blue-500" : "text-blue-600"}`}>
-                {hasFloorPlanImages
-                  ? "Additional basic diagram from Energy Performance Certificate"
-                  : "Basic floor plan diagram from the official Energy Performance Certificate"
-                }
-              </div>
-            </div>
-            <ExternalLink className={`w-4 h-4 ${hasFloorPlanImages ? "text-blue-400" : "text-blue-500"}`} />
-          </a>
-        )}
       </div>
 
       {/* Fullscreen Modal */}

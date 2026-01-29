@@ -52,6 +52,7 @@ import { AgentContactCard } from "@/components/agent-contact-card"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
 import { PriceAlertButton } from "@/components/price-alert-button"
+import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES & INTERFACES
@@ -395,6 +396,9 @@ export function PropertyDetailCard({
           <div className="flex flex-wrap gap-2">
             <HeroMetricPill icon={BedDouble} value={property.bedrooms} label="Bedrooms" />
             <HeroMetricPill icon={Bath} value={property.bathrooms} label="Bathrooms" />
+            {property.gross_internal_area_sqm && (
+              <HeroMetricPill icon={Scale} value={`${Math.round(property.gross_internal_area_sqm)}m²`} label="Floor Area" />
+            )}
             {property.lettable_rooms && (
               <HeroMetricPill icon={LayoutGrid} value={property.lettable_rooms} label="Lettable" />
             )}
@@ -873,96 +877,145 @@ export function PropertyDetailCard({
           </div>
         </CollapsibleSection>
 
-        {/* Floor Plan Section */}
+        {/* EPC Certificate Section - Energy Performance Data */}
         <CollapsibleSection
-          title="Floor Plan"
-          icon={LayoutGrid}
-          badge={
-            (property.epc_certificate_url && property.epc_certificate_url !== "not_available") ||
-            property.floor_plans?.length
-              ? "Available"
-              : "Not available"
-          }
+          title="EPC Certificate"
+          icon={FileText}
+          badge={property.epc_rating || "Not available"}
           badgeVariant={
-            (property.epc_certificate_url && property.epc_certificate_url !== "not_available") ||
-            property.floor_plans?.length
-              ? "success"
-              : "default"
+            property.epc_rating && ["A", "B", "C"].includes(property.epc_rating) ? "success" :
+            property.epc_rating && ["D", "E"].includes(property.epc_rating) ? "warning" :
+            property.epc_rating ? "danger" : "default"
           }
         >
           <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            {/* EPC Floor Plan (from gov.uk certificate) */}
-            {property.epc_certificate_url && property.epc_certificate_url !== "not_available" ? (
-              <div className="space-y-3">
-                <a
-                  href={property.epc_certificate_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 hover:border-emerald-400 hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
-                    <LayoutGrid className="w-4 h-4 text-emerald-600" />
+            {property.epc_rating || property.epc_certificate_url ? (
+              <div className="space-y-4">
+                {/* EPC Rating */}
+                {property.epc_rating && (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <span className="text-sm font-medium text-slate-700">Energy Rating</span>
+                    <EPCBadge
+                      rating={property.epc_rating}
+                      numericRating={property.epc_rating_numeric}
+                    />
                   </div>
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-slate-700 block">
-                      EPC Floor Plan
-                    </span>
-                    <span className="text-xs text-emerald-600">
-                      Official gov.uk certificate
-                    </span>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-                </a>
+                )}
 
-                {/* Additional floor plans from listing if any */}
-                {property.floor_plans && property.floor_plans.length > 0 && (
-                  <>
-                    <p className="text-xs text-slate-400 px-1">Additional floor plans:</p>
-                    {property.floor_plans.map((plan, idx) => (
-                      <a
-                        key={idx}
-                        href={plan}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200 hover:border-teal-300 hover:from-teal-50 hover:to-emerald-50 transition-all duration-200 group"
-                      >
-                        <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
-                          <LayoutGrid className="w-4 h-4 text-teal-600" />
-                        </div>
-                        <span className="flex-1 text-sm font-medium text-slate-700">
-                          Listing Floor Plan {idx + 1}
+                {/* Floor Area from EPC */}
+                {(property.gross_internal_area_sqm || property.floor_area_band) && (
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-slate-700">Floor Area</span>
+                      {property.gross_internal_area_sqm && (
+                        <span className="text-lg font-bold text-slate-900">
+                          {Math.round(property.gross_internal_area_sqm)}m²
+                          <span className="text-xs text-slate-500 ml-1">
+                            ({Math.round(property.gross_internal_area_sqm * 10.764)} sq ft)
+                          </span>
                         </span>
-                        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
-                      </a>
-                    ))}
-                  </>
+                      )}
+                    </div>
+                    <EpcFloorAreaBadge
+                      floorAreaSqm={property.gross_internal_area_sqm}
+                      floorAreaBand={property.floor_area_band}
+                      bedrooms={property.bedrooms}
+                      variant="full"
+                    />
+                  </div>
+                )}
+
+                {/* EPC Expiry */}
+                {property.epc_expiry_date && (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                    <span className="text-sm font-medium text-slate-700">Certificate Expiry</span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      new Date(property.epc_expiry_date) < new Date() ? "text-red-600" : "text-slate-900"
+                    )}>
+                      {new Date(property.epc_expiry_date).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                      {new Date(property.epc_expiry_date) < new Date() && " (Expired)"}
+                    </span>
+                  </div>
+                )}
+
+                {/* View Certificate Link */}
+                {property.epc_certificate_url && property.epc_certificate_url !== "not_available" && (
+                  <a
+                    href={property.epc_certificate_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:border-blue-400 hover:shadow-md transition-all duration-200 group"
+                  >
+                    <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-slate-700 block">
+                        View Full EPC Certificate
+                      </span>
+                      <span className="text-xs text-blue-600">
+                        Official gov.uk certificate with recommendations
+                      </span>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                  </a>
                 )}
               </div>
-            ) : property.floor_plans && property.floor_plans.length > 0 ? (
-              <div className="space-y-2">
+            ) : (
+              <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
+                <FileText className="w-10 h-10 mb-2 opacity-40" />
+                <p className="font-semibold text-slate-500">No EPC data available</p>
+                <p className="text-sm text-center">Energy Performance Certificate not found for this property</p>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+
+        {/* Floor Plans Section - Visual Diagrams from Listing */}
+        <CollapsibleSection
+          title="Floor Plans"
+          icon={LayoutGrid}
+          badge={
+            property.floor_plans?.length
+              ? `${property.floor_plans.length} image${property.floor_plans.length > 1 ? "s" : ""}`
+              : "Not available"
+          }
+          badgeVariant={property.floor_plans?.length ? "success" : "default"}
+        >
+          <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            {property.floor_plans && property.floor_plans.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-500 mb-2">
+                  Floor plan images from the property listing
+                </p>
                 {property.floor_plans.map((plan, idx) => (
                   <a
                     key={idx}
                     href={plan}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200 hover:border-teal-300 hover:from-teal-50 hover:to-emerald-50 transition-all duration-200 group"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 hover:border-emerald-400 hover:shadow-md transition-all duration-200 group"
                   >
                     <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow transition-shadow">
-                      <LayoutGrid className="w-4 h-4 text-teal-600" />
+                      <LayoutGrid className="w-4 h-4 text-emerald-600" />
                     </div>
                     <span className="flex-1 text-sm font-medium text-slate-700">
-                      Floor Plan {idx + 1}
+                      Floor Plan {property.floor_plans!.length > 1 ? idx + 1 : ""}
                     </span>
-                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
                   </a>
                 ))}
               </div>
             ) : (
               <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
                 <LayoutGrid className="w-10 h-10 mb-2 opacity-40" />
-                <p className="font-semibold text-slate-500">No floor plan available</p>
-                <p className="text-sm">This property has no EPC certificate with a floor plan on record</p>
+                <p className="font-semibold text-slate-500">No floor plan images</p>
+                <p className="text-sm text-center">Floor plan images not provided in the listing</p>
               </div>
             )}
           </div>

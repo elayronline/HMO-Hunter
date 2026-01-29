@@ -38,6 +38,9 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
     query = query.or("is_stale.eq.false,is_stale.is.null")
 
+    // HMO Hunter: Only show Licensed HMOs or Potential HMOs - filter out standard listings
+    query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true")
+
     if (filters?.listingType) {
       query = query.eq("listing_type", filters.listingType)
     }
@@ -139,18 +142,18 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
     // Phase 4 - Potential HMO Filters
     if (filters?.showPotentialHMOs) {
-      // When toggle is ON: show ALL properties (potential HMOs + licensed + unlicensed)
-      // The additional filters below only apply to narrow down results if specified
+      // When toggle is ON: show both Licensed HMOs AND Potential HMOs
+      // Additional filters below narrow down the potential HMO results
 
       // HMO Classification filter - only filter if specifically selected
       if (filters?.hmoClassification) {
         query = query.eq("hmo_classification", filters.hmoClassification)
       }
 
-      // Min Deal Score filter - only applies to potential HMOs but doesn't exclude others
+      // Min Deal Score filter - only applies to potential HMOs but doesn't exclude licensed
       if (filters?.minDealScore && filters.minDealScore > 0) {
-        // Show properties that either meet the deal score OR are not potential HMOs
-        query = query.or(`deal_score.gte.${filters.minDealScore},is_potential_hmo.eq.false,is_potential_hmo.is.null`)
+        // Show properties that either meet the deal score OR are licensed HMOs
+        query = query.or(`deal_score.gte.${filters.minDealScore},licensed_hmo.eq.true`)
       }
 
       // Floor Area Band filter
@@ -175,8 +178,8 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
         query = query.eq("is_ex_local_authority", true)
       }
     } else {
-      // When toggle is OFF: exclude potential HMOs, show only licensed/unlicensed
-      query = query.or("is_potential_hmo.eq.false,is_potential_hmo.is.null")
+      // When toggle is OFF: show only Licensed HMOs (exclude potential HMOs)
+      query = query.eq("licensed_hmo", true)
     }
 
     const { data, error } = await safeSupabaseQuery(async () => await query)
