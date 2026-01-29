@@ -21,14 +21,16 @@ interface PropertyImageProps {
 }
 
 /**
- * Check if an image URL is a stock/placeholder image
+ * Check if an image URL is a stock/placeholder/streetview image
+ * These should be replaced by real listing images from Zoopla when available
  */
 function isStockImage(url: string | null | undefined): boolean {
   if (!url) return true
   return url.includes("unsplash.com") ||
     url.includes("placeholder") ||
     url.includes("stock") ||
-    url.includes("example.com")
+    url.includes("example.com") ||
+    url.includes("maps.googleapis.com/maps/api/streetview") // Treat Street View as replaceable
 }
 
 /**
