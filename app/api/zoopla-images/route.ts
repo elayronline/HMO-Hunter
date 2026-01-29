@@ -36,7 +36,7 @@ function calculateMatchConfidence(
   zooplaAddress: string,
   zooplaPostcode: string,
   zooplaBedrooms: number
-): "exact" | "high" | "medium" | "low" | "none" {
+): "exact" | "high" | "medium" | "low" | "nearby" | "none" {
   const hmo = parseAddress(hmoAddress)
   const zoopla = parseAddress(zooplaAddress)
 
@@ -48,10 +48,12 @@ function calculateMatchConfidence(
   const hmoOutcode = hmoPC.replace(/\d[a-z]{2}$/, "")
   const zooplaOutcode = zooplaPC.replace(/\d[a-z]{2}$/, "")
 
-  // Must be same outcode (postcode area) at minimum
-  if (hmoOutcode !== zooplaOutcode) {
-    return "none"
-  }
+  // Check if same outcode or nearby (same postcode district letter, e.g., E11 and E18 are both "E")
+  const sameOutcode = hmoOutcode === zooplaOutcode
+  const sameDistrict = hmoOutcode.charAt(0) === zooplaOutcode.charAt(0) // E, N, W, SE, etc.
+
+  // For exact/high/medium matches, require same outcode
+  // For nearby matches, allow same district
 
   // Check for exact postcode match
   const exactPostcode = hmoPC === zooplaPC
@@ -68,29 +70,42 @@ function calculateMatchConfidence(
   // Check bedroom match
   const bedroomMatch = hmoBedrooms !== undefined && hmoBedrooms === zooplaBedrooms
 
-  // Exact match: same street number + street name (regardless of exact postcode)
-  if (streetNumberMatch && streetNameMatch) {
-    return "exact"
+  // For exact/high/medium confidence, require same outcode
+  if (sameOutcode) {
+    // Exact match: same street number + street name
+    if (streetNumberMatch && streetNameMatch) {
+      return "exact"
+    }
+
+    // High confidence: street number matches + bedrooms match
+    if (streetNumberMatch && bedroomMatch) {
+      return "high"
+    }
+
+    // Medium confidence: street name matches + bedrooms match (but different street number)
+    if (streetNameMatch && bedroomMatch) {
+      return "medium"
+    }
+
+    // Low confidence: street name matches only
+    if (streetNameMatch) {
+      return "low"
+    }
   }
 
-  // High confidence: street number matches + bedrooms match
-  if (streetNumberMatch && bedroomMatch) {
-    return "high"
+  // Nearby: same postcode district (e.g., both "E" postcodes) with similar bedrooms
+  // This provides representative images of the area when exact match isn't available
+  const bedroomSimilar = hmoBedrooms !== undefined &&
+    Math.abs(hmoBedrooms - zooplaBedrooms) <= 2
+
+  if (sameDistrict && bedroomSimilar) {
+    return "nearby"
   }
 
-  // Medium confidence: street name matches + bedrooms match (but different street number)
-  // This could be a neighboring property on the same street
-  if (streetNameMatch && bedroomMatch) {
-    return "medium"
+  // Also allow nearby for same outcode even without street match
+  if (sameOutcode && bedroomSimilar) {
+    return "nearby"
   }
-
-  // Low confidence: street name matches only (different bedrooms, different number)
-  if (streetNameMatch) {
-    return "low"
-  }
-
-  // None: different street, only bedroom count might match
-  // We don't want to show images from completely different streets
 
   return "none"
 }
@@ -111,15 +126,21 @@ export async function GET(request: NextRequest) {
 
   const cacheKey = `${postcode}-${address || ""}-${bedrooms || ""}`
 
-  // Check cache
+  // Check cache - but invalidate if we have 0 images with a valid match (stale cache issue)
   const cached = cache.get(cacheKey)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log(`[ZooplaImages] Returning cached images for ${cacheKey}`)
-    return NextResponse.json({
-      images: cached.images,
-      matchQuality: cached.matchQuality,
-      cached: true
-    })
+    // Don't return stale cache with 0 images if we had a match - refetch
+    if (cached.images.length > 0 || cached.matchQuality === "none") {
+      console.log(`[ZooplaImages] Returning cached images for ${cacheKey}`)
+      return NextResponse.json({
+        images: cached.images,
+        matchQuality: cached.matchQuality,
+        cached: true
+      })
+    }
+    // Clear bad cache entry with 0 images but valid match
+    console.log(`[ZooplaImages] Clearing stale cache for ${cacheKey}`)
+    cache.delete(cacheKey)
   }
 
   try {
@@ -129,14 +150,14 @@ export async function GET(request: NextRequest) {
     const listings = await zoopla.fetch({
       postcode,
       listingType: listingType || "rent",
-      minBedrooms: bedrooms ? parseInt(bedrooms) - 1 : undefined, // Slightly wider search
-      maxBedrooms: bedrooms ? parseInt(bedrooms) + 1 : undefined,
-      radius: 0.25, // Very close proximity
-      pageSize: 20,
+      minBedrooms: bedrooms ? Math.max(1, parseInt(bedrooms) - 2) : undefined, // Wider bedroom search
+      maxBedrooms: bedrooms ? parseInt(bedrooms) + 2 : undefined,
+      radius: 0.5, // Half mile radius for more coverage
+      pageSize: 30,
     })
 
     let images: string[] = []
-    let matchQuality: "exact" | "high" | "medium" | "low" | "none" = "none"
+    let matchQuality: "exact" | "high" | "medium" | "low" | "nearby" | "none" = "none"
     let matchedListing = null
 
     // Score and rank all listings by match confidence
@@ -156,15 +177,17 @@ export async function GET(request: NextRequest) {
       }))
 
       // Sort by confidence level
-      const confidenceOrder = { exact: 0, high: 1, medium: 2, low: 3, none: 4 }
+      const confidenceOrder: Record<string, number> = { exact: 0, high: 1, medium: 2, low: 3, nearby: 4, none: 5 }
       scoredListings.sort((a, b) => confidenceOrder[a.confidence] - confidenceOrder[b.confidence])
 
       // Get best match
       const bestMatch = scoredListings[0]
 
-      // Only use images if we have at least medium confidence (street name match required)
-      // "low" confidence means only bedroom count matched - not specific enough
-      if (bestMatch && (bestMatch.confidence === "exact" || bestMatch.confidence === "high" || bestMatch.confidence === "medium")) {
+      // Use images for all confidence levels except "none"
+      // - exact/high/medium: same street match
+      // - low: street name only match
+      // - nearby: same area with matching bedrooms (representative of neighborhood)
+      if (bestMatch && bestMatch.confidence !== "none") {
         matchedListing = bestMatch.listing
         matchQuality = bestMatch.confidence
 

@@ -59,7 +59,7 @@ export function PropertyGallery({
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [viewMode, setViewMode] = useState<"photos" | "floorplans">("photos")
   const [zooplaImages, setZooplaImages] = useState<string[]>([])
-  const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "none">("none")
+  const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "low" | "nearby" | "none">("none")
   const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
 
   // Fetch Zoopla images if no real images available
@@ -180,12 +180,16 @@ export function PropertyGallery({
             <div className={`text-white text-xs px-2 py-1 rounded flex items-center gap-1 ${
               zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
                 ? "bg-purple-600/80"
+                : zooplaMatchQuality === "nearby"
+                ? "bg-indigo-500/70"
                 : "bg-purple-500/70"
             }`}>
               <Home className="w-3 h-3" />
               {zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
                 ? "Zoopla"
-                : "Zoopla (Area)"}
+                : zooplaMatchQuality === "nearby"
+                ? "Zoopla (Nearby)"
+                : "Zoopla (Street)"}
             </div>
           )}
           {isStreetView && viewMode === "photos" && (
