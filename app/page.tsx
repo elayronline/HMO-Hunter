@@ -29,7 +29,6 @@ import {
   LogOut,
   User,
   Home,
-  ShoppingCart,
   X,
   ExternalLink,
 } from "lucide-react"
@@ -71,7 +70,7 @@ import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
-  const [listingType, setListingType] = useState<"rent" | "purchase">("rent")
+  const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
@@ -83,7 +82,7 @@ export default function HMOHunterPage() {
 
   const [selectedCity, setSelectedCity] = useState<UKCity>(DEFAULT_CITY)
 
-  const [priceRange, setPriceRange] = useState([500, 15000])
+  const [priceRange, setPriceRange] = useState([100000, 1000000])
   const priceRangeKey = priceRange.join(",")
   const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House"])
   const propertyTypesKey = propertyTypes.join(",")
@@ -126,14 +125,6 @@ export default function HMOHunterPage() {
 
   const router = useRouter()
   const supabase = createClient()
-
-  useEffect(() => {
-    if (listingType === "purchase") {
-      setPriceRange([100000, 1000000])
-    } else {
-      setPriceRange([500, 15000])
-    }
-  }, [listingType])
 
   useEffect(() => {
     let mounted = true
@@ -591,55 +582,22 @@ export default function HMOHunterPage() {
             {searchExpanded && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-2 block">Listing Type</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setListingType("rent")}
-                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                        listingType === "rent"
-                          ? "bg-teal-600 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      <Home className="w-4 h-4 inline mr-1.5" />
-                      Rent
-                    </button>
-                    <button
-                      onClick={() => setListingType("purchase")}
-                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                        listingType === "purchase"
-                          ? "bg-teal-600 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                      Purchase
-                    </button>
-                  </div>
-                </div>
-
-                <div>
                   <label className="text-xs font-medium text-slate-700 mb-2.5 block">
-                    {listingType === "purchase" ? "Purchase Price" : "Price Range"} (£
-                    {priceRange[0].toLocaleString()} - £{priceRange[1].toLocaleString()}
-                    {listingType === "rent" ? "pcm" : ""})
+                    {listingType === "purchase" ? "Purchase Price" : "Monthly Rent"} (£{priceRange[0].toLocaleString()} - £{priceRange[1].toLocaleString()}{listingType === "rent" ? " pcm" : ""})
                   </label>
                   <div className="px-1">
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      min={listingType === "purchase" ? 100000 : 0}
-                      max={listingType === "purchase" ? 1000000 : 20000}
+                      min={listingType === "purchase" ? 100000 : 500}
+                      max={listingType === "purchase" ? 1000000 : 15000}
                       step={listingType === "purchase" ? 5000 : 100}
                       className="mb-3"
                     />
                   </div>
                   <div className="flex justify-between text-xs text-slate-500">
-                    <span>£{priceRange[0].toLocaleString()}</span>
-                    <span>
-                      £{priceRange[1].toLocaleString()}
-                      {listingType === "rent" ? "pcm" : ""}
-                    </span>
+                    <span>£{priceRange[0].toLocaleString()}{listingType === "rent" ? " pcm" : ""}</span>
+                    <span>£{priceRange[1].toLocaleString()}{listingType === "rent" ? " pcm" : ""}</span>
                   </div>
                 </div>
 
@@ -738,16 +696,14 @@ export default function HMOHunterPage() {
                     className="data-[state=checked]:bg-teal-600"
                   />
                 </div>
-                {listingType === "purchase" && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-700">Licensed HMO Only</span>
-                    <Switch
-                      checked={licensedHmoOnly}
-                      onCheckedChange={setLicensedHmoOnly}
-                      className="data-[state=checked]:bg-teal-600"
-                    />
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-700">Licensed HMO Only</span>
+                  <Switch
+                    checked={licensedHmoOnly}
+                    onCheckedChange={setLicensedHmoOnly}
+                    className="data-[state=checked]:bg-teal-600"
+                  />
+                </div>
 
                 {/* EPC Rating Filter */}
                 <div className="pt-2 border-t border-slate-100">
@@ -967,6 +923,36 @@ export default function HMOHunterPage() {
                           <span>100</span>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Acquisition Strategy - Advanced */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-700">Rent-to-Rent Mode</span>
+                      <span className="text-xs text-slate-500">Show rental listings for R2R strategy</span>
+                    </div>
+                    <Switch
+                      checked={listingType === "rent"}
+                      onCheckedChange={(checked) => {
+                        setListingType(checked ? "rent" : "purchase")
+                        // Reset price range when switching
+                        if (checked) {
+                          setPriceRange([500, 15000])
+                        } else {
+                          setPriceRange([100000, 1000000])
+                        }
+                      }}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                  {listingType === "rent" && (
+                    <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg p-2">
+                      <p className="text-xs text-purple-700">
+                        Showing rental listings. Lease properties and sublet as HMO rooms.
+                      </p>
                     </div>
                   )}
                 </div>
