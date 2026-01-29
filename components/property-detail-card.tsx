@@ -586,11 +586,11 @@ export function PropertyDetailCard({
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                                {director.name.charAt(0)}
+                                {director?.name?.charAt(0) || "?"}
                               </div>
-                              <span className="font-medium text-slate-800">{director.name}</span>
+                              <span className="font-medium text-slate-800">{director?.name || "Unknown"}</span>
                             </div>
-                            <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-lg">{director.role}</span>
+                            <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-lg">{director?.role || "Director"}</span>
                           </div>
                         ))}
                         {property.directors.length > 3 && (

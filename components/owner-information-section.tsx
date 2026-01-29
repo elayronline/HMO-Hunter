@@ -459,11 +459,13 @@ function CompanyStatusBadge({ status }: { status: string }) {
 }
 
 function DirectorItem({ director }: { director: Director }) {
+  if (!director) return null
+
   return (
     <div className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
       <div>
-        <span className="font-medium">{director.name}</span>
-        {director.appointed_on && (
+        <span className="font-medium">{director?.name || "Unknown"}</span>
+        {director?.appointed_on && (
           <span className="text-gray-400 text-xs ml-2">
             since {new Date(director.appointed_on).toLocaleDateString("en-GB", {
               month: "short",
@@ -473,7 +475,7 @@ function DirectorItem({ director }: { director: Director }) {
         )}
       </div>
       <Badge variant="outline" className="text-xs bg-gray-100">
-        {director.role}
+        {director?.role || "Director"}
       </Badge>
     </div>
   )

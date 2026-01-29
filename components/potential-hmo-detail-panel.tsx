@@ -159,8 +159,8 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
             <div className="text-sm font-medium text-slate-900">
               {property.lettable_rooms || property.bedrooms} rooms
             </div>
-            <div className={`text-xs ${yieldBandColors[property.yield_band || "low"]}`}>
-              {property.estimated_yield_percentage}% yield
+            <div className={`text-xs ${yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]}`}>
+              {property.estimated_yield_percentage || "N/A"}% yield
             </div>
           </div>
           {isOpen ? (
@@ -203,11 +203,11 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
                 <span className="text-xs font-medium text-slate-600">Floor Area</span>
               </div>
               <div className="text-sm font-semibold text-slate-900">
-                {property.gross_internal_area_sqm ? `${property.gross_internal_area_sqm} m²` : "Est. " + (property.floor_area_band ? floorAreaBandLabels[property.floor_area_band] : "N/A")}
+                {property.gross_internal_area_sqm ? `${property.gross_internal_area_sqm} m²` : "Est. " + (property.floor_area_band && floorAreaBandLabels[property.floor_area_band as keyof typeof floorAreaBandLabels] ? floorAreaBandLabels[property.floor_area_band as keyof typeof floorAreaBandLabels] : "N/A")}
               </div>
-              {property.floor_area_band && (
+              {property.floor_area_band && floorAreaBandLabels[property.floor_area_band as keyof typeof floorAreaBandLabels] && (
                 <div className="text-xs text-slate-500 mt-1">
-                  {floorAreaBandLabels[property.floor_area_band]}
+                  {floorAreaBandLabels[property.floor_area_band as keyof typeof floorAreaBandLabels]}
                 </div>
               )}
             </div>
@@ -260,14 +260,14 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
           </div>
 
           {/* EPC Upgrade Potential */}
-          {property.epc_improvement_potential && property.epc_improvement_potential !== "none" && (
+          {property.epc_improvement_potential && property.epc_improvement_potential !== "none" && epcImprovementLabels[property.epc_improvement_potential as keyof typeof epcImprovementLabels] && (
             <div className="bg-white rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-amber-500" />
                 <span className="text-xs font-medium text-slate-600">EPC Upgrade Potential</span>
               </div>
               <div className="text-sm font-semibold text-slate-900">
-                {epcImprovementLabels[property.epc_improvement_potential]}
+                {epcImprovementLabels[property.epc_improvement_potential as keyof typeof epcImprovementLabels]}
               </div>
               {property.epc_upgrade_cost_estimate && (
                 <div className="text-xs text-slate-500 mt-1">
@@ -304,9 +304,9 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
               </div>
               <div>
                 <div className="text-xs text-slate-500">Est. Yield</div>
-                <div className={`text-sm font-semibold ${yieldBandColors[property.yield_band || "low"]}`}>
-                  {property.estimated_yield_percentage}%
-                  <span className="text-xs text-slate-500 ml-1">({property.yield_band})</span>
+                <div className={`text-sm font-semibold ${yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]}`}>
+                  {property.estimated_yield_percentage || "N/A"}%
+                  {property.yield_band && <span className="text-xs text-slate-500 ml-1">({property.yield_band})</span>}
                 </div>
               </div>
             </div>
