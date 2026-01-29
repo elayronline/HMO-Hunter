@@ -985,6 +985,8 @@ export default function HMOHunterPage() {
                     address={selectedProperty.address}
                     bedrooms={selectedProperty.bedrooms}
                     listingType={selectedProperty.listing_type}
+                    externalId={selectedProperty.external_id}
+                    price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1197,6 +1199,8 @@ export default function HMOHunterPage() {
                     address={selectedProperty.address}
                     bedrooms={selectedProperty.bedrooms}
                     listingType={selectedProperty.listing_type}
+                    externalId={selectedProperty.external_id}
+                    price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
                   />
                   <SavePropertyButton
                     propertyId={selectedProperty.id}
@@ -1274,6 +1278,8 @@ export default function HMOHunterPage() {
                   address={selectedProperty.address}
                   bedrooms={selectedProperty.bedrooms}
                   listingType={selectedProperty.listing_type}
+                  externalId={selectedProperty.external_id}
+                  price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
                 />
               </div>
 

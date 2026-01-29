@@ -17,6 +17,8 @@ interface PropertyGalleryProps {
   address?: string
   bedrooms?: number
   listingType?: "rent" | "purchase"
+  externalId?: string | null  // For direct Zoopla lookup (e.g., "zoopla-67728002")
+  price?: number | null       // For price matching
 }
 
 /**
@@ -54,6 +56,8 @@ export function PropertyGallery({
   address,
   bedrooms,
   listingType,
+  externalId,
+  price,
 }: PropertyGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [showFullscreen, setShowFullscreen] = useState(false)
@@ -72,9 +76,14 @@ export function PropertyGallery({
       if (realImages.length > 0) return
 
       try {
-        const params = new URLSearchParams({ postcode })
+        const params = new URLSearchParams()
+        // Option 1: Direct Zoopla lookup by external_id (highest accuracy)
+        if (externalId) params.append("externalId", externalId)
+        // Fallback to address-based matching
+        if (postcode) params.append("postcode", postcode)
         if (address) params.append("address", address)
         if (bedrooms) params.append("bedrooms", bedrooms.toString())
+        if (price) params.append("price", price.toString())
         if (listingType) params.append("listingType", listingType === "purchase" ? "sale" : "rent")
         // Add coordinates for exact matching
         if (latitude) params.append("latitude", latitude.toString())
@@ -95,7 +104,7 @@ export function PropertyGallery({
     }
 
     fetchZooplaImages()
-  }, [postcode, address, bedrooms, listingType, latitude, longitude, images])
+  }, [postcode, address, bedrooms, listingType, latitude, longitude, images, externalId, price])
 
   // Smart image selection - prioritize real images over stock
   const allImages = useMemo(() => {

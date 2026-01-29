@@ -3,6 +3,96 @@ import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
 
 const zoopla = new ZooplaAdapter()
 
+// API key for direct Zoopla calls
+const ZOOPLA_API_KEY = process.env.ZOOPLA_API_KEY || "eec9ejtet7bzzgduvjlkj1b8"
+const ZOOPLA_BASE_URL = "https://api.zoopla.co.uk/api/v1"
+
+/**
+ * Fetch images directly by Zoopla listing ID (Option 1: External ID cross-reference)
+ */
+async function fetchByZooplaListingId(listingId: string, postcode: string): Promise<NextResponse> {
+  const cacheKey = `zoopla-direct-${listingId}`
+
+  // Check cache
+  const cached = directCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL && cached.images.length > 0) {
+    console.log(`[ZooplaImages] Direct fetch from cache: listing_id=${listingId}`)
+    return NextResponse.json({
+      images: cached.images,
+      matchType: "exact",
+      confidence: 100,
+      source: "zoopla_direct",
+      cached: true
+    })
+  }
+
+  try {
+    console.log(`[ZooplaImages] Direct fetch by listing_id: ${listingId}`)
+
+    const url = `${ZOOPLA_BASE_URL}/property_listings.json?api_key=${ZOOPLA_API_KEY}&listing_id=${listingId}`
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      console.error(`[ZooplaImages] Direct fetch failed: ${response.status}`)
+      return NextResponse.json({ images: [], matchType: "none", error: "Listing not found" })
+    }
+
+    const data = await response.json()
+
+    if (!data.listing || data.listing.length === 0) {
+      console.log(`[ZooplaImages] No listing found for ID: ${listingId}`)
+      return NextResponse.json({ images: [], matchType: "none", error: "Listing not found" })
+    }
+
+    const listing = data.listing[0]
+
+    // Extract all images
+    const images: string[] = []
+
+    // Get from other_image array (medium res)
+    if (listing.other_image && Array.isArray(listing.other_image)) {
+      for (const img of listing.other_image) {
+        if (img.url) {
+          // Convert to higher resolution
+          const highResUrl = img.url.replace("/354/255/", "/645/430/")
+          images.push(highResUrl)
+        }
+      }
+    }
+
+    // Fallback to original_image array
+    if (images.length === 0 && listing.original_image && Array.isArray(listing.original_image)) {
+      images.push(...listing.original_image)
+    }
+
+    // Final fallback to single image
+    if (images.length === 0 && listing.image_645_430_url) {
+      images.push(listing.image_645_430_url)
+    }
+
+    console.log(`[ZooplaImages] ✓ Direct fetch successful: ${images.length} images for listing_id=${listingId}`)
+
+    // Cache the result
+    directCache.set(cacheKey, { images, timestamp: Date.now() })
+
+    return NextResponse.json({
+      images: images.slice(0, 20),
+      matchType: "exact",
+      confidence: 100,
+      source: "zoopla_direct",
+      matchedAddress: listing.displayable_address,
+      cached: false
+    })
+
+  } catch (error) {
+    console.error(`[ZooplaImages] Direct fetch error:`, error)
+    return NextResponse.json({ images: [], matchType: "none", error: "Fetch failed" })
+  }
+}
+
+// Cache for direct Zoopla fetches
+const directCache = new Map<string, { images: string[]; timestamp: number }>()
+
 // Cache for Zoopla images (15 min TTL)
 const cache = new Map<string, { images: string[]; timestamp: number; matchType: string; confidence: number }>()
 const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
@@ -185,9 +275,16 @@ export async function GET(request: NextRequest) {
   const latitude = searchParams.get("latitude")
   const longitude = searchParams.get("longitude")
   const listingType = searchParams.get("listingType") as "rent" | "sale" | null
+  const externalId = searchParams.get("externalId") // e.g., "zoopla-67728002"
 
-  if (!postcode) {
-    return NextResponse.json({ error: "Postcode is required" }, { status: 400 })
+  if (!postcode && !externalId) {
+    return NextResponse.json({ error: "Postcode or externalId is required" }, { status: 400 })
+  }
+
+  // OPTION 1: If we have a Zoopla external_id, fetch directly by listing ID
+  if (externalId && externalId.startsWith("zoopla-")) {
+    const listingId = externalId.replace("zoopla-", "")
+    return fetchByZooplaListingId(listingId, postcode || "")
   }
 
   const cacheKey = `${postcode}-${address || ""}-${bedrooms || ""}-${latitude || ""}-${longitude || ""}`
