@@ -59,7 +59,7 @@ export function PropertyGallery({
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [viewMode, setViewMode] = useState<"photos" | "floorplans">("photos")
   const [zooplaImages, setZooplaImages] = useState<string[]>([])
-  const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "low" | "nearby" | "none">("none")
+  const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "none">("none")
   const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
 
   // Fetch Zoopla images if no real images available
@@ -76,13 +76,17 @@ export function PropertyGallery({
         if (address) params.append("address", address)
         if (bedrooms) params.append("bedrooms", bedrooms.toString())
         if (listingType) params.append("listingType", listingType === "purchase" ? "sale" : "rent")
+        // Add coordinates for exact matching
+        if (latitude) params.append("latitude", latitude.toString())
+        if (longitude) params.append("longitude", longitude.toString())
 
         const response = await fetch(`/api/zoopla-images?${params.toString()}`)
         if (response.ok) {
           const data = await response.json()
           if (data.images && data.images.length > 0) {
             setZooplaImages(data.images)
-            setZooplaMatchQuality(data.matchQuality || "none")
+            setZooplaMatchQuality(data.matchType || "none")
+            console.log(`[PropertyGallery] Zoopla match: ${data.matchType} (${data.confidence}%) for ${address}`)
           }
         }
       } catch (err) {
@@ -91,7 +95,7 @@ export function PropertyGallery({
     }
 
     fetchZooplaImages()
-  }, [postcode, address, bedrooms, listingType, images])
+  }, [postcode, address, bedrooms, listingType, latitude, longitude, images])
 
   // Smart image selection - prioritize real images over stock
   const allImages = useMemo(() => {
@@ -178,18 +182,14 @@ export function PropertyGallery({
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
           {isZoopla && viewMode === "photos" && (
             <div className={`text-white text-xs px-2 py-1 rounded flex items-center gap-1 ${
-              zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
-                ? "bg-purple-600/80"
-                : zooplaMatchQuality === "nearby"
-                ? "bg-indigo-500/70"
-                : "bg-purple-500/70"
+              zooplaMatchQuality === "exact"
+                ? "bg-green-600/80"
+                : "bg-purple-600/80"
             }`}>
               <Home className="w-3 h-3" />
-              {zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
-                ? "Zoopla"
-                : zooplaMatchQuality === "nearby"
-                ? "Zoopla (Nearby)"
-                : "Zoopla (Street)"}
+              {zooplaMatchQuality === "exact"
+                ? "Zoopla ✓"
+                : "Zoopla"}
             </div>
           )}
           {isStreetView && viewMode === "photos" && (

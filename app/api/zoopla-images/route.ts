@@ -4,110 +4,176 @@ import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
 const zoopla = new ZooplaAdapter()
 
 // Cache for Zoopla images (15 min TTL)
-const cache = new Map<string, { images: string[]; timestamp: number; matchQuality: string }>()
+const cache = new Map<string, { images: string[]; timestamp: number; matchType: string; confidence: number }>()
 const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
 
 /**
- * Extract street number and name from an address for matching
+ * Calculate distance between two coordinates in meters using Haversine formula
  */
-function parseAddress(address: string): { streetNumber: string; streetName: string; normalized: string } {
-  const normalized = address.toLowerCase().replace(/[,.']/g, " ").replace(/\s+/g, " ").trim()
-
-  // Extract street number (including flat numbers like "Flat 3" or "21a")
-  const numberMatch = normalized.match(/^(?:flat\s+)?(\d+[a-z]?)\s+/i) ||
-                      normalized.match(/(\d+[a-z]?)\s+[\w]/i)
-  const streetNumber = numberMatch ? numberMatch[1] : ""
-
-  // Extract street name (first significant word after number)
-  const streetMatch = normalized.match(/\d+[a-z]?\s+(\w+(?:\s+\w+)?)/i)
-  const streetName = streetMatch ? streetMatch[1].replace(/\s+(road|street|avenue|lane|drive|close|way|place|court|gardens|terrace|crescent|grove|square|mews|hill|rise|row|walk|park)$/i, "") : ""
-
-  return { streetNumber, streetName, normalized }
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000 // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 /**
- * Calculate match confidence between two addresses
- * Returns: "exact" | "high" | "medium" | "low" | "none"
+ * Normalize address for comparison
+ * Extracts: street number, street name, flat/unit number
  */
-function calculateMatchConfidence(
+function normalizeAddress(address: string): {
+  streetNumber: string
+  flatNumber: string
+  streetName: string
+  normalized: string
+} {
+  const lower = address.toLowerCase()
+    .replace(/[,.']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  // Extract flat/apartment number
+  const flatMatch = lower.match(/(?:flat|apartment|unit|apt)\s*(\d+[a-z]?)/i)
+  const flatNumber = flatMatch ? flatMatch[1] : ""
+
+  // Extract street number
+  const numberMatch = lower.match(/^(\d+[a-z]?)\s+/) ||
+    lower.match(/(?:flat\s+\d+[a-z]?\s+)?(\d+[a-z]?)\s+[\w]/i)
+  const streetNumber = numberMatch ? numberMatch[1] : ""
+
+  // Extract street name (remove common suffixes for comparison)
+  const streetMatch = lower.match(/\d+[a-z]?\s+(.+?)(?:\s+(?:road|street|avenue|lane|drive|close|way|place|court|gardens|terrace|crescent|grove|square|mews|hill|rise|row|walk|park|london|[a-z]{1,2}\d+)|\s*$)/i)
+  const streetName = streetMatch ? streetMatch[1].trim() : ""
+
+  return {
+    streetNumber,
+    flatNumber,
+    streetName,
+    normalized: lower
+  }
+}
+
+/**
+ * Calculate exact match score between HMO Hunter property and Zoopla listing
+ * Returns score 0-100 and match details
+ */
+function calculateExactMatchScore(
   hmoAddress: string,
   hmoPostcode: string,
   hmoBedrooms: number | undefined,
-  zooplaAddress: string,
-  zooplaPostcode: string,
-  zooplaBedrooms: number
-): "exact" | "high" | "medium" | "low" | "nearby" | "none" {
-  const hmo = parseAddress(hmoAddress)
-  const zoopla = parseAddress(zooplaAddress)
+  hmoPrice: number | undefined,
+  hmoLat: number | undefined,
+  hmoLng: number | undefined,
+  zooplaListing: any
+): { score: number; matchType: string; details: string[] } {
+  const details: string[] = []
+  let score = 0
 
-  // Normalize postcodes for comparison
+  const hmo = normalizeAddress(hmoAddress)
+  const zoopla = normalizeAddress(zooplaListing.address || "")
+
+  // Get raw data if available
+  const raw = zooplaListing._raw || {}
+
+  // 1. COORDINATE MATCHING (most reliable) - up to 50 points
+  if (hmoLat && hmoLng && zooplaListing.latitude && zooplaListing.longitude) {
+    const distance = calculateDistance(
+      hmoLat, hmoLng,
+      zooplaListing.latitude,
+      zooplaListing.longitude
+    )
+
+    if (distance <= 15) {
+      // Within 15 meters - almost certainly same property
+      score += 50
+      details.push(`coords: ${distance.toFixed(0)}m ✓`)
+    } else if (distance <= 30) {
+      // Within 30 meters - likely same building
+      score += 40
+      details.push(`coords: ${distance.toFixed(0)}m`)
+    } else if (distance <= 50) {
+      // Within 50 meters - same immediate area
+      score += 25
+      details.push(`coords: ${distance.toFixed(0)}m ~`)
+    } else {
+      details.push(`coords: ${distance.toFixed(0)}m ✗`)
+    }
+  }
+
+  // 2. POSTCODE MATCHING - up to 20 points
   const hmoPC = hmoPostcode.toLowerCase().replace(/\s+/g, "")
-  const zooplaPC = zooplaPostcode.toLowerCase().replace(/\s+/g, "")
-
-  // Extract outcode (first part of postcode, e.g., "E8" from "E8 1EJ")
+  const zooplaPC = zooplaListing.postcode?.toLowerCase().replace(/\s+/g, "") || ""
   const hmoOutcode = hmoPC.replace(/\d[a-z]{2}$/, "")
   const zooplaOutcode = zooplaPC.replace(/\d[a-z]{2}$/, "")
 
-  // Check if same outcode or nearby (same postcode district letter, e.g., E11 and E18 are both "E")
-  const sameOutcode = hmoOutcode === zooplaOutcode
-  const sameDistrict = hmoOutcode.charAt(0) === zooplaOutcode.charAt(0) // E, N, W, SE, etc.
+  if (hmoPC === zooplaPC) {
+    score += 20
+    details.push("postcode ✓")
+  } else if (hmoOutcode === zooplaOutcode) {
+    // Same outcode (e.g., E8) but different incode - still very close
+    score += 15
+    details.push("outcode ✓")
+  }
 
-  // For exact/high/medium matches, require same outcode
-  // For nearby matches, allow same district
+  // 3. STREET NUMBER MATCHING - up to 20 points (crucial for exact match)
+  const rawPropertyNumber = raw.property_number || ""
+  const zooplaStreetNumber = rawPropertyNumber.match(/^(\d+[a-z]?)/i)?.[1] ||
+                             zoopla.streetNumber || ""
 
-  // Check for exact postcode match
-  const exactPostcode = hmoPC === zooplaPC
-
-  // Check street number match
-  const streetNumberMatch = hmo.streetNumber && zoopla.streetNumber &&
-                            hmo.streetNumber.toLowerCase() === zoopla.streetNumber.toLowerCase()
-
-  // Check street name match (fuzzy)
-  const streetNameMatch = hmo.streetName && zoopla.streetName &&
-                          (hmo.streetName.includes(zoopla.streetName) ||
-                           zoopla.streetName.includes(hmo.streetName))
-
-  // Check bedroom match
-  const bedroomMatch = hmoBedrooms !== undefined && hmoBedrooms === zooplaBedrooms
-
-  // For exact/high/medium confidence, require same outcode
-  if (sameOutcode) {
-    // Exact match: same street number + street name
-    if (streetNumberMatch && streetNameMatch) {
-      return "exact"
-    }
-
-    // High confidence: street number matches + bedrooms match
-    if (streetNumberMatch && bedroomMatch) {
-      return "high"
-    }
-
-    // Medium confidence: street name matches + bedrooms match (but different street number)
-    if (streetNameMatch && bedroomMatch) {
-      return "medium"
-    }
-
-    // Low confidence: street name matches only
-    if (streetNameMatch) {
-      return "low"
+  if (hmo.streetNumber && zooplaStreetNumber) {
+    if (hmo.streetNumber.toLowerCase() === zooplaStreetNumber.toLowerCase()) {
+      score += 20
+      details.push(`#${hmo.streetNumber} ✓`)
     }
   }
 
-  // Nearby: same postcode district (e.g., both "E" postcodes) with similar bedrooms
-  // This provides representative images of the area when exact match isn't available
-  const bedroomSimilar = hmoBedrooms !== undefined &&
-    Math.abs(hmoBedrooms - zooplaBedrooms) <= 2
+  // 4. STREET NAME MATCHING - up to 15 points
+  const rawStreetName = (raw.street_name || "").toLowerCase().replace(/[,.']/g, " ").trim()
+  const zooplaStreetName = rawStreetName || zoopla.streetName
 
-  if (sameDistrict && bedroomSimilar) {
-    return "nearby"
+  if (hmo.streetName && zooplaStreetName) {
+    const hmoStreet = hmo.streetName.split(" ")[0]
+    const zooplaStreet = zooplaStreetName.split(" ")[0]
+    if (zooplaStreet.includes(hmoStreet) || hmoStreet.includes(zooplaStreet)) {
+      score += 15
+      details.push("street ✓")
+    }
   }
 
-  // Also allow nearby for same outcode even without street match
-  if (sameOutcode && bedroomSimilar) {
-    return "nearby"
+  // 5. BEDROOM MATCHING - up to 10 points
+  if (hmoBedrooms !== undefined && zooplaListing.bedrooms !== undefined) {
+    if (hmoBedrooms === zooplaListing.bedrooms) {
+      score += 10
+      details.push(`${hmoBedrooms}bed ✓`)
+    }
   }
 
-  return "none"
+  // 6. PRICE MATCHING (for validation) - up to 5 points
+  if (hmoPrice && zooplaListing.price_pcm) {
+    const priceDiff = Math.abs(hmoPrice - zooplaListing.price_pcm) / hmoPrice
+    if (priceDiff <= 0.20) {
+      score += 5
+      details.push("price ✓")
+    }
+  }
+
+  // Determine match type based on score
+  // Max possible: 50 (coords) + 20 (postcode) + 20 (street#) + 15 (street) + 10 (beds) + 5 (price) = 120
+  // Without coords: max 70 points
+  let matchType = "none"
+  if (score >= 70) {
+    matchType = "exact"
+  } else if (score >= 55) {
+    matchType = "high"
+  } else if (score >= 40) {
+    matchType = "medium"
+  }
+
+  return { score, matchType, details }
 }
 
 export async function GET(request: NextRequest) {
@@ -115,109 +181,125 @@ export async function GET(request: NextRequest) {
   const postcode = searchParams.get("postcode")
   const address = searchParams.get("address")
   const bedrooms = searchParams.get("bedrooms")
+  const price = searchParams.get("price")
+  const latitude = searchParams.get("latitude")
+  const longitude = searchParams.get("longitude")
   const listingType = searchParams.get("listingType") as "rent" | "sale" | null
 
   if (!postcode) {
-    return NextResponse.json(
-      { error: "Postcode is required" },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: "Postcode is required" }, { status: 400 })
   }
 
-  const cacheKey = `${postcode}-${address || ""}-${bedrooms || ""}`
+  const cacheKey = `${postcode}-${address || ""}-${bedrooms || ""}-${latitude || ""}-${longitude || ""}`
 
-  // Check cache - but invalidate if we have 0 images with a valid match (stale cache issue)
+  // Check cache
   const cached = cache.get(cacheKey)
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    // Don't return stale cache with 0 images if we had a match - refetch
-    if (cached.images.length > 0 || cached.matchQuality === "none") {
-      console.log(`[ZooplaImages] Returning cached images for ${cacheKey}`)
-      return NextResponse.json({
-        images: cached.images,
-        matchQuality: cached.matchQuality,
-        cached: true
-      })
-    }
-    // Clear bad cache entry with 0 images but valid match
-    console.log(`[ZooplaImages] Clearing stale cache for ${cacheKey}`)
-    cache.delete(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL && cached.images.length > 0) {
+    console.log(`[ZooplaImages] Returning cached: ${cached.matchType} (${cached.confidence}%)`)
+    return NextResponse.json({
+      images: cached.images,
+      matchType: cached.matchType,
+      confidence: cached.confidence,
+      cached: true
+    })
   }
 
   try {
-    console.log(`[ZooplaImages] Fetching images for ${postcode}, address: ${address || "N/A"}, bedrooms: ${bedrooms || "N/A"}`)
+    const hmoLat = latitude ? parseFloat(latitude) : undefined
+    const hmoLng = longitude ? parseFloat(longitude) : undefined
+    const hmoBedrooms = bedrooms ? parseInt(bedrooms) : undefined
+    const hmoPrice = price ? parseInt(price) : undefined
 
-    // Fetch listings from Zoopla for this postcode
+    console.log(`[ZooplaImages] Searching for exact match: ${address}, ${postcode}`)
+    if (hmoLat && hmoLng) {
+      console.log(`[ZooplaImages] Using coordinates: ${hmoLat}, ${hmoLng}`)
+    }
+
+    // Fetch listings from Zoopla - use tight radius for accuracy
     const listings = await zoopla.fetch({
       postcode,
       listingType: listingType || "rent",
-      minBedrooms: bedrooms ? Math.max(1, parseInt(bedrooms) - 2) : undefined, // Wider bedroom search
-      maxBedrooms: bedrooms ? parseInt(bedrooms) + 2 : undefined,
-      radius: 0.5, // Half mile radius for more coverage
-      pageSize: 30,
+      radius: 0.25, // 0.25 mile radius for precision
+      pageSize: 50, // Get more results to find exact match
     })
 
-    let images: string[] = []
-    let matchQuality: "exact" | "high" | "medium" | "low" | "nearby" | "none" = "none"
-    let matchedListing = null
+    if (listings.length === 0) {
+      console.log(`[ZooplaImages] No listings found for ${postcode}`)
+      cache.set(cacheKey, { images: [], timestamp: Date.now(), matchType: "none", confidence: 0 })
+      return NextResponse.json({ images: [], matchType: "none", confidence: 0, cached: false })
+    }
 
-    // Score and rank all listings by match confidence
-    if (address && listings.length > 0) {
-      const bedroomCount = bedrooms ? parseInt(bedrooms) : undefined
+    // Score all listings and find best match
+    const scoredListings = listings.map(listing => {
+      const result = calculateExactMatchScore(
+        address || "",
+        postcode,
+        hmoBedrooms,
+        hmoPrice,
+        hmoLat,
+        hmoLng,
+        listing
+      )
+      return { listing, ...result }
+    })
 
-      const scoredListings = listings.map(listing => ({
-        listing,
-        confidence: calculateMatchConfidence(
-          address,
-          postcode,
-          bedroomCount,
-          listing.address,
-          listing.postcode,
-          listing.bedrooms
-        )
-      }))
+    // Sort by score descending
+    scoredListings.sort((a, b) => b.score - a.score)
 
-      // Sort by confidence level
-      const confidenceOrder: Record<string, number> = { exact: 0, high: 1, medium: 2, low: 3, nearby: 4, none: 5 }
-      scoredListings.sort((a, b) => confidenceOrder[a.confidence] - confidenceOrder[b.confidence])
+    // Log top 3 matches for debugging
+    console.log(`[ZooplaImages] Top matches for "${address}":`)
+    scoredListings.slice(0, 3).forEach((s, i) => {
+      console.log(`  ${i + 1}. Score ${s.score}: ${s.listing.address} [${s.details.join(", ")}]`)
+    })
 
-      // Get best match
-      const bestMatch = scoredListings[0]
+    // Get best match
+    const bestMatch = scoredListings[0]
 
-      // Use images for all confidence levels except "none"
-      // - exact/high/medium: same street match
-      // - low: street name only match
-      // - nearby: same area with matching bedrooms (representative of neighborhood)
-      if (bestMatch && bestMatch.confidence !== "none") {
-        matchedListing = bestMatch.listing
-        matchQuality = bestMatch.confidence
+    // STRICT MATCHING: Only return images for exact or high confidence matches
+    // exact >= 70, high >= 55
+    if (bestMatch.score >= 55 && (bestMatch.matchType === "exact" || bestMatch.matchType === "high")) {
+      const images = bestMatch.listing.images?.filter((img: string) => img && !img.includes("placeholder")) || []
 
-        if (matchedListing.images && matchedListing.images.length > 0) {
-          images = matchedListing.images.filter(img => img && !img.includes("placeholder"))
-          console.log(`[ZooplaImages] Found ${matchQuality} match: ${matchedListing.address} with ${images.length} images`)
-        }
-      } else {
-        console.log(`[ZooplaImages] No confident match found for ${address}. Best was: ${bestMatch?.confidence || "none"}`)
+      if (images.length > 0) {
+        console.log(`[ZooplaImages] ✓ EXACT MATCH: ${bestMatch.listing.address} (score: ${bestMatch.score})`)
+
+        cache.set(cacheKey, {
+          images: images.slice(0, 15),
+          timestamp: Date.now(),
+          matchType: bestMatch.matchType,
+          confidence: bestMatch.score
+        })
+
+        return NextResponse.json({
+          images: images.slice(0, 15),
+          matchType: bestMatch.matchType,
+          confidence: bestMatch.score,
+          matchedAddress: bestMatch.listing.address,
+          matchDetails: bestMatch.details,
+          cached: false
+        })
       }
     }
 
-    // Deduplicate and limit
-    images = [...new Set(images)].slice(0, 15)
+    // No exact match found - property not listed on Zoopla
+    console.log(`[ZooplaImages] ✗ No exact match for "${address}". Best score: ${bestMatch.score}`)
+    console.log(`[ZooplaImages]   Best candidate: ${bestMatch.listing.address} [${bestMatch.details.join(", ")}]`)
+    console.log(`[ZooplaImages]   Property may not be listed on Zoopla - will use Street View`)
 
-    // Cache the result
-    cache.set(cacheKey, { images, timestamp: Date.now(), matchQuality })
+    cache.set(cacheKey, { images: [], timestamp: Date.now(), matchType: "none", confidence: bestMatch.score })
 
     return NextResponse.json({
-      images,
-      count: images.length,
-      matchQuality,
-      matched: matchQuality !== "none",
-      cached: false,
+      images: [],
+      matchType: "none",
+      confidence: bestMatch.score,
+      reason: "Property not found on Zoopla - no exact match available",
+      bestMatchAddress: bestMatch.listing.address,
+      bestMatchDetails: bestMatch.details,
+      cached: false
     })
+
   } catch (error) {
     console.error("[ZooplaImages] Error:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch images", images: [], matchQuality: "none" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to fetch images", images: [], matchType: "none" }, { status: 500 })
   }
 }

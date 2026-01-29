@@ -158,7 +158,17 @@ export class ZooplaAdapter extends SourceAdapter {
 
             // Timestamps
             last_seen_at: new Date().toISOString(),
-          }
+
+            // Raw Zoopla data for exact matching
+            _raw: {
+              listing_id: listing.listing_id,
+              property_number: listing.property_number,
+              street_name: listing.street_name,
+              outcode: listing.outcode,
+              incode: listing.incode,
+              displayable_address: listing.displayable_address,
+            },
+          } as PropertyListing & { _raw: any }
 
           // Skip if no valid coordinates
           if (!property.latitude || !property.longitude) {
