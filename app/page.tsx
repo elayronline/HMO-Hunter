@@ -765,6 +765,7 @@ export default function HMOHunterPage() {
                     <SelectContent>
                       <SelectItem value="all">All Licence Types</SelectItem>
                       <SelectItem value="any_licensed">Any Licensed HMO</SelectItem>
+                      <SelectItem value="expired_licence">Expired Licence Only</SelectItem>
                       <SelectItem value="unlicensed">Unlicensed Only</SelectItem>
                       <SelectItem value="---" disabled>───────────────</SelectItem>
                       {DEFAULT_LICENCE_TYPES.filter(t => t.is_active).map((type) => (
@@ -1015,6 +1016,22 @@ export default function HMOHunterPage() {
                         isPremium={isPremiumUser}
                       />
                     )}
+                    {selectedProperty.licence_status === "expired" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Expired Licence
+                      </span>
+                    )}
+                    {selectedProperty.licensed_hmo && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-100 text-teal-800 rounded text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Licensed
+                      </span>
+                    )}
                     {selectedProperty.epc_rating && (
                       <EPCBadge
                         rating={selectedProperty.epc_rating}
@@ -1124,6 +1141,15 @@ export default function HMOHunterPage() {
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-teal-700"></div>
                     <span className="text-xs text-slate-600">Licensed HMO</span>
+                  </div>
+                </div>
+
+                {/* Amber - Expired Licence */}
+                <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
+                  <span className="text-xs font-medium text-amber-600">Expired Licence</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
+                    <span className="text-xs text-slate-600">HMO with Expired Licence</span>
                   </div>
                 </div>
 
@@ -1353,6 +1379,24 @@ export default function HMOHunterPage() {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {selectedProperty.licence_status === "expired" && !selectedProperty.licensed_hmo && (
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Expired HMO Licence
+                      </div>
+                      {selectedProperty.licence_end_date && (
+                        <div className="mt-1 ml-6 text-xs text-amber-700">
+                          Licence Expired: {new Date(selectedProperty.licence_end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </div>
+                      )}
+                      <div className="mt-2 ml-6 text-xs text-slate-600 bg-amber-50 p-2 rounded">
+                        This property previously held an HMO licence that has now expired. Contact the owner for current licensing status.
+                      </div>
                     </div>
                   )}
                 </div>

@@ -320,6 +320,9 @@ export function MapInner({
     const isReadyToGo = isPotentialHMO && hmoClassification === "ready_to_go"
     const isValueAdd = isPotentialHMO && hmoClassification === "value_add"
 
+    // Check for expired licence - HMOs that were previously licensed but licence has expired
+    const hasExpiredLicence = property.licence_status === "expired"
+
     // Check for title owner and licence holder information
     const hasTitleOwner = !!(property.owner_name || property.company_name || property.company_number)
     const hasLicenceHolder = !!(property.licensed_hmo || property.licence_status === "active" || property.hmo_status?.includes("Licensed"))
@@ -336,6 +339,12 @@ export function MapInner({
       textColor = "white"
       borderStyle = "3px solid #ffffff"
       markerSize = 36
+    } else if (hasExpiredLicence) {
+      // Expired Licence - Orange/Amber color to indicate caution
+      bgColor = "#f59e0b" // amber-500
+      textColor = "white"
+      borderStyle = "3px solid #d97706" // amber-600
+      markerSize = 40
     } else if (isPotentialHMO && showPotentialHMO) {
       if (isReadyToGo) {
         // Ready to Go with complete info = BOLD bright green (best opportunities)

@@ -38,8 +38,8 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
     query = query.or("is_stale.eq.false,is_stale.is.null")
 
-    // HMO Hunter: Only show Licensed HMOs or Potential HMOs - filter out standard listings
-    query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true")
+    // HMO Hunter: Only show Licensed HMOs, Potential HMOs, or Expired Licence HMOs - filter out standard listings
+    query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
     if (filters?.listingType) {
       query = query.eq("listing_type", filters.listingType)
@@ -118,6 +118,9 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       if (filters.licenceTypeFilter === "any_licensed") {
         // Show only properties with any active licence
         query = query.eq("licensed_hmo", true)
+      } else if (filters.licenceTypeFilter === "expired_licence") {
+        // Show only properties with expired licences
+        query = query.eq("licence_status", "expired")
       } else if (filters.licenceTypeFilter === "unlicensed") {
         // Show only properties without licences
         query = query.or("licensed_hmo.eq.false,licensed_hmo.is.null")
