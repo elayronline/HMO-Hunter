@@ -82,9 +82,9 @@ export default function HMOHunterPage() {
 
   const [selectedCity, setSelectedCity] = useState<UKCity>(DEFAULT_CITY)
 
-  const [priceRange, setPriceRange] = useState([100000, 1000000])
+  const [priceRange, setPriceRange] = useState([50000, 2000000])
   const priceRangeKey = priceRange.join(",")
-  const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House"])
+  const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
   const propertyTypesKey = propertyTypes.join(",")
   const [availableNow, setAvailableNow] = useState(false)
   const [studentFriendly, setStudentFriendly] = useState(false)
@@ -589,9 +589,9 @@ export default function HMOHunterPage() {
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      min={listingType === "purchase" ? 100000 : 500}
-                      max={listingType === "purchase" ? 1000000 : 15000}
-                      step={listingType === "purchase" ? 5000 : 100}
+                      min={listingType === "purchase" ? 50000 : 500}
+                      max={listingType === "purchase" ? 2000000 : 15000}
+                      step={listingType === "purchase" ? 10000 : 100}
                       className="mb-3"
                     />
                   </div>
@@ -604,20 +604,20 @@ export default function HMOHunterPage() {
                 <div>
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Property Type</label>
                   <Select
-                    defaultValue="hmo"
+                    defaultValue="all"
                     onValueChange={(value) => {
-                      if (value === "hmo") setPropertyTypes(["HMO", "Flat", "House"])
-                      else if (value === "flat") setPropertyTypes(["Flat"])
-                      else if (value === "house") setPropertyTypes(["House"])
+                      if (value === "all") setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
+                      else if (value === "flat") setPropertyTypes(["Flat", "Studio"])
+                      else if (value === "house") setPropertyTypes(["House", "Bungalow"])
                     }}
                   >
                     <SelectTrigger className="w-full bg-white border-teal-200 focus:border-teal-500 focus:ring-teal-500">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hmo">HMO, Flat, House</SelectItem>
-                      <SelectItem value="flat">Flat</SelectItem>
-                      <SelectItem value="house">House</SelectItem>
+                      <SelectItem value="all">All Property Types</SelectItem>
+                      <SelectItem value="flat">Flats & Studios</SelectItem>
+                      <SelectItem value="house">Houses & Bungalows</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -942,7 +942,7 @@ export default function HMOHunterPage() {
                         if (checked) {
                           setPriceRange([500, 15000])
                         } else {
-                          setPriceRange([100000, 1000000])
+                          setPriceRange([50000, 2000000])
                         }
                       }}
                       className="data-[state=checked]:bg-purple-600"

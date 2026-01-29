@@ -70,8 +70,12 @@ export async function POST(request: NextRequest) {
           .eq("external_id", listing.external_id)
           .maybeSingle()
 
-        // Determine HMO status based on bedrooms (3+ bedrooms = potential HMO)
-        const hmoStatus = listing.bedrooms >= 3 ? "Potential HMO" : "Potential HMO"
+        // Determine HMO potential based on bedrooms (3+ bedrooms = potential HMO)
+        const isPotentialHmo = listing.bedrooms >= 3
+        // Classify HMO opportunity type
+        const hmoClassification = isPotentialHmo
+          ? (listing.bedrooms >= 5 ? "ready_to_go" : "value_add")
+          : null
 
         const propertyData = {
           title: listing.title,
@@ -97,7 +101,9 @@ export async function POST(request: NextRequest) {
           source_url: listing.source_url,
           external_id: listing.external_id, // zoopla-{listing_id}
           media_source_url: "zoopla_direct",
-          hmo_status: hmoStatus,
+          hmo_status: isPotentialHmo ? "Potential HMO" : "Standard",
+          is_potential_hmo: isPotentialHmo,
+          hmo_classification: hmoClassification,
           last_synced: now,
           last_seen_at: now,
           is_stale: false,
