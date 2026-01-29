@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Bell,
@@ -96,6 +96,9 @@ export default function HMOHunterPage() {
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
   const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
   const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
+
+  // Segment filter - main category tabs for clearer UX
+  const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">("all")
 
   // Potential HMO filters - show all but highlight opportunities
   const [showPotentialHMOs, setShowPotentialHMOs] = useState(true)
@@ -407,6 +410,58 @@ export default function HMOHunterPage() {
       maxYield: maxYield === -Infinity ? 0 : maxYield,
     }
   }
+
+  // Calculate segment counts for the category tabs
+  const segmentCounts = useMemo(() => {
+    const counts = {
+      all: properties.length,
+      licensed: 0,
+      expired: 0,
+      opportunities: 0,
+      restricted: 0,
+    }
+
+    for (const p of properties) {
+      // Licensed HMOs with active licence
+      if (p.licensed_hmo && p.licence_status !== "expired") {
+        counts.licensed++
+      }
+      // Expired licence HMOs
+      if (p.licence_status === "expired") {
+        counts.expired++
+      }
+      // Opportunities - potential HMOs (ready_to_go or value_add)
+      if (p.is_potential_hmo && (p.hmo_classification === "ready_to_go" || p.hmo_classification === "value_add")) {
+        counts.opportunities++
+      }
+      // Restricted - Article 4 areas
+      if (p.article_4_area) {
+        counts.restricted++
+      }
+    }
+
+    return counts
+  }, [properties])
+
+  // Filter properties based on active segment
+  const segmentFilteredProperties = useMemo(() => {
+    if (activeSegment === "all") return properties
+
+    return properties.filter(p => {
+      switch (activeSegment) {
+        case "licensed":
+          return p.licensed_hmo && p.licence_status !== "expired"
+        case "expired":
+          return p.licence_status === "expired"
+        case "opportunities":
+          return p.is_potential_hmo && (p.hmo_classification === "ready_to_go" || p.hmo_classification === "value_add")
+        case "restricted":
+          return p.article_4_area
+        default:
+          return true
+      }
+    })
+  }, [properties, activeSegment])
 
   return (
     <div className="flex flex-col h-screen bg-slate-800">
@@ -942,10 +997,64 @@ export default function HMOHunterPage() {
 
         {/* Map Area */}
         <main className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
+          {/* Segment Tabs - Category Filter */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200">
+            <button
+              onClick={() => setActiveSegment("all")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSegment === "all"
+                  ? "bg-slate-800 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              All <span className="ml-1 opacity-70">{segmentCounts.all}</span>
+            </button>
+            <button
+              onClick={() => setActiveSegment("licensed")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSegment === "licensed"
+                  ? "bg-teal-600 text-white shadow-sm"
+                  : "text-teal-700 hover:bg-teal-50"
+              }`}
+            >
+              Licensed <span className="ml-1 opacity-70">{segmentCounts.licensed}</span>
+            </button>
+            <button
+              onClick={() => setActiveSegment("expired")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSegment === "expired"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "text-amber-700 hover:bg-amber-50"
+              }`}
+            >
+              Expired <span className="ml-1 opacity-70">{segmentCounts.expired}</span>
+            </button>
+            <button
+              onClick={() => setActiveSegment("opportunities")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSegment === "opportunities"
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "text-green-700 hover:bg-green-50"
+              }`}
+            >
+              Opportunities <span className="ml-1 opacity-70">{segmentCounts.opportunities}</span>
+            </button>
+            <button
+              onClick={() => setActiveSegment("restricted")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeSegment === "restricted"
+                  ? "bg-red-600 text-white shadow-sm"
+                  : "text-red-600 hover:bg-red-50"
+              }`}
+            >
+              Restricted <span className="ml-1 opacity-70">{segmentCounts.restricted}</span>
+            </button>
+          </div>
+
           {/* MapLibre GL Map */}
           <MainMapView
             selectedCity={selectedCity}
-            properties={properties}
+            properties={segmentFilteredProperties}
             selectedProperty={selectedProperty}
             onPropertySelect={(property) => {
               setSelectedProperty(property)
@@ -1099,8 +1208,8 @@ export default function HMOHunterPage() {
             </Card>
           )}
 
-          {/* Map legend */}
-          <Card className="absolute bottom-8 left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden">
+          {/* Map legend - Reorganized by user intent */}
+          <Card className="absolute bottom-8 left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[280px]">
             <button
               onClick={() => setLegendExpanded(!legendExpanded)}
               className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
@@ -1113,50 +1222,61 @@ export default function HMOHunterPage() {
               )}
             </button>
             {legendExpanded && (
-              <div className="px-4 pb-4 space-y-2.5">
-                {/* Green - Opportunities outside Article 4 */}
+              <div className="px-4 pb-4 space-y-3">
+                {/* READY TO OPERATE */}
                 <div className="pb-2.5 border-b border-slate-100">
-                  <span className="text-xs font-semibold text-green-700 mb-2 block">Opportunities (Outside Article 4)</span>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-green-500 border-2 border-green-600 flex items-center justify-center">
-                        <span className="text-[8px] text-white font-bold">85</span>
-                      </div>
-                      <span className="text-xs text-slate-700">Ready to Go HMO</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
-                      <span className="text-xs text-slate-700">Value-Add HMO</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-green-500 border-[3px] border-green-600"></div>
-                      <span className="text-xs text-slate-600">Potential HMO Opportunity</span>
-                    </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">Ready to Operate</span>
+                    <span className="text-[10px] text-slate-400">Rent immediately</span>
                   </div>
-                </div>
-
-                {/* Teal - Licensed HMOs */}
-                <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
-                  <span className="text-xs font-medium text-teal-700">Licensed HMOs</span>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-teal-700"></div>
                     <span className="text-xs text-slate-600">Licensed HMO</span>
+                    <span className="text-[10px] text-teal-600 ml-auto">{segmentCounts.licensed}</span>
                   </div>
                 </div>
 
-                {/* Amber - Expired Licence */}
-                <div className="space-y-1.5 pb-2.5 border-b border-slate-100">
-                  <span className="text-xs font-medium text-amber-600">Expired Licence</span>
+                {/* REQUIRES ACTION */}
+                <div className="pb-2.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Requires Action</span>
+                    <span className="text-[10px] text-slate-400">Needs renewal</span>
+                  </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
-                    <span className="text-xs text-slate-600">HMO with Expired Licence</span>
+                    <span className="text-xs text-slate-600">Expired Licence</span>
+                    <span className="text-[10px] text-amber-600 ml-auto">{segmentCounts.expired}</span>
                   </div>
                 </div>
 
-                {/* Red - Article 4 restricted */}
+                {/* OPPORTUNITIES */}
+                <div className="pb-2.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Opportunities</span>
+                    <span className="text-[10px] text-slate-400">Conversion potential</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-green-600 border-2 border-green-700"></div>
+                      <span className="text-xs text-slate-600">Ready to Go</span>
+                      <span className="text-[10px] text-green-600 ml-auto">Minimal work</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
+                      <span className="text-xs text-slate-600">Value-Add</span>
+                      <span className="text-[10px] text-green-600 ml-auto">Some work</span>
+                    </div>
+                  </div>
+                  <div className="mt-1 text-[10px] text-slate-400 text-right">{segmentCounts.opportunities} opportunities</div>
+                </div>
+
+                {/* RESTRICTIONS */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-red-600">Article 4 Restricted</span>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Restrictions</span>
+                      <span className="text-[10px] text-slate-400">Planning required</span>
+                    </div>
                     <Switch
                       checked={showArticle4Overlay}
                       onCheckedChange={setShowArticle4Overlay}
@@ -1164,13 +1284,14 @@ export default function HMOHunterPage() {
                     />
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-red-600 border-[3px] border-white shadow-sm"></div>
-                    <span className="text-xs text-slate-600">Property in Article 4</span>
+                    <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div>
+                    <span className="text-xs text-slate-600">Article 4 Area</span>
+                    <span className="text-[10px] text-red-600 ml-auto">{segmentCounts.restricted}</span>
                   </div>
                   {showArticle4Overlay && (
                     <div className="flex items-center gap-2.5">
                       <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
-                      <span className="text-xs text-slate-500">Article 4 Zone</span>
+                      <span className="text-xs text-slate-500">Article 4 Zone overlay</span>
                     </div>
                   )}
                   {showArticle4Overlay && (
