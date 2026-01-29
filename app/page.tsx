@@ -53,7 +53,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Property } from "@/lib/types/database"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
-import { DEFAULT_CITY, type UKCity } from "@/lib/data/uk-cities"
+import { DEFAULT_CITY, ALL_CITIES_OPTION, type UKCity } from "@/lib/data/uk-cities"
 import { CitySearchAutocomplete } from "@/components/city-search-autocomplete"
 import { MainMapView } from "@/components/main-map-view"
 import { EPCBadge } from "@/components/epc-badge"
@@ -97,7 +97,7 @@ export default function HMOHunterPage() {
   const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
 
   // Potential HMO filters - show all but highlight opportunities
-  const [showPotentialHMOs, setShowPotentialHMOs] = useState(false)
+  const [showPotentialHMOs, setShowPotentialHMOs] = useState(true)
   const [hmoClassificationFilter, setHmoClassificationFilter] = useState<"ready_to_go" | "value_add" | null>(null)
   const [floorAreaBandFilter, setFloorAreaBandFilter] = useState<"under_90" | "90_120" | "120_plus" | null>(null)
   const [yieldBandFilter, setYieldBandFilter] = useState<"low" | "medium" | "high" | null>(null)

@@ -61,7 +61,8 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     if (filters?.propertyTypes && filters.propertyTypes.length > 0) {
       query = query.in("property_type", filters.propertyTypes)
     }
-    if (filters?.city) {
+    // Only filter by city if it's not "All Cities"
+    if (filters?.city && filters.city !== "All Cities") {
       query = query.eq("city", filters.city)
     }
     if (filters?.studentFriendly) {

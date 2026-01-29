@@ -47,7 +47,15 @@ export const UK_CITIES: UKCity[] = [
   { name: "Newry", region: "Northern Ireland", latitude: 54.1751, longitude: -6.3402, zoom: 13 },
 ]
 
-export const DEFAULT_CITY = UK_CITIES.find((city) => city.name === "London")!
+export const ALL_CITIES_OPTION: UKCity = {
+  name: "All Cities",
+  region: "England",
+  latitude: 54.0,
+  longitude: -2.0,
+  zoom: 6,
+}
+
+export const DEFAULT_CITY = ALL_CITIES_OPTION
 
 export const CITIES_BY_REGION = UK_CITIES.reduce(
   (acc, city) => {
