@@ -77,6 +77,15 @@ export interface PropertyListing {
   has_fiber?: boolean
   has_superfast?: boolean
   broadband_last_checked?: string
+  // Agent/Estate Agent Contact Info
+  agent_name?: string
+  agent_phone?: string
+  agent_email?: string
+  agent_address?: string
+  agent_logo?: string
+  agent_profile_url?: string
+  // Floor area from listing
+  floor_area_sqft?: number
 }
 
 export interface IngestionSource {

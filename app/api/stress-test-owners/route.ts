@@ -80,6 +80,39 @@ export async function GET() {
     .or("is_stale.eq.false,is_stale.is.null")
     .not("directors", "is", null)
 
+  // Properties with agent contact info (for purchase listings)
+  const { count: withAgentName } = await supabase
+    .from("properties")
+    .select("*", { count: "exact", head: true })
+    .or("is_stale.eq.false,is_stale.is.null")
+    .not("agent_name", "is", null)
+
+  const { count: withAgentPhone } = await supabase
+    .from("properties")
+    .select("*", { count: "exact", head: true })
+    .or("is_stale.eq.false,is_stale.is.null")
+    .not("agent_phone", "is", null)
+
+  const { count: withAgentEmail } = await supabase
+    .from("properties")
+    .select("*", { count: "exact", head: true })
+    .or("is_stale.eq.false,is_stale.is.null")
+    .not("agent_email", "is", null)
+
+  // Purchase properties with agent contact
+  const { count: purchaseTotal } = await supabase
+    .from("properties")
+    .select("*", { count: "exact", head: true })
+    .or("is_stale.eq.false,is_stale.is.null")
+    .eq("listing_type", "purchase")
+
+  const { count: purchaseWithAgent } = await supabase
+    .from("properties")
+    .select("*", { count: "exact", head: true })
+    .or("is_stale.eq.false,is_stale.is.null")
+    .eq("listing_type", "purchase")
+    .or("agent_name.not.is.null,agent_phone.not.is.null")
+
   // Sample properties with owner data
   const { data: sampleWithOwners } = await supabase
     .from("properties")
@@ -168,6 +201,16 @@ export async function GET() {
         withOwnerEmail,
         withOwnerPhone,
         withLicenceHolder,
+      },
+      agentData: {
+        withAgentName,
+        withAgentPhone,
+        withAgentEmail,
+        purchaseListings: {
+          total: purchaseTotal,
+          withAgentContact: purchaseWithAgent,
+          coverage: purchaseTotal ? `${((purchaseWithAgent || 0) / purchaseTotal * 100).toFixed(1)}%` : "N/A",
+        },
       },
     },
     dataQualityIssues: {

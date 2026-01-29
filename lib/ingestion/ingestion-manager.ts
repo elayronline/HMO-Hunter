@@ -159,6 +159,15 @@ export class IngestionManager {
             title_number: listing.title_number,
             title_last_enriched_at: listing.title_last_enriched_at,
             owner_enrichment_source: listing.owner_enrichment_source,
+            // Agent contact info (for purchase/rental listings)
+            agent_name: listing.agent_name,
+            agent_phone: listing.agent_phone,
+            agent_email: listing.agent_email,
+            agent_address: listing.agent_address,
+            agent_logo: listing.agent_logo,
+            agent_profile_url: listing.agent_profile_url,
+            // Floor area from listing
+            floor_area_sqft: listing.floor_area_sqft,
           }
 
           if (existingProperty) {

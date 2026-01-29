@@ -152,9 +152,13 @@ export class ZooplaAdapter extends SourceAdapter {
             // Additional data
             floor_area_sqft: parseInt(listing.floor_area?.value) || undefined,
 
-            // Agent info
+            // Agent info - capture all available fields for contact
             agent_name: listing.agent_name,
             agent_phone: listing.agent_phone,
+            agent_email: listing.agent_email,
+            agent_address: listing.agent_address,
+            agent_logo: listing.agent_logo,
+            agent_profile_url: listing.agent_profile_page_url,
 
             // Timestamps
             last_seen_at: new Date().toISOString(),
