@@ -74,8 +74,8 @@ export class ZooplaAdapter extends SourceAdapter {
     if (minPrice) params.append("minimum_price", minPrice.toString())
     if (maxPrice) params.append("maximum_price", maxPrice.toString())
 
-    // Add property type filter for potential HMOs
-    params.append("property_type", "houses,flats")
+    // Note: property_type filter removed as Zoopla API v1 doesn't support comma-separated values
+    // and returns all property types by default
 
     const allListings: PropertyListing[] = []
 

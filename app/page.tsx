@@ -981,6 +981,10 @@ export default function HMOHunterPage() {
                     propertyTitle={selectedProperty.title}
                     latitude={selectedProperty.latitude}
                     longitude={selectedProperty.longitude}
+                    postcode={selectedProperty.postcode}
+                    address={selectedProperty.address}
+                    bedrooms={selectedProperty.bedrooms}
+                    listingType={selectedProperty.listing_type}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1189,6 +1193,10 @@ export default function HMOHunterPage() {
                     propertyTitle={selectedProperty.title}
                     latitude={selectedProperty.latitude}
                     longitude={selectedProperty.longitude}
+                    postcode={selectedProperty.postcode}
+                    address={selectedProperty.address}
+                    bedrooms={selectedProperty.bedrooms}
+                    listingType={selectedProperty.listing_type}
                   />
                   <SavePropertyButton
                     propertyId={selectedProperty.id}
@@ -1260,8 +1268,12 @@ export default function HMOHunterPage() {
                   primaryImage={selectedProperty.primary_image}
                   fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
                   propertyTitle={selectedProperty.title}
-                    latitude={selectedProperty.latitude}
-                    longitude={selectedProperty.longitude}
+                  latitude={selectedProperty.latitude}
+                  longitude={selectedProperty.longitude}
+                  postcode={selectedProperty.postcode}
+                  address={selectedProperty.address}
+                  bedrooms={selectedProperty.bedrooms}
+                  listingType={selectedProperty.listing_type}
                 />
               </div>
 
