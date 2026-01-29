@@ -60,7 +60,7 @@ import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
 import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
-import { YieldCalculator } from "@/components/yield-calculator"
+import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
 import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
 import { BroadbandBadge } from "@/components/broadband-badge"
@@ -1687,10 +1687,9 @@ export default function HMOHunterPage() {
                 <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
               </div>
 
-              {/* Yield Calculator - Always show for all listings */}
               {/* Yield Calculator - Premium feature */}
               <div className="mb-6">
-                <YieldCalculator property={selectedProperty} defaultOpen={true} isPremium={true} />
+                <PremiumYieldCalculator property={selectedProperty} isPremium={isPremiumUser} />
               </div>
 
               {/* Potential HMO Analysis in Full Details - Pro Feature */}

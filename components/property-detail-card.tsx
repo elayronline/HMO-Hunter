@@ -47,7 +47,7 @@ import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
 import { EPCBadge } from "@/components/epc-badge"
 import { BroadbandBadge } from "@/components/broadband-badge"
-import { YieldCalculator } from "@/components/yield-calculator"
+import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
 import { AgentContactCard } from "@/components/agent-contact-card"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
@@ -464,7 +464,7 @@ export function PropertyDetailCard({
       {/* ═══════════════════════════════════════════════════════════════════
           YIELD CALCULATOR - PRO FEATURE
       ═══════════════════════════════════════════════════════════════════ */}
-      <YieldCalculator property={property} defaultOpen={true} isPremium={isPremium} />
+      <PremiumYieldCalculator property={property} isPremium={isPremium} />
 
       {/* ═══════════════════════════════════════════════════════════════════
           AGENT CONTACT - From Zoopla
