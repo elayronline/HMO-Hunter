@@ -6,25 +6,43 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * Fix HMO flags for properties that are missing is_potential_hmo
- * Sets is_potential_hmo = true for properties with 3+ bedrooms
+ * For purchase listings: All are potential HMOs (investment opportunities)
+ * For rent listings: Only 3+ bedrooms are potential HMOs
  */
 export async function POST() {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get properties with 3+ bedrooms that don't have is_potential_hmo set
-    const { data: properties, error: fetchError } = await supabase
+    // Get purchase properties without HMO flags - ALL purchase listings are opportunities
+    const { data: purchaseProperties, error: purchaseError } = await supabase
       .from("properties")
-      .select("id, bedrooms, is_potential_hmo, hmo_classification")
-      .gte("bedrooms", 3)
+      .select("id, bedrooms, is_potential_hmo, hmo_classification, licensed_hmo")
+      .eq("listing_type", "purchase")
       .or("is_potential_hmo.is.null,is_potential_hmo.eq.false")
+      .eq("licensed_hmo", false)
       .limit(1000)
 
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    if (purchaseError) {
+      return NextResponse.json({ error: purchaseError.message }, { status: 500 })
     }
 
-    if (!properties || properties.length === 0) {
+    // Get rent properties with 3+ bedrooms without HMO flags
+    const { data: rentProperties, error: rentError } = await supabase
+      .from("properties")
+      .select("id, bedrooms, is_potential_hmo, hmo_classification, licensed_hmo")
+      .eq("listing_type", "rent")
+      .gte("bedrooms", 3)
+      .or("is_potential_hmo.is.null,is_potential_hmo.eq.false")
+      .eq("licensed_hmo", false)
+      .limit(1000)
+
+    if (rentError) {
+      return NextResponse.json({ error: rentError.message }, { status: 500 })
+    }
+
+    const allProperties = [...(purchaseProperties || []), ...(rentProperties || [])]
+
+    if (allProperties.length === 0) {
       return NextResponse.json({
         success: true,
         message: "No properties need updating",
@@ -35,9 +53,10 @@ export async function POST() {
     let updated = 0
     const errors: string[] = []
 
-    for (const property of properties) {
-      // Classify based on bedrooms
-      const hmoClassification = property.bedrooms >= 5 ? "ready_to_go" : "value_add"
+    for (const property of allProperties) {
+      // Classify based on bedrooms: 5+ = ready_to_go, 3-4 = value_add, <3 = value_add (still opportunity)
+      const bedrooms = property.bedrooms || 0
+      const hmoClassification = bedrooms >= 5 ? "ready_to_go" : "value_add"
 
       const { error } = await supabase
         .from("properties")
@@ -59,7 +78,9 @@ export async function POST() {
       success: true,
       message: `Updated ${updated} properties with HMO flags`,
       updated,
-      total: properties.length,
+      purchaseUpdated: purchaseProperties?.length || 0,
+      rentUpdated: rentProperties?.length || 0,
+      total: allProperties.length,
       errors: errors.slice(0, 10),
     })
   } catch (error) {
