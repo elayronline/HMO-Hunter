@@ -113,9 +113,16 @@ export class ZooplaAdapter extends SourceAdapter {
           // Determine listing type
           const isRental = listing.listing_status === "rent"
 
+          // Build full address including property number for better matching
+          const propertyNumber = listing.property_number || ""
+          const streetName = listing.street_name || ""
+          const fullAddress = propertyNumber
+            ? `${propertyNumber} ${listing.displayable_address}`
+            : listing.displayable_address
+
           const property: PropertyListing = {
             title: listing.title || listing.displayable_address,
-            address: listing.displayable_address,
+            address: fullAddress,
             postcode: propertyPostcode,
             city: city,
             latitude: parseFloat(listing.latitude) || 0,
@@ -133,8 +140,8 @@ export class ZooplaAdapter extends SourceAdapter {
             price_pcm: isRental ? parseInt(listing.rental_prices?.per_month) || parseInt(listing.price) : undefined,
             purchase_price: !isRental ? parseInt(listing.price) : undefined,
 
-            // Images
-            images: listing.image_url ? [listing.image_url] : [],
+            // Images - extract all available images from Zoopla
+            images: this.extractAllImages(listing),
             floor_plans: listing.floor_plan ? [listing.floor_plan] : [],
 
             // Features
@@ -192,6 +199,39 @@ export class ZooplaAdapter extends SourceAdapter {
    */
   async fetchByPostcode(postcode: string, radius: number = 1, listingType: "rent" | "sale" = "rent"): Promise<PropertyListing[]> {
     return this.fetch({ postcode, radius, listingType })
+  }
+
+  /**
+   * Extract all images from a Zoopla listing
+   * Prioritizes higher resolution images
+   */
+  private extractAllImages(listing: any): string[] {
+    const images: string[] = []
+
+    // First, try to get images from other_image array (medium res)
+    if (listing.other_image && Array.isArray(listing.other_image)) {
+      for (const img of listing.other_image) {
+        if (img.url) {
+          // Convert to higher resolution (645x430)
+          const highResUrl = img.url.replace("/354/255/", "/645/430/")
+          images.push(highResUrl)
+        }
+      }
+    }
+
+    // Fallback to original_image array (full res but larger files)
+    if (images.length === 0 && listing.original_image && Array.isArray(listing.original_image)) {
+      images.push(...listing.original_image)
+    }
+
+    // Final fallback to single image_url
+    if (images.length === 0 && listing.image_645_430_url) {
+      images.push(listing.image_645_430_url)
+    } else if (images.length === 0 && listing.image_url) {
+      images.push(listing.image_url)
+    }
+
+    return images
   }
 
   /**

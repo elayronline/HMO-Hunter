@@ -59,6 +59,7 @@ export function PropertyGallery({
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [viewMode, setViewMode] = useState<"photos" | "floorplans">("photos")
   const [zooplaImages, setZooplaImages] = useState<string[]>([])
+  const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "none">("none")
   const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
 
   // Fetch Zoopla images if no real images available
@@ -81,6 +82,7 @@ export function PropertyGallery({
           const data = await response.json()
           if (data.images && data.images.length > 0) {
             setZooplaImages(data.images)
+            setZooplaMatchQuality(data.matchQuality || "none")
           }
         }
       } catch (err) {
@@ -175,9 +177,15 @@ export function PropertyGallery({
         {/* Image source badge */}
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
           {isZoopla && viewMode === "photos" && (
-            <div className="bg-purple-600/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+            <div className={`text-white text-xs px-2 py-1 rounded flex items-center gap-1 ${
+              zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
+                ? "bg-purple-600/80"
+                : "bg-purple-500/70"
+            }`}>
               <Home className="w-3 h-3" />
-              Zoopla
+              {zooplaMatchQuality === "exact" || zooplaMatchQuality === "high"
+                ? "Zoopla"
+                : "Zoopla (Area)"}
             </div>
           )}
           {isStreetView && viewMode === "photos" && (
