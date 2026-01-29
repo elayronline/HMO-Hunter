@@ -11,6 +11,8 @@ interface PropertyImageProps {
   latitude?: number
   longitude?: number
   existingImages?: string[]
+  bedrooms?: number
+  listingType?: "rent" | "purchase"
   alt?: string
   width?: number
   height?: number
@@ -43,9 +45,10 @@ function getStreetViewUrl(lat: number, lng: number, width: number, height: numbe
  *
  * Priority order:
  * 1. Real property images from database (not stock/placeholder)
- * 2. Google Street View (if lat/lng and API key available)
- * 3. Stock images from database (if any)
- * 4. Placeholder image
+ * 2. Zoopla listing images (fetched via API)
+ * 3. Google Street View (if lat/lng and API key available)
+ * 4. Stock images from database (if any)
+ * 5. Placeholder image
  */
 export function PropertyImage({
   address,
@@ -53,6 +56,8 @@ export function PropertyImage({
   latitude,
   longitude,
   existingImages,
+  bedrooms,
+  listingType,
   alt,
   width = 400,
   height = 300,
@@ -60,48 +65,75 @@ export function PropertyImage({
   priority = false,
 }: PropertyImageProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageSource, setImageSource] = useState<"listing" | "streetview" | "stock" | "placeholder">("placeholder")
+  const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock" | "placeholder">("placeholder")
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    const fetchImages = async () => {
+      const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-    // Priority 1: Use real images (not stock) if available
-    if (existingImages && existingImages.length > 0) {
-      const realImages = existingImages.filter(img => !isStockImage(img))
-      if (realImages.length > 0) {
-        setImageUrl(realImages[0])
-        setImageSource("listing")
+      // Priority 1: Use real images (not stock) if available
+      if (existingImages && existingImages.length > 0) {
+        const realImages = existingImages.filter(img => !isStockImage(img))
+        if (realImages.length > 0) {
+          setImageUrl(realImages[0])
+          setImageSource("listing")
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // Priority 2: Try Zoopla images
+      if (postcode) {
+        try {
+          const params = new URLSearchParams({ postcode })
+          if (address) params.append("address", address)
+          if (bedrooms) params.append("bedrooms", bedrooms.toString())
+          if (listingType) params.append("listingType", listingType === "purchase" ? "sale" : "rent")
+
+          const response = await fetch(`/api/zoopla-images?${params.toString()}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.images && data.images.length > 0) {
+              setImageUrl(data.images[0])
+              setImageSource("zoopla")
+              setIsLoading(false)
+              return
+            }
+          }
+        } catch (err) {
+          console.log("[PropertyImage] Zoopla images not available, falling back")
+        }
+      }
+
+      // Priority 3: Try Google Street View
+      if (latitude && longitude && googleApiKey) {
+        const streetViewUrl = getStreetViewUrl(latitude, longitude, width, height)
+        if (streetViewUrl) {
+          setImageUrl(streetViewUrl)
+          setImageSource("streetview")
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // Priority 4: Fall back to stock images from database
+      if (existingImages && existingImages.length > 0) {
+        setImageUrl(existingImages[0])
+        setImageSource("stock")
         setIsLoading(false)
         return
       }
-    }
 
-    // Priority 2: Try Google Street View
-    if (latitude && longitude && googleApiKey) {
-      const streetViewUrl = getStreetViewUrl(latitude, longitude, width, height)
-      if (streetViewUrl) {
-        setImageUrl(streetViewUrl)
-        setImageSource("streetview")
-        setIsLoading(false)
-        return
-      }
-    }
-
-    // Priority 3: Fall back to stock images from database
-    if (existingImages && existingImages.length > 0) {
-      setImageUrl(existingImages[0])
-      setImageSource("stock")
+      // Priority 5: Placeholder
+      setImageUrl("/placeholder.jpg")
+      setImageSource("placeholder")
       setIsLoading(false)
-      return
     }
 
-    // Priority 4: Placeholder
-    setImageUrl("/placeholder.jpg")
-    setImageSource("placeholder")
-    setIsLoading(false)
-  }, [address, postcode, latitude, longitude, existingImages, width, height])
+    fetchImages()
+  }, [address, postcode, latitude, longitude, existingImages, bedrooms, listingType, width, height])
 
   const handleImageError = () => {
     setHasError(true)
@@ -149,6 +181,12 @@ export function PropertyImage({
       />
 
       {/* Image source badge */}
+      {imageSource === "zoopla" && (
+        <div className="absolute bottom-2 right-2 bg-purple-600/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+          <Home className="w-3 h-3" />
+          Zoopla
+        </div>
+      )}
       {imageSource === "streetview" && (
         <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
           <MapPin className="w-3 h-3" />

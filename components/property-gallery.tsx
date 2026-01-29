@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useMemo } from "react"
-import { ChevronLeft, ChevronRight, X, ImageIcon, Map, MapPin } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { ChevronLeft, ChevronRight, X, ImageIcon, Map, MapPin, Home } from "lucide-react"
 
 interface PropertyGalleryProps {
   images?: string[] | null
@@ -13,6 +13,10 @@ interface PropertyGalleryProps {
   propertyTitle: string
   latitude?: number
   longitude?: number
+  postcode?: string
+  address?: string
+  bedrooms?: number
+  listingType?: "rent" | "purchase"
 }
 
 /**
@@ -44,10 +48,46 @@ export function PropertyGallery({
   propertyTitle,
   latitude,
   longitude,
+  postcode,
+  address,
+  bedrooms,
+  listingType,
 }: PropertyGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [viewMode, setViewMode] = useState<"photos" | "floorplans">("photos")
+  const [zooplaImages, setZooplaImages] = useState<string[]>([])
+  const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
+
+  // Fetch Zoopla images if no real images available
+  useEffect(() => {
+    const fetchZooplaImages = async () => {
+      if (!postcode) return
+
+      // Check if we already have real images
+      const realImages = (images || []).filter(img => !isStockImage(img))
+      if (realImages.length > 0) return
+
+      try {
+        const params = new URLSearchParams({ postcode })
+        if (address) params.append("address", address)
+        if (bedrooms) params.append("bedrooms", bedrooms.toString())
+        if (listingType) params.append("listingType", listingType === "purchase" ? "sale" : "rent")
+
+        const response = await fetch(`/api/zoopla-images?${params.toString()}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.images && data.images.length > 0) {
+            setZooplaImages(data.images)
+          }
+        }
+      } catch (err) {
+        console.log("[PropertyGallery] Could not fetch Zoopla images")
+      }
+    }
+
+    fetchZooplaImages()
+  }, [postcode, address, bedrooms, listingType, images])
 
   // Smart image selection - prioritize real images over stock
   const allImages = useMemo(() => {
@@ -55,28 +95,51 @@ export function PropertyGallery({
 
     // Get real images (not stock)
     const realImages = (images || []).filter(img => !isStockImage(img))
-    if (realImages.length > 0) return realImages
+    if (realImages.length > 0) {
+      setImageSource("listing")
+      return realImages
+    }
 
     // Try primary image if it's real
-    if (primaryImage && !isStockImage(primaryImage)) return [primaryImage]
+    if (primaryImage && !isStockImage(primaryImage)) {
+      setImageSource("listing")
+      return [primaryImage]
+    }
+
+    // Use Zoopla images if available
+    if (zooplaImages.length > 0) {
+      setImageSource("zoopla")
+      return zooplaImages
+    }
 
     // Use Google Street View if available
     if (latitude && longitude && googleApiKey) {
       const streetViewUrl = getStreetViewUrl(latitude, longitude)
-      if (streetViewUrl) return [streetViewUrl]
+      if (streetViewUrl) {
+        setImageSource("streetview")
+        return [streetViewUrl]
+      }
     }
 
     // Fall back to stock images if we have them
-    if (images && images.length > 0) return images
-    if (primaryImage) return [primaryImage]
+    if (images && images.length > 0) {
+      setImageSource("stock")
+      return images
+    }
+    if (primaryImage) {
+      setImageSource("stock")
+      return [primaryImage]
+    }
 
     // Final fallback
+    setImageSource("stock")
     return [fallbackImage]
-  }, [images, primaryImage, fallbackImage, latitude, longitude])
+  }, [images, primaryImage, fallbackImage, latitude, longitude, zooplaImages])
 
   // Check if current image is Street View
   const isStreetView = allImages[selectedIndex]?.includes("maps.googleapis.com/maps/api/streetview")
-  const isStock = isStockImage(allImages[selectedIndex])
+  const isZoopla = imageSource === "zoopla"
+  const isStock = isStockImage(allImages[selectedIndex]) && !isStreetView && !isZoopla
 
   const allFloorPlans = floorPlans || []
 
@@ -109,13 +172,19 @@ export function PropertyGallery({
 
         {/* Image source badge */}
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
+          {isZoopla && viewMode === "photos" && (
+            <div className="bg-purple-600/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+              <Home className="w-3 h-3" />
+              Zoopla
+            </div>
+          )}
           {isStreetView && viewMode === "photos" && (
             <div className="bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               Street View
             </div>
           )}
-          {isStock && !isStreetView && viewMode === "photos" && (
+          {isStock && viewMode === "photos" && (
             <div className="bg-amber-500/80 text-white text-xs px-2 py-1 rounded">
               Stock Image
             </div>
