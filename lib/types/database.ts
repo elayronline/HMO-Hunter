@@ -132,6 +132,16 @@ export type Property = {
   has_fiber: boolean | null
   has_superfast: boolean | null
   broadband_last_checked: string | null
+  // Phase 6 - Agent/Listing Information (from Zoopla)
+  agent_name: string | null
+  agent_phone: string | null
+  agent_email: string | null
+  agent_address: string | null
+  agent_logo: string | null
+  agent_profile_url: string | null
+  days_on_market: number | null
+  first_listed_date: string | null
+  price_change_summary: string | null
 }
 
 export type Director = {

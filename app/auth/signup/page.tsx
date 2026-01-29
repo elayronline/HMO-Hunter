@@ -105,33 +105,12 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 bg-teal-500 rounded-lg"></div>
-            <svg
-              className="absolute inset-0 w-10 h-10"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 8L10 14V24H14V18H22V24H26V14L18 8Z"
-                fill="white"
-                stroke="white"
-                strokeWidth="1"
-                strokeLinejoin="round"
-              />
-              <circle cx="22" cy="22" r="8" fill="white" fillOpacity="0.3" />
-              <path
-                d="M22 18C20.34 18 19 19.34 19 21C19 22.66 20.34 24 22 24C23.66 24 25 22.66 25 21C25 19.34 23.66 18 22 18ZM22 22.5C21.17 22.5 20.5 21.83 20.5 21C20.5 20.17 21.17 19.5 22 19.5C22.83 19.5 23.5 20.17 23.5 21C23.5 21.83 22.83 22.5 22 22.5Z"
-                fill="white"
-              />
-            </svg>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-slate-900">HMO</span>
-            <span className="text-2xl font-bold text-teal-600">Hunter</span>
-          </div>
+        <div className="flex items-center justify-center mb-8">
+          <img
+            src="/hmo-hunter-logo.png"
+            alt="HMO Hunter"
+            className="h-20 w-auto"
+          />
         </div>
 
         <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">Create an account</h1>

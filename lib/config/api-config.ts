@@ -1,7 +1,7 @@
 /**
  * API Configuration for HMO Hunter
  * Manages legitimate data source connections
- * Active APIs: PropertyData, StreetData, PaTMa, Apify (Rightmove), Searchland, Companies House
+ * Active APIs: PropertyData, StreetData, PaTMa, Apify (Rightmove), Searchland, Companies House, Zoopla
  */
 
 export const apiConfig = {
@@ -114,6 +114,20 @@ export const apiConfig = {
     },
   },
 
+  // Zoopla Property Listings API
+  zoopla: {
+    apiKey: process.env.ZOOPLA_API_KEY,
+    baseUrl: process.env.ZOOPLA_BASE_URL || "https://api.zoopla.co.uk/api/v1",
+    enabled: !!process.env.ZOOPLA_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 100,
+      requestsPerDay: 10000,
+    },
+    endpoints: {
+      propertyListings: "/property_listings",
+    },
+  },
+
   // Google Maps (Optional - Street View fallback)
   googleMaps: {
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -174,6 +188,10 @@ export function validateApiConfig(): {
 
   if (!apiConfig.ofcom.enabled) {
     warnings.push("Ofcom API not configured. Broadband/fiber availability data will be unavailable. Add OFCOM_API_KEY for connectivity info.")
+  }
+
+  if (!apiConfig.zoopla.enabled) {
+    warnings.push("Zoopla API not configured. Zoopla property listings will be unavailable. Add ZOOPLA_API_KEY for Zoopla data.")
   }
 
   if (!apiConfig.googleMaps.enabled) {
@@ -252,6 +270,12 @@ export function getApiStatus() {
         name: "Ofcom Broadband API",
         status: apiConfig.ofcom.enabled ? "connected" : "not_configured",
         description: "Broadband and fiber availability data",
+      },
+      zoopla: {
+        enabled: apiConfig.zoopla.enabled,
+        name: "Zoopla Property Listings API",
+        status: apiConfig.zoopla.enabled ? "connected" : "not_configured",
+        description: "Property listings from Zoopla",
       },
     },
     mockMode: apiConfig.useMockData,

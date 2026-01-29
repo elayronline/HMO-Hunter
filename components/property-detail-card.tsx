@@ -7,20 +7,16 @@ import {
   Wifi,
   Trees,
   TrainFront,
-  PoundSterling,
   Users,
   TrendingUp,
   ChevronDown,
   Building2,
   FileText,
-  Calculator,
   MapPin,
   ExternalLink,
   Phone,
   Mail,
   Shield,
-  Star,
-  Zap,
   Home,
   Car,
   PawPrint,
@@ -33,7 +29,6 @@ import {
   Sofa,
   LayoutGrid,
   Sparkles,
-  Crown,
   Copy,
   Check,
   Scale,
@@ -52,6 +47,11 @@ import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
 import { EPCBadge } from "@/components/epc-badge"
 import { BroadbandBadge } from "@/components/broadband-badge"
+import { YieldCalculator } from "@/components/yield-calculator"
+import { AgentContactCard } from "@/components/agent-contact-card"
+import { AreaStatisticsCard } from "@/components/area-statistics-card"
+import { SoldPriceHistory } from "@/components/sold-price-history"
+import { PriceAlertButton } from "@/components/price-alert-button"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES & INTERFACES
@@ -453,8 +453,32 @@ export function PropertyDetailCard({
           >
             View Full Details
           </Button>
+          <PriceAlertButton property={property} variant="icon" />
         </div>
       </Card>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          YIELD CALCULATOR - PRO FEATURE
+      ═══════════════════════════════════════════════════════════════════ */}
+      <YieldCalculator property={property} defaultOpen={true} isPremium={isPremium} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          AGENT CONTACT - From Zoopla
+      ═══════════════════════════════════════════════════════════════════ */}
+      <AgentContactCard property={property} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          AREA STATISTICS - From Zoopla
+      ═══════════════════════════════════════════════════════════════════ */}
+      <AreaStatisticsCard postcode={property.postcode} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SOLD PRICE HISTORY - From Zoopla
+      ═══════════════════════════════════════════════════════════════════ */}
+      <SoldPriceHistory
+        postcode={property.postcode}
+        currentPrice={property.purchase_price || property.price_pcm || undefined}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           COLLAPSIBLE SECTIONS
@@ -944,68 +968,6 @@ export function PropertyDetailCard({
           </div>
         </CollapsibleSection>
 
-        {/* Yield Calculator Section */}
-        <CollapsibleSection
-          title="Yield Calculator"
-          icon={Calculator}
-          badge="PRO"
-          badgeVariant="success"
-        >
-          <div className="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            {isPremium ? (
-              <div className="space-y-4">
-                {/* Quick Yield Summary */}
-                {property.listing_type === "purchase" && property.purchase_price && monthlyRent && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200">
-                      <p className="text-xs text-slate-500 font-medium mb-1">Purchase Price</p>
-                      <p className="font-bold text-slate-900 text-lg">£{(property.purchase_price / 1000).toFixed(0)}k</p>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200">
-                      <p className="text-xs text-slate-500 font-medium mb-1">Monthly Rent</p>
-                      <p className="font-bold text-slate-900 text-lg">£{monthlyRent.toLocaleString()}</p>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl shadow-lg shadow-teal-500/25">
-                      <p className="text-xs text-white/80 font-medium mb-1">Gross Yield</p>
-                      <p className="font-black text-white text-2xl">{grossYield}%</p>
-                    </div>
-                  </div>
-                )}
-
-                {property.listing_type === "rent" && (
-                  <div className="text-center p-6 bg-slate-50 rounded-xl">
-                    <p className="text-sm text-slate-600">
-                      Yield calculator is available for purchase listings only.
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  variant="outline"
-                  className="w-full h-11 border-2 font-semibold"
-                  onClick={onViewFullDetails}
-                >
-                  <Calculator className="w-4 h-4 mr-2" />
-                  Open Full Calculator
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center p-8 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 rounded-xl border border-amber-200">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
-                  <Crown className="w-8 h-8 text-white" />
-                </div>
-                <p className="font-bold text-slate-900 text-lg mb-2">Upgrade to PRO</p>
-                <p className="text-sm text-slate-600 mb-5">
-                  Unlock the yield calculator and advanced investment analytics
-                </p>
-                <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/30 h-11 px-6">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Upgrade Now
-                </Button>
-              </div>
-            )}
-          </div>
-        </CollapsibleSection>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════

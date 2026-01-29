@@ -410,34 +410,13 @@ export default function HMOHunterPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-800">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative w-9 h-9">
-            <div className="absolute inset-0 bg-teal-500 rounded-lg"></div>
-            <svg
-              className="absolute inset-0 w-9 h-9"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 8L10 14V24H14V18H22V24H26V14L18 8Z"
-                fill="white"
-                stroke="white"
-                strokeWidth="1"
-                strokeLinejoin="round"
-              />
-              <circle cx="22" cy="22" r="8" fill="white" fillOpacity="0.3" />
-              <path
-                d="M22 18C20.34 18 19 19.34 19 21C19 22.66 20.34 24 22 24C23.66 24 25 22.66 25 21C25 19.34 23.66 18 22 18ZM22 22.5C21.17 22.5 20.5 21.83 20.5 21C20.5 20.17 21.17 19.5 22 19.5C22.83 19.5 23.5 20.17 23.5 21C23.5 21.83 22.83 22.5 22 22.5Z"
-                fill="white"
-              />
-            </svg>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-slate-900">HMO</span>
-            <span className="text-xl font-bold text-teal-600">Hunter</span>
-          </div>
+      <header className="bg-white border-b border-slate-200 px-6 py-1.5 flex items-center justify-between">
+        <div className="flex items-center">
+          <img
+            src="/hmo-hunter-logo.png"
+            alt="HMO Hunter"
+            className="h-14 w-auto"
+          />
         </div>
 
         <nav className="flex items-center gap-8">
