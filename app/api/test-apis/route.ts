@@ -61,6 +61,15 @@ async function runApiTests(property: { address: string; postcode: string }) {
   // Test PropertyData HMO API
   tests.propertyData = await testPropertyDataApi(property)
 
+  // Test Zoopla API
+  tests.zoopla = await testZooplaApi(property)
+
+  // Test StreetData API
+  tests.streetData = await testStreetDataApi(property)
+
+  // Test PaTMa API
+  tests.patma = await testPaTMaApi(property)
+
   return tests
 }
 
@@ -264,21 +273,31 @@ async function testPropertyDataApi(property: { address: string; postcode: string
   // Test HMO Register API
   try {
     const hmoResponse = await fetch(
-      `${apiConfig.propertyData.baseUrl}/hmo-register?postcode=${encodeURIComponent(property.postcode)}&key=${apiConfig.propertyData.apiKey}`
+      `${apiConfig.propertyData.baseUrl}/national-hmo-register?postcode=${encodeURIComponent(property.postcode)}&key=${apiConfig.propertyData.apiKey}`
     )
 
     results.hmoRegisterApi = {
-      endpoint: "/hmo-register",
+      endpoint: "/national-hmo-register",
       status: hmoResponse.status,
       success: hmoResponse.ok,
     }
 
     if (hmoResponse.ok) {
       const data = await hmoResponse.json()
-      results.hmoRegisterApi.resultCount = data.data?.length || 0
-      results.hmoRegisterApi.providesLicenceHolder = data.data?.some((h: any) => h.licence_holder_name) || false
-      if (data.data?.[0]) {
-        results.hmoRegisterApi.availableFields = Object.keys(data.data[0])
+      // PropertyData returns { status, data: { hmos: [...] } } structure
+      const hmos = data.data?.hmos || data.data || data.hmo_licences || data.results || []
+      const hmoArray = Array.isArray(hmos) ? hmos : []
+
+      results.hmoRegisterApi.resultCount = hmoArray.length
+      results.hmoRegisterApi.providesLicenceHolder = hmoArray.some((h: any) => h.licence_holder_name || h.licence_holder) || false
+      results.hmoRegisterApi.rawStructure = Object.keys(data)
+      if (hmoArray[0]) {
+        results.hmoRegisterApi.availableFields = Object.keys(hmoArray[0])
+        results.hmoRegisterApi.sample = {
+          address: hmoArray[0].address || hmoArray[0].property_address,
+          licenceHolder: hmoArray[0].licence_holder_name || hmoArray[0].licence_holder,
+          reference: hmoArray[0].reference,
+        }
       }
     } else {
       const errorText = await hmoResponse.text()
@@ -286,6 +305,296 @@ async function testPropertyDataApi(property: { address: string; postcode: string
     }
   } catch (error) {
     results.hmoRegisterApi = { success: false, error: String(error) }
+  }
+
+  return results
+}
+
+async function testZooplaApi(property: { address: string; postcode: string }) {
+  if (!apiConfig.zoopla.enabled) {
+    return {
+      configured: false,
+      error: "Not configured - add ZOOPLA_API_KEY",
+      signUpUrl: "https://developer.zoopla.co.uk/",
+      description: "Property listings, sold prices, area statistics, Zed Index valuations",
+    }
+  }
+
+  const results: any = {
+    configured: true,
+    apiKey: apiConfig.zoopla.apiKey?.substring(0, 8) + "...",
+  }
+
+  // Test Property Listings API
+  try {
+    const params = new URLSearchParams({
+      api_key: apiConfig.zoopla.apiKey || "",
+      postcode: property.postcode.replace(/\s+/g, ""),
+      radius: "0.5",
+      listing_status: "rent",
+      page_size: "5",
+    })
+
+    const response = await fetch(`${apiConfig.zoopla.baseUrl}/property_listings.json?${params}`)
+
+    results.propertyListingsApi = {
+      endpoint: "/property_listings.json",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      results.propertyListingsApi.resultCount = data.result_count || 0
+      results.propertyListingsApi.listingsReturned = data.listing?.length || 0
+      results.propertyListingsApi.providesImages = data.listing?.some((l: any) => l.image_url) || false
+      results.propertyListingsApi.providesAgentDetails = data.listing?.some((l: any) => l.agent_name) || false
+      if (data.listing?.[0]) {
+        results.propertyListingsApi.sampleFields = Object.keys(data.listing[0]).slice(0, 15)
+        results.propertyListingsApi.sample = {
+          address: data.listing[0].displayable_address,
+          price: data.listing[0].price,
+          bedrooms: data.listing[0].num_bedrooms,
+          agent: data.listing[0].agent_name,
+        }
+      }
+    } else {
+      const errorText = await response.text()
+      results.propertyListingsApi.error = errorText.substring(0, 200)
+    }
+  } catch (error) {
+    results.propertyListingsApi = { success: false, error: String(error) }
+  }
+
+  // Test Area Statistics API
+  try {
+    const params = new URLSearchParams({
+      api_key: apiConfig.zoopla.apiKey || "",
+      postcode: property.postcode.replace(/\s+/g, ""),
+      output_type: "outcode",
+    })
+
+    const response = await fetch(`${apiConfig.zoopla.baseUrl}/average_area_sold_price.json?${params}`)
+
+    results.areaStatsApi = {
+      endpoint: "/average_area_sold_price.json",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      results.areaStatsApi.averagePrice1Year = data.average_sold_price_1year
+      results.areaStatsApi.averagePrice5Year = data.average_sold_price_5year
+      results.areaStatsApi.numberOfSales = data.number_of_sales_1year
+    } else {
+      const errorText = await response.text()
+      results.areaStatsApi.error = errorText.substring(0, 200)
+    }
+  } catch (error) {
+    results.areaStatsApi = { success: false, error: String(error) }
+  }
+
+  // Test Zed Index API
+  try {
+    const params = new URLSearchParams({
+      api_key: apiConfig.zoopla.apiKey || "",
+      postcode: property.postcode.replace(/\s+/g, ""),
+      output_type: "outcode",
+    })
+
+    const response = await fetch(`${apiConfig.zoopla.baseUrl}/zed_index.json?${params}`)
+
+    results.zedIndexApi = {
+      endpoint: "/zed_index.json",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      results.zedIndexApi.zedIndex = data.zed_index
+      results.zedIndexApi.zedIndexChange1Year = data.zed_index_1year
+    } else {
+      const errorText = await response.text()
+      results.zedIndexApi.error = errorText.substring(0, 200)
+    }
+  } catch (error) {
+    results.zedIndexApi = { success: false, error: String(error) }
+  }
+
+  return results
+}
+
+async function testStreetDataApi(property: { address: string; postcode: string }) {
+  if (!apiConfig.streetData.enabled) {
+    return {
+      configured: false,
+      error: "Not configured - add STREETDATA_API_KEY",
+      signUpUrl: "https://data.street.co.uk/",
+      description: "Property valuations, rental yield calculations, year built data",
+      envVar: "STREETDATA_API_KEY",
+    }
+  }
+
+  const results: any = {
+    configured: true,
+    apiKey: apiConfig.streetData.apiKey?.substring(0, 8) + "...",
+  }
+
+  // Street Data API v2 - correct base URL
+  const streetDataBaseUrl = "https://api.data.street.co.uk/street-data-api/v2"
+
+  // Test Property Data API - search by postcode
+  try {
+    const postcodeNoSpaces = property.postcode.replace(/\s+/g, "")
+    const response = await fetch(
+      `${streetDataBaseUrl}/properties/areas/postcodes?postcode=${postcodeNoSpaces}&tier=core`,
+      {
+        headers: {
+          "x-api-key": apiConfig.streetData.apiKey || "",
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    results.propertyApi = {
+      endpoint: "/properties/areas/postcodes",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      const properties = data.data || []
+      const propArray = Array.isArray(properties) ? properties : [properties]
+
+      results.propertyApi.resultCount = propArray.length
+      results.propertyApi.rawStructure = Object.keys(data)
+
+      if (propArray[0]) {
+        // StreetData uses JSON:API format with nested attributes
+        const attrs = propArray[0].attributes || propArray[0]
+        results.propertyApi.availableFields = Object.keys(attrs).slice(0, 20)
+        results.propertyApi.providesValuation = !!attrs.estimated_value || !!attrs.price_estimate || !!attrs.avm_value
+        results.propertyApi.providesRentalYield = !!attrs.rental_yield || !!attrs.yield || !!attrs.gross_yield
+        results.propertyApi.sample = {
+          address: attrs.full_address || attrs.address,
+          estimatedValue: attrs.estimated_value || attrs.avm_value || attrs.price_estimate,
+          rentalYield: attrs.rental_yield || attrs.gross_yield,
+          bedrooms: attrs.bedrooms,
+          propertyType: attrs.property_type,
+        }
+      }
+    } else {
+      const errorText = await response.text()
+      results.propertyApi.error = errorText.substring(0, 300)
+    }
+  } catch (error) {
+    results.propertyApi = { success: false, error: String(error) }
+  }
+
+  return results
+}
+
+async function testPaTMaApi(property: { address: string; postcode: string }) {
+  if (!apiConfig.patma.enabled) {
+    return {
+      configured: false,
+      error: "Not configured - add PATMA_API_KEY",
+      signUpUrl: "https://app.patma.co.uk/profile/api_keys/create",
+      description: "Rental price analysis, area demographics, investment metrics",
+      envVar: "PATMA_API_KEY",
+    }
+  }
+
+  const results: any = {
+    configured: true,
+    apiKey: apiConfig.patma.apiKey?.substring(0, 8) + "...",
+  }
+
+  // PaTMa API base URL
+  const patmaBaseUrl = "https://app.patma.co.uk/api"
+
+  // Test Asking Prices API (requires bedrooms and property_type)
+  try {
+    const params = new URLSearchParams({
+      postcode: property.postcode,
+      bedrooms: "3",
+      property_type: "house",
+    })
+
+    const response = await fetch(
+      `${patmaBaseUrl}/prospector/v1/asking-prices/?${params}`,
+      {
+        headers: {
+          "Authorization": `Token ${apiConfig.patma.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    results.askingPricesApi = {
+      endpoint: "/prospector/v1/asking-prices/",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      results.askingPricesApi.dataPoints = data.data?.data_points
+      results.askingPricesApi.radius = data.data?.radius
+      results.askingPricesApi.sample = {
+        meanPrice: data.data?.mean,
+        medianPrice: data.data?.median,
+        dataPoints: data.data?.data_points,
+        radiusMiles: data.data?.radius,
+      }
+    } else {
+      const errorText = await response.text()
+      results.askingPricesApi.error = errorText.substring(0, 300)
+    }
+  } catch (error) {
+    results.askingPricesApi = { success: false, error: String(error) }
+  }
+
+  // Test Sold Prices API
+  try {
+    const params = new URLSearchParams({
+      postcode: property.postcode,
+      bedrooms: "3",
+      property_type: "house",
+    })
+
+    const response = await fetch(
+      `${patmaBaseUrl}/prospector/v1/sold-prices/?${params}`,
+      {
+        headers: {
+          "Authorization": `Token ${apiConfig.patma.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    results.soldPricesApi = {
+      endpoint: "/prospector/v1/sold-prices/",
+      status: response.status,
+      success: response.ok,
+    }
+
+    if (response.ok) {
+      const data = await response.json()
+      results.soldPricesApi.sample = {
+        meanPrice: data.data?.mean,
+        medianPrice: data.data?.median,
+        dataPoints: data.data?.data_points,
+      }
+    } else {
+      const errorText = await response.text()
+      results.soldPricesApi.error = errorText.substring(0, 200)
+    }
+  } catch (error) {
+    results.soldPricesApi = { success: false, error: String(error) }
   }
 
   return results
@@ -349,6 +658,61 @@ function generateRecommendations(apiTests: any) {
     } else {
       recommendations.push("PARTIAL: PropertyData HMO API works but licence holder data varies by property")
     }
+  }
+
+  // Zoopla
+  if (apiTests.zoopla?.propertyListingsApi?.success) {
+    recommendations.push(`AVAILABLE: Zoopla API working - ${apiTests.zoopla.propertyListingsApi.resultCount} listings found`)
+    if (apiTests.zoopla.propertyListingsApi.providesImages) {
+      recommendations.push("AVAILABLE: Zoopla provides property images")
+    }
+    if (apiTests.zoopla.propertyListingsApi.providesAgentDetails) {
+      recommendations.push("AVAILABLE: Zoopla provides agent contact details")
+    }
+  } else if (!apiTests.zoopla?.configured) {
+    recommendations.push("NOT CONFIGURED: Add ZOOPLA_API_KEY for property listings and area stats")
+  } else {
+    recommendations.push("ISSUE: Zoopla API not working - " + (apiTests.zoopla?.propertyListingsApi?.error || "unknown error"))
+  }
+
+  // Zoopla Area Stats
+  if (apiTests.zoopla?.areaStatsApi?.success) {
+    recommendations.push(`AVAILABLE: Zoopla area stats - avg price £${apiTests.zoopla.areaStatsApi.averagePrice1Year?.toLocaleString() || "N/A"}`)
+  }
+
+  // Zoopla Zed Index
+  if (apiTests.zoopla?.zedIndexApi?.success) {
+    recommendations.push(`AVAILABLE: Zoopla Zed Index - ${apiTests.zoopla.zedIndexApi.zedIndex?.toLocaleString() || "N/A"}`)
+  }
+
+  // StreetData
+  if (apiTests.streetData?.propertyApi?.success) {
+    recommendations.push("AVAILABLE: StreetData API working - property valuations available")
+    if (apiTests.streetData.propertyApi.providesValuation) {
+      recommendations.push(`AVAILABLE: StreetData avg price: £${apiTests.streetData.propertyApi.sample?.averagePrice?.toLocaleString() || "N/A"}`)
+    }
+    if (apiTests.streetData.propertyApi.providesRentalYield) {
+      recommendations.push(`AVAILABLE: StreetData rental yield: ${apiTests.streetData.propertyApi.sample?.rentalYield || "N/A"}%`)
+    }
+  } else if (!apiTests.streetData?.configured) {
+    recommendations.push("NOT CONFIGURED: Add STREETDATA_API_KEY for property valuations (https://www.streetgroup.co.uk/street-data)")
+  } else {
+    recommendations.push("ISSUE: StreetData API not working - " + (apiTests.streetData?.propertyApi?.error || "unknown error"))
+  }
+
+  // PaTMa
+  if (apiTests.patma?.rentalPricesApi?.success) {
+    recommendations.push("AVAILABLE: PaTMa API working - rental analytics available")
+    if (apiTests.patma.rentalPricesApi.providesRentalYield) {
+      recommendations.push(`AVAILABLE: PaTMa rental yield: ${apiTests.patma.rentalPricesApi.sample?.rentalYield || "N/A"}%`)
+    }
+    if (apiTests.patma.rentalPricesApi.providesPopulation) {
+      recommendations.push(`AVAILABLE: PaTMa area demographics available`)
+    }
+  } else if (!apiTests.patma?.configured) {
+    recommendations.push("NOT CONFIGURED: Add PATMA_API_KEY for rental analytics (https://app.patma.co.uk/profile/api_keys/create)")
+  } else {
+    recommendations.push("ISSUE: PaTMa API not working - " + (apiTests.patma?.rentalPricesApi?.error || "unknown error"))
   }
 
   // Alternative sources
