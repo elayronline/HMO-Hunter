@@ -107,6 +107,13 @@ export async function POST(request: NextRequest) {
           last_synced: now,
           last_seen_at: now,
           is_stale: false,
+          // Agent contact info from Zoopla
+          agent_name: listing.agent_name || null,
+          agent_phone: listing.agent_phone || null,
+          agent_email: listing.agent_email || null,
+          agent_address: listing.agent_address || null,
+          agent_logo: listing.agent_logo || null,
+          agent_profile_url: listing.agent_profile_url || null,
         }
 
         if (existing) {
