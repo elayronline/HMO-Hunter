@@ -506,7 +506,8 @@ export async function POST(request: Request) {
               log.push(`  Failed to update ${property.address}: ${updateError.message}`)
               failed.push(property.address)
             } else {
-              log.push(`  Updated: ${property.address} (EPC ${epcRating}, ${floorArea}sqm)`)
+              const uprnNote = matchedCert.uprn ? `, UPRN: ${matchedCert.uprn}` : ""
+              log.push(`  Updated: ${property.address} (EPC ${epcRating}, ${floorArea}sqm${uprnNote})`)
               updated.push(property.address)
             }
           } else {

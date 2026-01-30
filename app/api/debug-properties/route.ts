@@ -31,7 +31,7 @@ export async function GET() {
     // Get sample of properties for segment calculation
     const { data: allProperties, error: fetchError } = await supabase
       .from("properties")
-      .select("id, listing_type, property_type, licensed_hmo, is_potential_hmo, licence_status, hmo_classification, article_4_area, purchase_price, bedrooms")
+      .select("id, listing_type, property_type, licensed_hmo, is_potential_hmo, licence_status, hmo_classification, article_4_area, purchase_price, bedrooms, uprn, address, postcode")
       .eq("listing_type", "purchase")
       .or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
       .limit(2000)
