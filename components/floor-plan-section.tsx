@@ -28,8 +28,12 @@ export function FloorPlanSection({
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [imageError, setImageError] = useState<Record<number, boolean>>({})
 
-  const validFloorPlans = (floorPlans || []).filter(fp => fp && fp.length > 0)
+  const validFloorPlans = (floorPlans || []).filter((fp): fp is string => typeof fp === 'string' && fp.length > 0)
   const hasFloorPlanImages = validFloorPlans.length > 0
+
+  // Ensure selectedIndex is always valid
+  const safeIndex = Math.min(selectedIndex, Math.max(0, validFloorPlans.length - 1))
+  const currentFloorPlan = validFloorPlans[safeIndex] || ""
 
   if (!hasFloorPlanImages) {
     return (
@@ -77,9 +81,9 @@ export function FloorPlanSection({
           <div className="space-y-3">
             {/* Main Image View */}
             <div className="relative bg-white rounded-lg overflow-hidden border border-emerald-200 group">
-              {validFloorPlans[selectedIndex]?.toLowerCase().endsWith(".pdf") ? (
+              {currentFloorPlan.toLowerCase().endsWith(".pdf") ? (
                 <a
-                  href={validFloorPlans[selectedIndex]}
+                  href={currentFloorPlan}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center py-12 bg-slate-50 hover:bg-slate-100 transition-colors"
@@ -88,7 +92,7 @@ export function FloorPlanSection({
                   <span className="text-sm text-slate-600 font-medium">View PDF Floor Plan</span>
                   <span className="text-xs text-slate-400 mt-1">Click to open in new tab</span>
                 </a>
-              ) : imageError[selectedIndex] ? (
+              ) : imageError[safeIndex] ? (
                 <div className="flex flex-col items-center justify-center py-12 bg-slate-50">
                   <ImageOff className="w-12 h-12 text-slate-300 mb-2" />
                   <span className="text-sm text-slate-500">Failed to load image</span>
@@ -96,11 +100,11 @@ export function FloorPlanSection({
               ) : (
                 <>
                   <img
-                    src={validFloorPlans[selectedIndex]}
-                    alt={`${propertyTitle} - Floor plan ${selectedIndex + 1}`}
+                    src={currentFloorPlan}
+                    alt={`${propertyTitle} - Floor plan ${safeIndex + 1}`}
                     className="w-full h-auto max-h-[400px] object-contain cursor-pointer"
                     onClick={() => setShowFullscreen(true)}
-                    onError={() => setImageError(prev => ({ ...prev, [selectedIndex]: true }))}
+                    onError={() => setImageError(prev => ({ ...prev, [safeIndex]: true }))}
                   />
 
                   {/* Fullscreen button */}
@@ -133,7 +137,7 @@ export function FloorPlanSection({
                   {/* Image counter */}
                   {validFloorPlans.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
-                      {selectedIndex + 1} / {validFloorPlans.length}
+                      {safeIndex + 1} / {validFloorPlans.length}
                     </div>
                   )}
                 </>
@@ -198,7 +202,7 @@ export function FloorPlanSection({
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={validFloorPlans[selectedIndex]}
+              src={currentFloorPlan}
               alt={`${propertyTitle} - Floor plan full size`}
               className="max-w-full max-h-full object-contain"
             />
@@ -221,12 +225,12 @@ export function FloorPlanSection({
             )}
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
-              Floor Plan {selectedIndex + 1} / {validFloorPlans.length}
+              Floor Plan {safeIndex + 1} / {validFloorPlans.length}
             </div>
 
             {/* Download button */}
             <a
-              href={validFloorPlans[selectedIndex]}
+              href={currentFloorPlan}
               download
               target="_blank"
               rel="noopener noreferrer"

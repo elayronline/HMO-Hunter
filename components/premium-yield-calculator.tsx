@@ -188,6 +188,9 @@ export function PremiumYieldCalculator({
     if (property.floor_area_band === "120_plus") dealScore += 5
     else if (property.floor_area_band === "90_120") dealScore += 2
 
+    // Price per room (calculate before using)
+    const pricePerRoom = rooms.length > 0 ? purchasePrice / rooms.length : 0
+
     // Price per room scoring (lower is better)
     if (pricePerRoom > 0) {
       if (pricePerRoom < 50000) dealScore += 5
@@ -196,9 +199,6 @@ export function PremiumYieldCalculator({
     }
 
     dealScore = Math.max(0, Math.min(100, dealScore))
-
-    // Price per room
-    const pricePerRoom = purchasePrice > 0 ? purchasePrice / rooms.length : 0
 
     // 5-year projection
     const rentGrowth = 0.03
