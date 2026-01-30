@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Calculator,
   TrendingUp,
@@ -22,6 +22,7 @@ import {
   FileText,
   ArrowRight,
   Check,
+  MapPin,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,7 +44,15 @@ interface RoomConfig {
   size: "small" | "medium" | "large" | "ensuite"
 }
 
-const ROOM_PRESETS = {
+interface CityRentData {
+  min: number
+  max: number
+  avg: number
+  city: string
+}
+
+// Default fallback rents
+const DEFAULT_ROOM_PRESETS = {
   small: { label: "Small", rent: 450, icon: "S" },
   medium: { label: "Medium", rent: 550, icon: "M" },
   large: { label: "Large", rent: 650, icon: "L" },
@@ -69,6 +78,48 @@ export function PremiumYieldCalculator({
 }: PremiumYieldCalculatorProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [showDetails, setShowDetails] = useState(false)
+  const [cityRentData, setCityRentData] = useState<CityRentData | null>(null)
+
+  // Fetch city-specific rents on mount
+  useEffect(() => {
+    const fetchCityRents = async () => {
+      if (!property.city) return
+      try {
+        const response = await fetch("/api/enrich-rents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city: property.city }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.rent) {
+            setCityRentData({
+              min: data.rent.min,
+              max: data.rent.max,
+              avg: data.rent.avg,
+              city: property.city,
+            })
+          }
+        }
+      } catch (err) {
+        // Silently fail, use defaults
+      }
+    }
+    fetchCityRents()
+  }, [property.city])
+
+  // Dynamic room presets based on city data
+  const roomPresets = useMemo(() => {
+    if (!cityRentData) return DEFAULT_ROOM_PRESETS
+    const { min, avg, max } = cityRentData
+    // Calculate tiers: small=min, medium=avg-50, large=avg+50, ensuite=max
+    return {
+      small: { label: "Small", rent: Math.round(min), icon: "S" },
+      medium: { label: "Medium", rent: Math.round(avg - 50), icon: "M" },
+      large: { label: "Large", rent: Math.round(avg + 50), icon: "L" },
+      ensuite: { label: "En-suite", rent: Math.round(max), icon: "E" },
+    }
+  }, [cityRentData])
 
   // Get the best available rent estimate from property data
   const getInitialRoomRent = (): number => {
@@ -259,7 +310,7 @@ export function PremiumYieldCalculator({
   }
 
   const updateRoomSize = (id: number, size: RoomConfig["size"]) => {
-    setRooms(rooms.map(r => r.id === id ? { ...r, size, rent: ROOM_PRESETS[size].rent } : r))
+    setRooms(rooms.map(r => r.id === id ? { ...r, size, rent: roomPresets[size].rent } : r))
   }
 
   const getDealScoreColor = (score: number) => {
@@ -519,7 +570,7 @@ export function PremiumYieldCalculator({
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-slate-700">Room {room.id}</span>
                     <div className="flex gap-1">
-                      {(Object.keys(ROOM_PRESETS) as Array<keyof typeof ROOM_PRESETS>).map((size) => (
+                      {(Object.keys(roomPresets) as Array<keyof typeof roomPresets>).map((size) => (
                         <button
                           key={size}
                           onClick={() => updateRoomSize(room.id, size)}
@@ -529,7 +580,7 @@ export function PremiumYieldCalculator({
                               : "bg-white text-slate-500 hover:bg-purple-100 border border-slate-200"
                           }`}
                         >
-                          {ROOM_PRESETS[size].icon}
+                          {roomPresets[size].icon}
                         </button>
                       ))}
                     </div>
@@ -556,7 +607,14 @@ export function PremiumYieldCalculator({
             </div>
 
             <p className="text-[10px] text-slate-500 text-center">
-              S=Small £450 • M=Medium £550 • L=Large £650 • E=En-suite £750
+              {cityRentData ? (
+                <>
+                  <MapPin className="w-3 h-3 inline mr-1" />
+                  {cityRentData.city}: S=£{roomPresets.small.rent} • M=£{roomPresets.medium.rent} • L=£{roomPresets.large.rent} • E=£{roomPresets.ensuite.rent}
+                </>
+              ) : (
+                <>S=Small £{roomPresets.small.rent} • M=Medium £{roomPresets.medium.rent} • L=Large £{roomPresets.large.rent} • E=En-suite £{roomPresets.ensuite.rent}</>
+              )}
             </p>
           </div>
         )}

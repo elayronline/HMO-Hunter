@@ -37,6 +37,9 @@ import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
 import { AgentContactCard } from "@/components/agent-contact-card"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
+import { KammaComplianceCard } from "@/components/kamma-compliance-card"
+import { LicenceDetailsCard } from "@/components/licence-details-card"
+import { DataEnrichmentCard } from "@/components/data-enrichment-card"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -443,6 +446,15 @@ export function PropertyDetailCard({
                   </div>
                 </div>
               </div>
+
+              {/* Kamma Compliance Check - Real-time API */}
+              <KammaComplianceCard postcode={property.postcode} address={property.address} />
+
+              {/* Licence Details from Council Register */}
+              <LicenceDetailsCard propertyId={property.id} />
+
+              {/* On-demand Data Enrichment */}
+              <DataEnrichmentCard property={property} />
             </>
           )}
         </div>

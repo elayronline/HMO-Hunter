@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import PropertyMap from "@/components/property-map"
 import { createClient } from "@/lib/supabase/client"
+import { HmoStatsCard } from "@/components/hmo-stats-card"
 import { 
   RefreshCw, 
   CheckCircle, 
@@ -133,6 +134,9 @@ export default function UserDashboard() {
             Last refreshed: {lastRefresh.toLocaleTimeString()}
           </p>
         )}
+
+        {/* HMO Portfolio Statistics */}
+        <HmoStatsCard className="mb-6" />
 
         {/* Property Map */}
         {properties.length > 0 && (
