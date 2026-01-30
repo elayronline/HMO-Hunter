@@ -40,6 +40,7 @@ import { SoldPriceHistory } from "@/components/sold-price-history"
 import { KammaComplianceCard } from "@/components/kamma-compliance-card"
 import { LicenceDetailsCard } from "@/components/licence-details-card"
 import { DataEnrichmentCard } from "@/components/data-enrichment-card"
+import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -337,6 +338,9 @@ export function PropertyDetailCard({
               )}
 
               <AgentContactCard property={property} />
+
+              {/* Enriched Data from APIs */}
+              <EnrichedDataDisplay property={property} />
             </>
           )}
 

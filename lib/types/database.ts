@@ -142,6 +142,50 @@ export type Property = {
   days_on_market: number | null
   first_listed_date: string | null
   price_change_summary: string | null
+  // Phase 7 - Zoopla Enrichment
+  zoopla_listing_id: string | null
+  zoopla_listing_url: string | null
+  zoopla_price_pcm: number | null
+  zoopla_price_pw: number | null
+  zoopla_agent_name: string | null
+  zoopla_agent_phone: string | null
+  zoopla_images: string[] | null
+  zoopla_floor_plan_url: string | null
+  zoopla_first_published: string | null
+  zoopla_days_on_market: number | null
+  zoopla_area_avg_price: number | null
+  zoopla_zed_index: number | null
+  zoopla_enriched_at: string | null
+  // Phase 7 - StreetData Enrichment
+  streetdata_property_id: string | null
+  construction_age_band: string | null
+  council_tax_band: string | null
+  internal_area_sqm: number | null
+  is_bungalow: boolean | null
+  has_outdoor_space: boolean | null
+  streetdata_enriched_at: string | null
+  // Phase 7 - PaTMa Enrichment
+  patma_asking_price_mean: number | null
+  patma_asking_price_median: number | null
+  patma_sold_price_mean: number | null
+  patma_sold_price_median: number | null
+  patma_price_data_points: number | null
+  patma_search_radius_miles: number | null
+  patma_enriched_at: string | null
+  // Phase 7 - PropertyData HMO Enrichment
+  hmo_licence_reference: string | null
+  hmo_licence_type: string | null
+  hmo_licence_expiry: string | null
+  hmo_council: string | null
+  hmo_max_occupancy: number | null
+  hmo_sleeping_rooms: number | null
+  hmo_shared_bathrooms: number | null
+  propertydata_enriched_at: string | null
+  // Phase 7 - Calculated Fields
+  estimated_rental_yield: number | null
+  price_per_sqm: number | null
+  last_enriched_at: string | null
+  enrichment_sources: Record<string, any> | null
 }
 
 export type Director = {
