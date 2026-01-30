@@ -67,8 +67,6 @@ import { BroadbandBadge } from "@/components/broadband-badge"
 import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
-import { PropertySidebar } from "@/components/property-sidebar"
-import { MapPropertyPopup } from "@/components/map-property-popup"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
@@ -1053,15 +1051,87 @@ export default function HMOHunterPage() {
             showPotentialHMOLayer={showPotentialHMOLayer}
           />
 
-          {/* Selected Property Card Overlay - Simplified for quick scanning */}
+          {/* Selected Property Card Overlay */}
           {selectedProperty && (
-            <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full z-20">
-              <MapPropertyPopup
-                property={selectedProperty}
-                onClick={() => setRightPanelOpen(true)}
-                onClose={() => setSelectedProperty(null)}
-              />
-            </div>
+            <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-80 shadow-2xl bg-white border-slate-200 z-20">
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedProperty(null)}
+                className="absolute -top-2 -right-2 z-30 w-6 h-6 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="relative">
+                <SavePropertyButton
+                  propertyId={selectedProperty.id}
+                  initialSaved={savedPropertyIds.has(selectedProperty.id)}
+                />
+              </div>
+              <div className="flex gap-3 p-4 cursor-pointer" onClick={() => setRightPanelOpen(true)}>
+                <div className="w-20 h-20 bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
+                  <PropertyGallery
+                    images={selectedProperty.images}
+                    floorPlans={selectedProperty.floor_plans}
+                    primaryImage={selectedProperty.primary_image}
+                    fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
+                    propertyTitle={selectedProperty.title}
+                    latitude={selectedProperty.latitude}
+                    longitude={selectedProperty.longitude}
+                    postcode={selectedProperty.postcode}
+                    address={selectedProperty.address}
+                    bedrooms={selectedProperty.bedrooms}
+                    listingType={selectedProperty.listing_type}
+                    externalId={selectedProperty.external_id}
+                    price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-lg font-bold text-slate-900 mb-1">
+                    {selectedProperty.listing_type === "purchase"
+                      ? `£${selectedProperty.purchase_price?.toLocaleString()}`
+                      : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
+                  </div>
+                  <div className="text-sm text-slate-600 leading-snug truncate">
+                    {selectedProperty.address}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    {selectedProperty.postcode}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                      <BedDouble className="w-3 h-3" />
+                      {selectedProperty.bedrooms}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                      <Bath className="w-3 h-3" />
+                      {selectedProperty.bathrooms}
+                    </span>
+                    {selectedProperty.licensed_hmo && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-100 text-teal-700 rounded text-xs font-medium">
+                        Licensed
+                      </span>
+                    )}
+                    {selectedProperty.licence_status === "expired" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                        Expired
+                      </span>
+                    )}
+                    {selectedProperty.epc_rating && (
+                      <EPCBadge
+                        rating={selectedProperty.epc_rating}
+                        numericRating={selectedProperty.epc_rating_numeric}
+                        className="text-xs"
+                        showTooltip={false}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                <span className="text-xs text-slate-500">Click to view full details</span>
+              </div>
+            </Card>
           )}
 
           {/* Map legend - Reorganized by user intent */}
@@ -1174,17 +1244,71 @@ export default function HMOHunterPage() {
           </Button>
         </main>
 
-        {/* Right Sidebar - Redesigned for investor-grade UX */}
+        {/* Right Sidebar */}
         {rightPanelOpen && (
-          <aside className="w-[420px] bg-white border-l border-slate-200 flex flex-col">
+          <aside className="w-[400px] bg-white border-l border-slate-200 overflow-y-auto relative">
+            {/* Close button */}
+            <button
+              onClick={() => setRightPanelOpen(false)}
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+              title="Close panel"
+            >
+              <X className="w-4 h-4 text-slate-600" />
+            </button>
             {selectedProperty ? (
-              <PropertySidebar
-                property={selectedProperty}
-                onClose={() => setRightPanelOpen(false)}
-                onViewFullDetails={() => setShowFullDetails(true)}
-                isPremium={isPremiumUser}
-                isSaved={savedPropertyIds.has(selectedProperty.id)}
-              />
+              <div>
+                <div className="p-5 border-b border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-4 h-4 text-teal-600" />
+                    <span className="font-semibold text-sm text-slate-900">Property Details</span>
+                  </div>
+
+                  <div className="relative mb-4">
+                    <PropertyGallery
+                      images={selectedProperty.images}
+                      floorPlans={selectedProperty.floor_plans}
+                      primaryImage={selectedProperty.primary_image}
+                      fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
+                      propertyTitle={selectedProperty.title}
+                      latitude={selectedProperty.latitude}
+                      longitude={selectedProperty.longitude}
+                      postcode={selectedProperty.postcode}
+                      address={selectedProperty.address}
+                      bedrooms={selectedProperty.bedrooms}
+                      listingType={selectedProperty.listing_type}
+                      externalId={selectedProperty.external_id}
+                      price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
+                    />
+                    <SavePropertyButton
+                      propertyId={selectedProperty.id}
+                      initialSaved={savedPropertyIds.has(selectedProperty.id)}
+                    />
+                  </div>
+
+                  {/* Property Detail Card */}
+                  <PropertyDetailCard
+                    property={selectedProperty}
+                    onViewFullDetails={() => setShowFullDetails(true)}
+                    isPremium={isPremiumUser}
+                  />
+                </div>
+
+                {/* Analytics & Comparison */}
+                <div className="p-5 border-t border-slate-100">
+                  <PropertyAnalyticsCard
+                    property={selectedProperty}
+                    properties={properties}
+                    comparisonMetric={comparisonMetric}
+                    onMetricChange={setComparisonMetric}
+                    onPropertySelect={(p) => {
+                      setSelectedProperty(p)
+                      setShowFullDetails(false)
+                    }}
+                    calculateROI={calculateROI}
+                    getMonthlyRent={getMonthlyRent}
+                  />
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8">
                 <FileText className="w-12 h-12 mb-4 opacity-30" />
