@@ -135,6 +135,9 @@ export function KammaComplianceCard({
 
   // API not configured or error
   if (!data?.success || !data.data) {
+    const isAddressError = data?.error?.includes("Unprocessable") || data?.error?.includes("address")
+    const isNotConfigured = data?.error?.includes("not configured") || data?.error?.includes("API key")
+
     return (
       <Card className={cn("overflow-hidden", className)}>
         <div className="p-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
@@ -150,13 +153,47 @@ export function KammaComplianceCard({
         </div>
         <CardContent className="p-4">
           <div className="text-center py-4">
-            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-            <p className="text-sm text-slate-600 mb-2">
-              {data?.error || "Kamma API not configured"}
-            </p>
-            <p className="text-xs text-slate-400">
-              Contact admin to enable compliance checking
-            </p>
+            <Info className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+            {isAddressError ? (
+              <>
+                <p className="text-sm text-slate-600 mb-2">
+                  Address not found in Kamma database
+                </p>
+                <p className="text-xs text-slate-400 mb-4">
+                  The property address couldn't be matched. Try the council website for licensing info.
+                </p>
+              </>
+            ) : isNotConfigured ? (
+              <>
+                <p className="text-sm text-slate-600 mb-2">
+                  Kamma API not configured
+                </p>
+                <p className="text-xs text-slate-400 mb-4">
+                  Add KAMMA_API_KEY to enable real-time compliance checking.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-slate-600 mb-2">
+                  Unable to check compliance
+                </p>
+                <p className="text-xs text-slate-400 mb-4">
+                  {data?.error || "Please try again later"}
+                </p>
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setChecked(false); setData(null) }}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-100">
+            <MapPin className="w-3 h-3" />
+            <span>{postcode}</span>
           </div>
         </CardContent>
       </Card>

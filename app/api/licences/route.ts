@@ -77,8 +77,18 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ counts })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching licences:", error)
+
+    // Handle case where table doesn't exist yet
+    if (error?.code === "PGRST205" || error?.message?.includes("property_licences")) {
+      return NextResponse.json({
+        licences: [],
+        tableNotFound: true,
+        message: "Licences table not yet configured"
+      })
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch licences" },
       { status: 500 }
