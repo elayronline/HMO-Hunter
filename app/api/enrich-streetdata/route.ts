@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}))
     const limit = Math.min(body.limit || 20, 100)
     const propertyId = body.propertyId
+    const retryFailed = body.retryFailed || false // Retry properties that failed matching
 
     if (!apiConfig.streetData.enabled) {
       return NextResponse.json({
@@ -36,6 +37,13 @@ export async function POST(request: Request) {
 
     if (propertyId) {
       query = query.eq("id", propertyId)
+    } else if (retryFailed) {
+      // Retry properties that were checked but failed to match (have enriched_at but no property_id)
+      query = query
+        .not("streetdata_enriched_at", "is", null)
+        .is("streetdata_property_id", null)
+        .limit(limit)
+      log.push("Retrying previously failed properties...")
     } else {
       query = query.is("streetdata_enriched_at", null).limit(limit)
     }
@@ -187,29 +195,75 @@ export async function POST(request: Request) {
 }
 
 function findMatchingStreetDataProperty(property: any, streetDataProps: any[]): any {
-  const propAddress = property.address?.toLowerCase().replace(/[,.']/g, "").replace(/\s+/g, " ").trim()
+  const normalizeAddress = (addr: string) => {
+    return addr
+      ?.toLowerCase()
+      .replace(/[,.']/g, "")
+      .replace(/\s+/g, " ")
+      .replace(/\bflat\b/g, "")
+      .replace(/\bapartment\b/g, "")
+      .replace(/\bunit\b/g, "")
+      .replace(/\broom\b/g, "")
+      .trim()
+  }
+
+  const propAddress = normalizeAddress(property.address || "")
+  if (!propAddress) return null
+
+  // Extract building number (including flat numbers like "2" from "Flat 2")
+  const extractNumbers = (addr: string) => {
+    const matches = addr.match(/\b(\d+[a-z]?)\b/g) || []
+    return matches
+  }
+
+  const propNumbers = extractNumbers(propAddress)
 
   for (const sdProp of streetDataProps) {
     const attrs = sdProp.attributes || {}
-    const sdAddress = attrs.address?.street_group_format?.address_lines?.toLowerCase().replace(/[,.']/g, "").replace(/\s+/g, " ").trim()
 
-    if (!sdAddress) continue
+    // Try multiple address formats from StreetData
+    const sdAddresses = [
+      attrs.address?.street_group_format?.address_lines,
+      attrs.address?.single_line_format?.address,
+      attrs.address?.paf_format?.address_lines,
+    ].filter(Boolean).map(normalizeAddress)
 
-    // Exact match
-    if (sdAddress === propAddress) return sdProp
+    for (const sdAddress of sdAddresses) {
+      if (!sdAddress) continue
 
-    // Partial match - check if key parts match
-    const propParts = propAddress.split(" ")
-    const sdParts = sdAddress.split(" ")
+      // Exact match
+      if (sdAddress === propAddress) return sdProp
 
-    // Check for number + street match
-    const propNumber = propParts.find((p: string) => /^\d+[a-z]?$/.test(p))
-    const sdNumber = sdParts.find((p: string) => /^\d+[a-z]?$/.test(p))
+      // Contains match
+      if (sdAddress.includes(propAddress) || propAddress.includes(sdAddress)) {
+        return sdProp
+      }
 
-    if (propNumber && sdNumber && propNumber === sdNumber) {
-      // Check if street names overlap
-      const commonWords = propParts.filter((w: string) => w.length > 3 && sdParts.includes(w))
-      if (commonWords.length >= 2) {
+      const sdNumbers = extractNumbers(sdAddress)
+      const sdParts = sdAddress.split(" ")
+      const propParts = propAddress.split(" ")
+
+      // Match by building number + street name
+      const hasMatchingNumber = propNumbers.some(n => sdNumbers.includes(n))
+
+      if (hasMatchingNumber) {
+        // Check for common street words
+        const commonWords = propParts.filter((w: string) =>
+          w.length > 2 && sdParts.includes(w) && !/^\d+[a-z]?$/.test(w)
+        )
+
+        if (commonWords.length >= 1) {
+          return sdProp
+        }
+      }
+
+      // Fuzzy match - check if most significant words match
+      const significantPropWords = propParts.filter((w: string) => w.length > 3 && !/^\d+[a-z]?$/.test(w))
+      const significantSdWords = sdParts.filter((w: string) => w.length > 3 && !/^\d+[a-z]?$/.test(w))
+
+      const matchingWords = significantPropWords.filter((w: string) => significantSdWords.includes(w))
+
+      if (matchingWords.length >= 2 && hasMatchingNumber) {
         return sdProp
       }
     }
@@ -238,6 +292,7 @@ export async function GET() {
       body: {
         limit: "Number of properties (default 20, max 100)",
         propertyId: "Specific property ID to enrich",
+        retryFailed: "Set to true to retry properties that previously failed matching",
       },
     },
   })
