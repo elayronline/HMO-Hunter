@@ -1,32 +1,46 @@
 import { NextResponse } from "next/server"
 import { apiConfig } from "@/lib/config/api-config"
-import { OfcomBroadbandAdapter, checkBroadbandByPostcode } from "@/lib/ingestion/enrichment/ofcom-broadband"
-import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase-admin"
+import fs from "fs"
+import path from "path"
+import readline from "readline"
+
+// In-memory cache for OFCOM CSV data
+let broadbandCache: Map<string, BroadbandData> | null = null
+let cacheLoaded = false
+
+interface BroadbandData {
+  sfbb_available: number
+  ufbb_available: number
+  gigabit_available: number
+  below_uso: number
+}
 
 /**
  * GET /api/enrich-broadband
  *
- * Check Ofcom API status and configuration
+ * Check broadband data status
  */
 export async function GET() {
-  const isConfigured = !!apiConfig.ofcom?.apiKey
+  const csvPath = path.join(process.cwd(), "data/ofcom/broadband_simple.csv")
+  const hasLocalData = fs.existsSync(csvPath)
 
   return NextResponse.json({
-    message: "Ofcom Broadband API Integration",
-    status: isConfigured ? "configured" : "not_configured",
-    baseUrl: apiConfig.ofcom?.baseUrl || "https://api-proxy.ofcom.org.uk/broadband/coverage",
-    signupUrl: "https://api.ofcom.org.uk",
+    message: "Broadband Enrichment - OFCOM Connected Nations 2024",
+    source: hasLocalData ? "local_csv" : "not_available",
+    postcodes: broadbandCache?.size || "not loaded",
     usage: {
       testPostcode: "POST with { postcode: 'SW1A1AA' }",
       enrichProperty: "POST with { propertyId: 'uuid' }",
-      enrichBatch: "POST with { enrichCount: 10 }",
+      enrichBatch: "POST with { limit: 50 }",
     },
     fields: {
-      broadband_basic_down: "Basic broadband download speed (Mbps)",
-      broadband_superfast_down: "Superfast broadband download speed (Mbps) - 30Mbps+",
-      broadband_ultrafast_down: "Ultrafast/Fiber download speed (Mbps) - 100Mbps+",
-      has_fiber: "Whether full fiber (FTTP) is available",
-      has_superfast: "Whether superfast broadband is available",
+      broadband_max_down: "Estimated max download speed (Mbps)",
+      broadband_max_up: "Estimated max upload speed (Mbps)",
+      has_fiber: "Whether fiber is available",
+      has_superfast: "Whether superfast (30Mbit+) is available",
+      broadband_superfast_down: "% premises with superfast",
+      broadband_ultrafast_down: "% premises with ultrafast",
     },
   })
 }
@@ -34,226 +48,200 @@ export async function GET() {
 /**
  * POST /api/enrich-broadband
  *
- * Test broadband lookup or enrich properties
+ * Enrich properties with OFCOM broadband coverage data (free, no API key needed)
  */
 export async function POST(request: Request) {
   const log: string[] = []
+  const updated: string[] = []
+  const failed: string[] = []
 
   try {
-    const body = await request.json()
-    const { postcode, propertyId, enrichCount } = body
+    const body = await request.json().catch(() => ({}))
+    const limit = Math.min(body.limit || body.enrichCount || 50, 500)
+    const propertyId = body.propertyId
+    const postcode = body.postcode
 
-    if (!apiConfig.ofcom?.apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: "Ofcom API key not configured. Add OFCOM_API_KEY to .env.local",
-        signupUrl: "https://api.ofcom.org.uk",
-        log,
-      }, { status: 400 })
+    log.push("Starting broadband enrichment (OFCOM Connected Nations 2024)...")
+
+    // Load CSV cache if not already loaded
+    if (!cacheLoaded) {
+      await loadCSVCache()
+      log.push(`Loaded ${broadbandCache?.size || 0} postcodes into cache`)
     }
 
-    // Mode 1: Test single postcode lookup
+    // Mode 1: Single postcode lookup
     if (postcode) {
-      log.push(`Looking up broadband availability for: ${postcode}`)
+      const normalized = postcode.toUpperCase().replace(/\s+/g, "")
+      const data = broadbandCache?.get(normalized)
 
-      const data = await checkBroadbandByPostcode(postcode)
-
-      if (!data || !data.Availability || data.Availability.length === 0) {
+      if (data) {
         return NextResponse.json({
           success: true,
-          message: "No broadband data found for this postcode",
-          postcode,
-          log,
+          postcode: normalized,
+          data: {
+            superfast_available: data.sfbb_available >= 80,
+            ultrafast_available: data.ufbb_available >= 80,
+            gigabit_available: data.gigabit_available >= 50,
+            sfbb_percentage: data.sfbb_available,
+            ufbb_percentage: data.ufbb_available,
+            gigabit_percentage: data.gigabit_available,
+            below_uso_percentage: data.below_uso,
+            rating: getBroadbandRating(data.gigabit_available, data.ufbb_available, data.sfbb_available),
+          },
         })
-      }
-
-      log.push(`Found ${data.Availability.length} addresses in postcode`)
-
-      // Parse results
-      const results = data.Availability.map(a => ({
-        uprn: a.UPRN,
-        address: a.AddressShortDescription,
-        basicDown: a.MaxBbPredictedDown,
-        superfastDown: a.MaxSfbbPredictedDown,
-        ultrafastDown: a.MaxUfbbPredictedDown,
-        maxDown: a.MaxPredictedDown,
-        hasFiber: a.MaxUfbbPredictedDown > 0,
-        hasSuperfast: a.MaxSfbbPredictedDown > 0,
-        status: OfcomBroadbandAdapter.getBroadbandStatus({
-          has_fiber: a.MaxUfbbPredictedDown > 0,
-          has_superfast: a.MaxSfbbPredictedDown > 0,
-          broadband_max_down: a.MaxPredictedDown,
-        }),
-      }))
-
-      return NextResponse.json({
-        success: true,
-        message: `Found ${results.length} addresses`,
-        postcode: data.PostCode,
-        results,
-        log,
-      })
-    }
-
-    // Mode 2: Enrich single property by ID
-    if (propertyId) {
-      const supabase = await createClient()
-
-      const { data: property, error: fetchError } = await supabase
-        .from("properties")
-        .select("id, address, postcode, uprn, has_fiber, broadband_max_down")
-        .eq("id", propertyId)
-        .single()
-
-      if (fetchError || !property) {
+      } else {
         return NextResponse.json({
           success: false,
-          error: fetchError?.message || "Property not found",
-          log,
+          error: `No data for postcode: ${normalized}`,
         }, { status: 404 })
       }
+    }
 
-      log.push(`Enriching property: ${property.address}`)
+    // Fetch properties needing enrichment
+    let query = supabaseAdmin
+      .from("properties")
+      .select("id, address, postcode")
+      .eq("is_stale", false)
+      .not("postcode", "is", null)
 
-      const adapter = new OfcomBroadbandAdapter()
-      const enrichedData = await adapter.enrich({
-        address: property.address,
-        postcode: property.postcode,
-        uprn: property.uprn,
-      } as any)
+    if (propertyId) {
+      query = query.eq("id", propertyId)
+    } else {
+      query = query.is("broadband_last_checked", null).limit(limit)
+    }
 
-      if (Object.keys(enrichedData).length === 0) {
-        return NextResponse.json({
-          success: true,
-          message: "No broadband data available for this property",
-          property: { id: property.id, address: property.address },
-          log,
-        })
-      }
+    const { data: properties, error: fetchError } = await query
 
-      // Update the property
-      const { error: updateError } = await supabase
-        .from("properties")
-        .update(enrichedData)
-        .eq("id", propertyId)
+    if (fetchError) {
+      return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 })
+    }
 
-      if (updateError) {
-        return NextResponse.json({
-          success: false,
-          error: updateError.message,
-          log,
-        }, { status: 500 })
-      }
-
-      log.push(`Updated with ${Object.keys(enrichedData).length} fields`)
-
+    if (!properties?.length) {
       return NextResponse.json({
         success: true,
-        message: "Property enriched with broadband data",
-        property: { id: property.id, address: property.address },
-        enrichedData,
-        status: OfcomBroadbandAdapter.getBroadbandStatus(enrichedData as any),
+        message: "No properties found needing broadband enrichment",
         log,
       })
     }
 
-    // Mode 3: Batch enrich properties
-    if (enrichCount) {
-      const supabase = await createClient()
+    log.push(`Found ${properties.length} properties to enrich`)
 
-      log.push(`Enriching up to ${enrichCount} properties with broadband data...`)
+    for (const property of properties) {
+      const pc = property.postcode?.toUpperCase().replace(/\s+/g, "")
 
-      // Find properties without broadband data
-      const { data: properties, error: fetchError } = await supabase
-        .from("properties")
-        .select("id, address, postcode, uprn")
-        .eq("is_stale", false)
-        .is("has_fiber", null)
-        .not("postcode", "is", null)
-        .limit(enrichCount)
-
-      if (fetchError) {
-        return NextResponse.json({
-          success: false,
-          error: fetchError.message,
-          log,
-        }, { status: 500 })
+      if (!pc) {
+        failed.push(property.address)
+        continue
       }
 
-      if (!properties || properties.length === 0) {
-        return NextResponse.json({
-          success: true,
-          message: "No properties need broadband enrichment",
-          log,
-        })
+      const data = broadbandCache?.get(pc)
+
+      const updateData: any = {
+        broadband_last_checked: new Date().toISOString(),
       }
 
-      log.push(`Found ${properties.length} properties to enrich`)
-
-      const adapter = new OfcomBroadbandAdapter()
-      let enriched = 0
-      let failed = 0
-      let noData = 0
-
-      for (const property of properties) {
-        try {
-          const enrichedData = await adapter.enrich({
-            address: property.address,
-            postcode: property.postcode,
-            uprn: property.uprn,
-          } as any)
-
-          if (Object.keys(enrichedData).length > 0) {
-            const { error: updateError } = await supabase
-              .from("properties")
-              .update(enrichedData)
-              .eq("id", property.id)
-
-            if (updateError) {
-              log.push(`  ✗ ${property.address}: Update error - ${updateError.message}`)
-              failed++
-            } else {
-              const status = OfcomBroadbandAdapter.getBroadbandStatus(enrichedData as any)
-              log.push(`  ✓ ${property.address}: ${status.label} (${enrichedData.broadband_max_down || 0}Mbps)`)
-              enriched++
-            }
-          } else {
-            log.push(`  - ${property.address}: No data`)
-            noData++
-          }
-
-          // Rate limiting - respect Ofcom's limits
-          await new Promise(resolve => setTimeout(resolve, 100))
-
-        } catch (error) {
-          log.push(`  ✗ ${property.address}: ${error instanceof Error ? error.message : "Unknown error"}`)
-          failed++
+      if (data) {
+        // Determine max speeds based on availability percentages
+        if (data.gigabit_available >= 50) {
+          updateData.broadband_max_down = 1000
+          updateData.broadband_max_up = 100
+          updateData.has_fiber = true
+          updateData.has_superfast = true
+        } else if (data.ufbb_available >= 50) {
+          updateData.broadband_max_down = 300
+          updateData.broadband_max_up = 50
+          updateData.has_fiber = true
+          updateData.has_superfast = true
+        } else if (data.sfbb_available >= 50) {
+          updateData.broadband_max_down = 80
+          updateData.broadband_max_up = 20
+          updateData.has_fiber = data.ufbb_available > 0
+          updateData.has_superfast = true
+        } else {
+          updateData.broadband_max_down = 24
+          updateData.broadband_max_up = 3
+          updateData.has_fiber = false
+          updateData.has_superfast = false
         }
+
+        updateData.broadband_superfast_down = data.sfbb_available
+        updateData.broadband_ultrafast_down = data.ufbb_available
+
+        log.push(`  ${property.address}: ${updateData.broadband_max_down}Mbps, fiber=${updateData.has_fiber}`)
+        updated.push(property.address)
+      } else {
+        log.push(`  ${property.address}: No data for ${pc}`)
+        failed.push(property.address)
       }
 
-      log.push("")
-      log.push(`Summary: ${enriched} enriched, ${noData} no data, ${failed} failed`)
-
-      return NextResponse.json({
-        success: true,
-        message: `Enriched ${enriched} properties with broadband data`,
-        log,
-        summary: { enriched, noData, failed, total: properties.length },
-      })
+      await supabaseAdmin
+        .from("properties")
+        .update(updateData)
+        .eq("id", property.id)
     }
 
     return NextResponse.json({
-      success: false,
-      error: "Provide 'postcode', 'propertyId', or 'enrichCount'",
+      success: true,
+      message: `Enriched ${updated.length} properties with broadband data`,
+      summary: { processed: properties.length, enriched: updated.length, failed: failed.length },
       log,
-    }, { status: 400 })
+      updated,
+      failed,
+    })
 
   } catch (error) {
-    log.push(`Error: ${error instanceof Error ? error.message : "Unknown error"}`)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      log,
-    }, { status: 500 })
+    return NextResponse.json({ success: false, error: String(error), log }, { status: 500 })
+  }
+}
+
+function getBroadbandRating(gigabit: number, ufbb: number, sfbb: number): string {
+  if (gigabit >= 80) return "Excellent"
+  if (ufbb >= 80) return "Very Good"
+  if (sfbb >= 80) return "Good"
+  if (sfbb >= 50) return "Fair"
+  return "Poor"
+}
+
+async function loadCSVCache(): Promise<void> {
+  broadbandCache = new Map()
+
+  const csvPath = path.join(process.cwd(), "data/ofcom/broadband_simple.csv")
+
+  if (!fs.existsSync(csvPath)) {
+    console.log("Broadband CSV not found at:", csvPath)
+    cacheLoaded = true
+    return
+  }
+
+  try {
+    const fileStream = fs.createReadStream(csvPath)
+    const rl = readline.createInterface({
+      input: fileStream,
+      crlfDelay: Infinity,
+    })
+
+    let isFirstLine = true
+    for await (const line of rl) {
+      if (isFirstLine) {
+        isFirstLine = false
+        continue
+      }
+
+      const [postcode, sfbb, ufbb, gigabit, uso] = line.split(",")
+      if (postcode) {
+        broadbandCache.set(postcode, {
+          sfbb_available: parseFloat(sfbb) || 0,
+          ufbb_available: parseFloat(ufbb) || 0,
+          gigabit_available: parseFloat(gigabit) || 0,
+          below_uso: parseFloat(uso) || 0,
+        })
+      }
+    }
+
+    console.log(`Broadband cache loaded: ${broadbandCache.size} postcodes`)
+    cacheLoaded = true
+  } catch (error) {
+    console.error("Error loading broadband CSV:", error)
+    cacheLoaded = true
   }
 }
