@@ -448,7 +448,7 @@ export function PropertyDetailCard({
               </div>
 
               {/* Kamma Compliance Check - Real-time API */}
-              <KammaComplianceCard postcode={property.postcode} address={property.address} />
+              <KammaComplianceCard postcode={property.postcode} address={property.address} uprn={property.uprn || undefined} />
 
               {/* Licence Details from Council Register */}
               <LicenceDetailsCard propertyId={property.id} />

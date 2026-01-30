@@ -481,7 +481,7 @@ export async function POST(request: Request) {
               log.push(`  No floor plan match on gov.uk for: ${property.address}`)
             }
 
-            // Update property
+            // Update property - including UPRN for Kamma compliance checks
             const { error: updateError } = await supabaseAdmin
               .from("properties")
               .update({
@@ -491,6 +491,8 @@ export async function POST(request: Request) {
                 epc_expiry_date: matchedCert["lodgement-date"]
                   ? new Date(new Date(matchedCert["lodgement-date"]).getTime() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
                   : null,
+                // Save UPRN from EPC data - enables Kamma compliance checks
+                ...(matchedCert.uprn && { uprn: matchedCert.uprn }),
                 // Update floor area if not already set
                 ...((!property.gross_internal_area_sqm && floorArea) && {
                   gross_internal_area_sqm: Math.round(floorArea),
