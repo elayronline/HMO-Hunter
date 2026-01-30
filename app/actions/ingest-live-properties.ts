@@ -40,9 +40,11 @@ export async function ingestLiveProperties(): Promise<{
         const insights = await getFullPropertyInsights(p)
 
         // Prepare property data for upsert
+        const address = p.address || insights.propertyData?.address || `Property at ${p.postcode}`
         const propertyData = {
           postcode: p.postcode,
-          address: p.address || insights.propertyData?.address || `Property at ${p.postcode}`,
+          address,
+          title: `Property - ${address}`,
           external_id: p.uprn || `LIVE-${p.postcode.replace(/\s/g, "")}`,
           source_name: "Live API Aggregation",
           source_type: "partner_api",
@@ -50,19 +52,19 @@ export async function ingestLiveProperties(): Promise<{
           last_ingested_at: new Date().toISOString(),
           is_stale: false,
           // PropertyData fields
-          hmo_status: insights.propertyData?.hmoLicenseStatus || null,
+          hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
           licensed_hmo: insights.propertyData?.hmoLicenseStatus === "Licensed",
-          bedrooms: insights.propertyData?.bedrooms || null,
-          bathrooms: insights.propertyData?.bathrooms || null,
-          property_type: insights.propertyData?.propertyType || "HMO",
+          bedrooms: insights.propertyData?.bedrooms || 4,
+          bathrooms: insights.propertyData?.bathrooms || 1,
+          property_type: insights.propertyData?.propertyType || "House",
           // StreetData valuation fields
           purchase_price: insights.streetData?.estimatedValue || null,
           estimated_rent_per_room: insights.streetData?.rentalEstimate
             ? Math.round(insights.streetData.rentalEstimate / (insights.propertyData?.bedrooms || 4))
             : null,
-          // Location data
-          latitude: insights.propertyData?.latitude || null,
-          longitude: insights.propertyData?.longitude || null,
+          // Location data (default to central London if not available)
+          latitude: insights.propertyData?.latitude || 51.5074,
+          longitude: insights.propertyData?.longitude || -0.1278,
           city: "London",
           country: "United Kingdom",
         }
@@ -115,16 +117,18 @@ export async function fetchAndStoreProperties(properties: PropertyInput[]): Prom
         const insights = await getFullPropertyInsights(p)
 
         // Store/update in Supabase
+        const addr = p.address || insights.propertyData?.address || `Property at ${p.postcode}`
         const { error } = await supabaseAdmin.from("properties").upsert({
           postcode: p.postcode,
-          address: p.address || insights.propertyData?.address || `Property at ${p.postcode}`,
+          address: addr,
+          title: `Property - ${addr}`,
           external_id: p.uprn || `LIVE-${p.postcode.replace(/\s/g, "")}`,
           source_name: "Live API",
           source_type: "partner_api",
           last_synced: new Date().toISOString(),
           is_stale: false,
-          hmo_status: insights.propertyData?.hmoLicenseStatus || null,
-          bedrooms: insights.propertyData?.bedrooms || null,
+          hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
+          bedrooms: insights.propertyData?.bedrooms || 4,
           purchase_price: insights.streetData?.estimatedValue || null,
         }, { onConflict: "external_id" })
 
@@ -148,26 +152,28 @@ export async function ingestSingleProperty(postcode: string, uprn?: string): Pro
   try {
     const insights = await getFullPropertyInsights({ postcode, uprn })
 
+    const addr = insights.propertyData?.address || `Property at ${postcode}`
     const propertyData = {
       postcode,
-      address: insights.propertyData?.address || `Property at ${postcode}`,
+      address: addr,
+      title: `Property - ${addr}`,
       external_id: uprn || `LIVE-${postcode.replace(/\s/g, "")}`,
       source_name: "Live API Aggregation",
       source_type: "partner_api",
       last_synced: new Date().toISOString(),
       last_ingested_at: new Date().toISOString(),
       is_stale: false,
-      hmo_status: insights.propertyData?.hmoLicenseStatus || null,
+      hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
       licensed_hmo: insights.propertyData?.hmoLicenseStatus === "Licensed",
-      bedrooms: insights.propertyData?.bedrooms || null,
-      bathrooms: insights.propertyData?.bathrooms || null,
-      property_type: insights.propertyData?.propertyType || "HMO",
+      bedrooms: insights.propertyData?.bedrooms || 4,
+      bathrooms: insights.propertyData?.bathrooms || 1,
+      property_type: insights.propertyData?.propertyType || "House",
       purchase_price: insights.streetData?.estimatedValue || null,
       estimated_rent_per_room: insights.streetData?.rentalEstimate
         ? Math.round(insights.streetData.rentalEstimate / (insights.propertyData?.bedrooms || 4))
         : null,
-      latitude: insights.propertyData?.latitude || null,
-      longitude: insights.propertyData?.longitude || null,
+      latitude: insights.propertyData?.latitude || 51.5074,
+      longitude: insights.propertyData?.longitude || -0.1278,
       city: "London",
       country: "United Kingdom",
     }
