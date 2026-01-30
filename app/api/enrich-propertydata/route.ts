@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         }
 
         const data = await response.json()
-        const hmos = data.data || []
+        const hmos = data.data?.hmos || []
 
         log.push(`  Found ${hmos.length} HMOs in register`)
 
@@ -114,9 +114,15 @@ export async function POST(request: Request) {
 
             // Parse expiry date
             if (matched.licence_expiry) {
-              // Handle formats like "24/02/2027" or "2027-02-24"
+              // Handle formats like "10th February 2027" or "24/02/2027" or "2027-02-24"
               const expiryStr = matched.licence_expiry
-              if (expiryStr.includes("/")) {
+              if (expiryStr.match(/\d{1,2}(st|nd|rd|th)\s+\w+\s+\d{4}/)) {
+                // Format: "10th February 2027"
+                const parsed = new Date(expiryStr.replace(/(\d+)(st|nd|rd|th)/, "$1"))
+                if (!isNaN(parsed.getTime())) {
+                  updateData.hmo_licence_expiry = parsed.toISOString().split("T")[0]
+                }
+              } else if (expiryStr.includes("/")) {
                 const [day, month, year] = expiryStr.split("/")
                 updateData.hmo_licence_expiry = `${year}-${month}-${day}`
               } else {
