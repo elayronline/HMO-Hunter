@@ -67,6 +67,8 @@ import { BroadbandBadge } from "@/components/broadband-badge"
 import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
+import { PropertySidebar } from "@/components/property-sidebar"
+import { MapPropertyPopup } from "@/components/map-property-popup"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 
 export default function HMOHunterPage() {
@@ -1051,147 +1053,15 @@ export default function HMOHunterPage() {
             showPotentialHMOLayer={showPotentialHMOLayer}
           />
 
-          {/* Selected Property Card Overlay */}
+          {/* Selected Property Card Overlay - Simplified for quick scanning */}
           {selectedProperty && (
-            <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-72 shadow-2xl bg-white border-slate-200 z-20">
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedProperty(null)}
-                className="absolute -top-2 -right-2 z-30 w-6 h-6 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
-                title="Close"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <div className="relative">
-                <SavePropertyButton
-                  propertyId={selectedProperty.id}
-                  initialSaved={savedPropertyIds.has(selectedProperty.id)}
-                />
-              </div>
-              <div className="flex gap-3 p-3 cursor-pointer" onClick={() => setRightPanelOpen(true)}>
-                <div className="w-20 h-20 bg-slate-200 rounded flex-shrink-0 overflow-hidden">
-                  <PropertyGallery
-                    images={selectedProperty.images}
-                    floorPlans={selectedProperty.floor_plans}
-                    primaryImage={selectedProperty.primary_image}
-                    fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
-                    propertyTitle={selectedProperty.title}
-                    latitude={selectedProperty.latitude}
-                    longitude={selectedProperty.longitude}
-                    postcode={selectedProperty.postcode}
-                    address={selectedProperty.address}
-                    bedrooms={selectedProperty.bedrooms}
-                    listingType={selectedProperty.listing_type}
-                    externalId={selectedProperty.external_id}
-                    price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-lg font-bold text-slate-900 mb-0.5">
-                    {selectedProperty.listing_type === "purchase"
-                      ? `£${selectedProperty.purchase_price?.toLocaleString()}`
-                      : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
-                  </div>
-                  <div className="text-xs text-slate-600 leading-relaxed">
-                    {selectedProperty.address},
-                    <br />
-                    {selectedProperty.postcode}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <FreshnessBadge
-                      lastSeenAt={selectedProperty.last_seen_at}
-                      isStale={selectedProperty.is_stale}
-                      className="text-xs"
-                    />
-                    {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
-                      <PotentialHMOBadge
-                        classification={selectedProperty.hmo_classification}
-                        dealScore={selectedProperty.deal_score ?? undefined}
-                        className="text-xs"
-                        isPremium={isPremiumUser}
-                      />
-                    )}
-                    {selectedProperty.licence_status === "expired" && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Expired Licence
-                      </span>
-                    )}
-                    {selectedProperty.licensed_hmo && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-100 text-teal-800 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Licensed
-                      </span>
-                    )}
-                    {selectedProperty.epc_rating && (
-                      <EPCBadge
-                        rating={selectedProperty.epc_rating}
-                        numericRating={selectedProperty.epc_rating_numeric}
-                        className="text-xs"
-                        showTooltip={false}
-                      />
-                    )}
-                    {(selectedProperty.gross_internal_area_sqm || selectedProperty.floor_area_band) && (
-                      <EpcFloorAreaBadge
-                        floorAreaSqm={selectedProperty.gross_internal_area_sqm}
-                        floorAreaBand={selectedProperty.floor_area_band}
-                        className="text-xs"
-                        showTooltip={false}
-                      />
-                    )}
-                    {(selectedProperty.has_fiber !== null || selectedProperty.has_superfast !== null) && (
-                      <BroadbandBadge
-                        hasFiber={selectedProperty.has_fiber}
-                        hasSuperfast={selectedProperty.has_superfast}
-                        maxDownload={selectedProperty.broadband_max_down}
-                        size="sm"
-                        showSpeed={false}
-                      />
-                    )}
-                    {/* Contact availability indicator */}
-                    {(selectedProperty.owner_contact_phone || selectedProperty.owner_contact_email) ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                        Contact Available
-                      </span>
-                    ) : selectedProperty.company_name ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        Company Owner
-                      </span>
-                    ) : selectedProperty.owner_name ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Owner Known
-                      </span>
-                    ) : null}
-                    {selectedProperty.article_4_area && (
-                      <Article4Warning
-                        article4Area={selectedProperty.article_4_area}
-                        conservationArea={selectedProperty.conservation_area}
-                        listedBuildingGrade={selectedProperty.listed_building_grade}
-                        className="text-xs"
-                      />
-                    )}
-                    <FloorPlanBadge
-                      hasFloorPlanImages={!!(selectedProperty.floor_plans && selectedProperty.floor_plans.length > 0)}
-                      floorPlanCount={selectedProperty.floor_plans?.length || 0}
-                      className="text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full z-20">
+              <MapPropertyPopup
+                property={selectedProperty}
+                onClick={() => setRightPanelOpen(true)}
+                onClose={() => setSelectedProperty(null)}
+              />
+            </div>
           )}
 
           {/* Map legend - Reorganized by user intent */}
@@ -1304,78 +1174,24 @@ export default function HMOHunterPage() {
           </Button>
         </main>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar - Redesigned for investor-grade UX */}
         {rightPanelOpen && (
-          <aside className="w-[360px] bg-white border-l border-slate-200 overflow-y-auto relative">
-            {/* Close button */}
-            <button
-              onClick={() => setRightPanelOpen(false)}
-              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
-              title="Close panel"
-            >
-              <X className="w-4 h-4 text-slate-600" />
-            </button>
+          <aside className="w-[420px] bg-white border-l border-slate-200 flex flex-col">
             {selectedProperty ? (
-              <div>
-                <div className="p-5 border-b border-slate-200">
-                  <div className="flex items-center gap-2 mb-4">
-                    <FileText className="w-4 h-4 text-teal-600" />
-                    <span className="font-semibold text-sm text-slate-900">Property Details</span>
-                  </div>
-
-                <div className="relative mb-4">
-                  <PropertyGallery
-                    images={selectedProperty.images}
-                    floorPlans={selectedProperty.floor_plans}
-                    primaryImage={selectedProperty.primary_image}
-                    fallbackImage={selectedProperty.image_url || "/modern-house-exterior.png"}
-                    propertyTitle={selectedProperty.title}
-                    latitude={selectedProperty.latitude}
-                    longitude={selectedProperty.longitude}
-                    postcode={selectedProperty.postcode}
-                    address={selectedProperty.address}
-                    bedrooms={selectedProperty.bedrooms}
-                    listingType={selectedProperty.listing_type}
-                    externalId={selectedProperty.external_id}
-                    price={selectedProperty.listing_type === "rent" ? selectedProperty.price_pcm : selectedProperty.purchase_price}
-                  />
-                  <SavePropertyButton
-                    propertyId={selectedProperty.id}
-                    initialSaved={savedPropertyIds.has(selectedProperty.id)}
-                  />
-                </div>
-
-                {/* New Sleek Property Detail Card */}
-                <PropertyDetailCard
-                  property={selectedProperty}
-                  onViewFullDetails={() => setShowFullDetails(true)}
-                  isPremium={isPremiumUser}
-                />
+              <PropertySidebar
+                property={selectedProperty}
+                onClose={() => setRightPanelOpen(false)}
+                onViewFullDetails={() => setShowFullDetails(true)}
+                isPremium={isPremiumUser}
+                isSaved={savedPropertyIds.has(selectedProperty.id)}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8">
+                <FileText className="w-12 h-12 mb-4 opacity-30" />
+                <p className="text-sm text-center">Select a property on the map to view details</p>
               </div>
-
-              {/* Analytics & Comparison - World-Class Redesign */}
-              <div className="p-5 border-t border-slate-100">
-                <PropertyAnalyticsCard
-                  property={selectedProperty}
-                  properties={properties}
-                  comparisonMetric={comparisonMetric}
-                  onMetricChange={setComparisonMetric}
-                  onPropertySelect={(p) => {
-                    setSelectedProperty(p)
-                    setShowFullDetails(false)
-                  }}
-                  calculateROI={calculateROI}
-                  getMonthlyRent={getMonthlyRent}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8">
-              <FileText className="w-12 h-12 mb-4 opacity-30" />
-              <p className="text-sm text-center">Select a property on the map to view details</p>
-            </div>
-          )}
-        </aside>
+            )}
+          </aside>
         )}
 
         {/* Toggle button when panel is closed */}
