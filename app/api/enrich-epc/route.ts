@@ -100,6 +100,27 @@ function findMatchingGovUKCertificate(
 ): GovUKCertificate | null {
   if (!certificates.length) return null
 
+  // Common street suffix variations - normalize to full form
+  const STREET_SUFFIXES: Record<string, string> = {
+    "rd": "road", "road": "road",
+    "st": "street", "street": "street",
+    "ave": "avenue", "avenue": "avenue",
+    "dr": "drive", "drive": "drive",
+    "ln": "lane", "lane": "lane",
+    "cl": "close", "close": "close",
+    "ct": "court", "court": "court",
+    "pl": "place", "place": "place",
+    "ter": "terrace", "terrace": "terrace",
+    "cres": "crescent", "crescent": "crescent",
+    "gdns": "gardens", "gardens": "gardens",
+    "gr": "grove", "grove": "grove",
+    "pk": "park", "park": "park",
+    "way": "way", "walk": "walk",
+    "sq": "square", "square": "square",
+    "mews": "mews", "row": "row", "hill": "hill",
+    "rise": "rise", "view": "view", "villas": "villas",
+  }
+
   // Normalize address for comparison
   const normalize = (addr: string) =>
     addr.toLowerCase()
@@ -107,48 +128,159 @@ function findMatchingGovUKCertificate(
       .replace(/\s+/g, " ")
       .trim()
 
-  const normalizedProperty = normalize(propertyAddress)
-
-  // Extract the key identifier (flat number + building number, or just building number)
-  const extractKey = (addr: string) => {
-    const normalized = normalize(addr)
-    // Match "flat X, Y address" or "Y address"
-    const flatMatch = normalized.match(/^flat\s+([a-z0-9]+)\s+(\d+)/)
-    if (flatMatch) {
-      return `flat ${flatMatch[1]} ${flatMatch[2]}`
+  // Normalize street suffixes
+  const normalizeStreetSuffix = (addr: string) => {
+    let result = addr
+    for (const [abbrev, full] of Object.entries(STREET_SUFFIXES)) {
+      result = result.replace(new RegExp(`\\b${abbrev}\\b`, "gi"), full)
     }
-    // Match just building number at start
-    const numMatch = normalized.match(/^(\d+[a-z]?)/)
-    return numMatch ? numMatch[1] : null
+    return result
   }
 
-  const propertyKey = extractKey(normalizedProperty)
+  // Remove garbage prefixes
+  const removeGarbagePrefixes = (addr: string): string => {
+    let cleaned = addr.replace(/^[a-z]{2,6}\d{5,}/i, "").trim()
+    cleaned = cleaned.replace(/^\d+[a-z]+,?\s*\d*[a-z]*,?\s*/i, "").trim()
+    cleaned = cleaned.replace(/^[A-Z]{1,3}-\d+\s*/i, "").trim()
+    cleaned = cleaned.replace(/^plot\s+[a-z0-9.]+\s+/i, "").trim()
+    cleaned = cleaned.replace(/^ph\s+\d+\s*[a-z]*\s+/i, "").trim()
+    return cleaned
+  }
 
-  // Score each certificate
+  // Fix hyphenated numbers
+  const fixHyphenatedNumbers = (addr: string): string => {
+    return addr.replace(/(\d+)-([a-z])/gi, "$1 $2")
+  }
+
+  // Extract first number from range
+  const extractFirstFromRange = (addr: string): string => {
+    return addr.replace(/(\d+)-\d+/g, "$1")
+  }
+
+  // Fix concatenated words
+  const fixConcatenatedWords = (addr: string): string => {
+    let result = addr.replace(/([a-z])([A-Z])/g, "$1 $2")
+    const cities = ["london", "liverpool", "manchester", "birmingham", "leeds", "sheffield", "bristol", "nottingham", "leicester", "oxford", "cambridge", "reading", "southampton", "portsmouth", "brighton", "glasgow", "edinburgh", "cardiff", "newcastle"]
+    for (const city of cities) {
+      const pattern = new RegExp(`([a-z])(${city})`, "gi")
+      result = result.replace(pattern, "$1 $2")
+    }
+    return result
+  }
+
+  // Clean duplicates from address
+  const cleanAddress = (addr: string) => {
+    let cleaned = fixConcatenatedWords(addr)
+    cleaned = normalize(cleaned)
+    cleaned = removeGarbagePrefixes(cleaned)
+    cleaned = fixHyphenatedNumbers(cleaned)
+    cleaned = extractFirstFromRange(cleaned)
+
+    // Remove duplicate multi-word segments
+    let words = cleaned.split(" ")
+
+    // Check if first half equals second half
+    if (words.length >= 4 && words.length % 2 === 0) {
+      const mid = words.length / 2
+      const firstHalf = words.slice(0, mid).join(" ")
+      const secondHalf = words.slice(mid).join(" ")
+      if (firstHalf === secondHalf) {
+        words = words.slice(0, mid)
+        cleaned = words.join(" ")
+      }
+    }
+
+    for (let len = Math.min(4, Math.floor(words.length / 2)); len >= 2; len--) {
+      for (let i = 0; i <= words.length - len * 2; i++) {
+        const seg1 = words.slice(i, i + len).join(" ")
+        const seg2 = words.slice(i + len, i + len * 2).join(" ")
+        if (seg1 === seg2) {
+          words.splice(i + len, len)
+          cleaned = words.join(" ")
+          break
+        }
+      }
+    }
+
+    // Remove duplicate single words
+    const parts = cleaned.split(" ")
+    const seen = new Set<string>()
+    const deduped: string[] = []
+    for (const part of parts) {
+      if (!seen.has(part) || /^\d+[a-z]?$/.test(part)) {
+        deduped.push(part)
+        seen.add(part)
+      }
+    }
+    return deduped.join(" ")
+  }
+
+  const normalizedProperty = normalizeStreetSuffix(cleanAddress(propertyAddress))
+
+  // Extract all numbers
+  const extractNumbers = (addr: string): string[] => {
+    const matches = addr.match(/\d+[a-z]?/gi) || []
+    return matches.map(m => m.toLowerCase())
+  }
+
+  // Extract flat number
+  const extractFlat = (addr: string): string | null => {
+    const patterns = [
+      /\bflat\s+([a-z0-9]+)/i,
+      /\bapartment\s+([a-z0-9]+)/i,
+      /\bunit\s+([a-z0-9]+)/i,
+      /^([a-z])\s+[a-z]+\s+(?:road|street|avenue|drive|lane|close|court|place|terrace|crescent|gardens|grove|park|way|walk|square)/i,
+    ]
+    for (const pattern of patterns) {
+      const match = normalize(addr).match(pattern)
+      if (match) return match[1].toLowerCase()
+    }
+    return null
+  }
+
+  const propertyNumbers = extractNumbers(normalizedProperty)
+  const propertyFlat = extractFlat(propertyAddress)
+  const propertyWords = normalizedProperty.split(" ").filter(w => w.length > 2)
+
   let bestMatch: { cert: GovUKCertificate; score: number } | null = null
 
   for (const cert of certificates) {
-    const normalizedCert = normalize(cert.address)
-    const certKey = extractKey(normalizedCert)
+    const normalizedCert = normalizeStreetSuffix(cleanAddress(cert.address))
+    const certNumbers = extractNumbers(normalizedCert)
+    const certFlat = extractFlat(cert.address)
+    const certWords = normalizedCert.split(" ").filter(w => w.length > 2)
+
     let score = 0
 
-    // Exact match after normalization
+    // Exact match
     if (normalizedCert === normalizedProperty) {
       score = 100
     }
-    // One contains the other (handles city name differences)
+    // One contains the other
     else if (normalizedCert.includes(normalizedProperty) || normalizedProperty.includes(normalizedCert)) {
       score = 90
     }
-    // Key matches (flat + number or just number)
-    else if (propertyKey && certKey && propertyKey === certKey) {
-      // Verify street name has some overlap
-      const propWords = normalizedProperty.split(" ")
-      const certWords = normalizedCert.split(" ")
-      // Check if any significant word matches
-      const commonWords = propWords.filter(w => w.length > 3 && certWords.includes(w))
-      if (commonWords.length > 0) {
-        score = 80
+    // Number match + word overlap
+    else if (propertyNumbers.length > 0 && certNumbers.length > 0) {
+      const hasMatchingNumber = propertyNumbers.some(n => certNumbers.includes(n))
+      if (hasMatchingNumber) {
+        const commonWords = propertyWords.filter(w => certWords.includes(w))
+        if (commonWords.length >= 2) {
+          score = 80
+          if (propertyFlat && certFlat && propertyFlat === certFlat) {
+            score = 85
+          }
+        } else if (commonWords.length >= 1) {
+          score = 70
+        }
+      }
+    }
+    // Street-only match (no number in property)
+    else if (propertyNumbers.length === 0) {
+      const commonWords = propertyWords.filter(w => certWords.includes(w))
+      const overlap = commonWords.length / Math.max(propertyWords.length, 1)
+      if (overlap >= 0.4 && commonWords.length >= 1) {
+        score = 65
       }
     }
 
@@ -157,7 +289,8 @@ function findMatchingGovUKCertificate(
     }
   }
 
-  return bestMatch && bestMatch.score >= 80 ? bestMatch.cert : null
+  // Lower threshold to catch more matches
+  return bestMatch && bestMatch.score >= 65 ? bestMatch.cert : null
 }
 
 /**
@@ -234,13 +367,39 @@ function epcRatingToNumeric(rating: string): number {
 
 /**
  * Match property address to EPC certificate from API data
- * Returns null if no confident match found (no fallback)
+ * Improved matching with fuzzy logic for partial addresses
  */
 function findMatchingCertificate(
   address: string,
   certificates: EPCCertificate[]
 ): EPCCertificate | null {
   if (!certificates.length) return null
+
+  // Common street suffix variations - normalize to full form for comparison
+  const STREET_SUFFIXES: Record<string, string> = {
+    "rd": "road", "road": "road",
+    "st": "street", "street": "street",
+    "ave": "avenue", "avenue": "avenue",
+    "dr": "drive", "drive": "drive",
+    "ln": "lane", "lane": "lane",
+    "cl": "close", "close": "close",
+    "ct": "court", "court": "court",
+    "pl": "place", "place": "place",
+    "ter": "terrace", "terrace": "terrace",
+    "cres": "crescent", "crescent": "crescent",
+    "gdns": "gardens", "gardens": "gardens",
+    "gr": "grove", "grove": "grove",
+    "pk": "park", "park": "park",
+    "way": "way",
+    "walk": "walk",
+    "sq": "square", "square": "square",
+    "mews": "mews",
+    "row": "row",
+    "hill": "hill",
+    "rise": "rise",
+    "view": "view",
+    "villas": "villas",
+  }
 
   // Normalize address for comparison
   const normalizeAddress = (addr: string) =>
@@ -249,50 +408,247 @@ function findMatchingCertificate(
       .replace(/\s+/g, " ")
       .trim()
 
-  const normalizedPropertyAddress = normalizeAddress(address)
-
-  // Extract building/flat identifier
-  const extractIdentifier = (addr: string) => {
-    const normalized = normalizeAddress(addr)
-    // Match "flat X Y" pattern
-    const flatMatch = normalized.match(/^flat\s+([a-z0-9]+)\s+(\d+)/)
-    if (flatMatch) return `flat ${flatMatch[1]} ${flatMatch[2]}`
-    // Match just building number
-    const numMatch = normalized.match(/^(\d+[a-z]?)/)
-    return numMatch ? numMatch[1] : null
+  // Normalize street suffixes to full form
+  const normalizeStreetSuffix = (addr: string) => {
+    let result = addr
+    for (const [abbrev, full] of Object.entries(STREET_SUFFIXES)) {
+      result = result.replace(new RegExp(`\\b${abbrev}\\b`, "gi"), full)
+    }
+    return result
   }
 
-  const propertyId = extractIdentifier(normalizedPropertyAddress)
-  const propertyWords = normalizedPropertyAddress.split(" ").filter(w => w.length > 2)
+  // Remove garbage prefixes (e.g., "chpk3422050", "SL-", alphanumeric codes)
+  const removeGarbagePrefixes = (addr: string): string => {
+    // Remove alphanumeric codes at start (e.g., "chpk3422050 Windsor Road")
+    let cleaned = addr.replace(/^[a-z]{2,6}\d{5,}/i, "").trim()
+    // Remove alphanumeric garbage like "62874836sdhh, 9823566s8dsg"
+    cleaned = cleaned.replace(/^\d+[a-z]+,?\s*\d*[a-z]*,?\s*/i, "").trim()
+    // Remove "SL-" or similar prefixes
+    cleaned = cleaned.replace(/^[A-Z]{1,3}-\d+\s*/i, "").trim()
+    // Remove "Plot X.XX.XX" prefixes but keep the address
+    cleaned = cleaned.replace(/^plot\s+[a-z0-9.]+\s+/i, "").trim()
+    // Remove "PH XXXX" or "PH XXXX XXX" penthouse prefixes
+    cleaned = cleaned.replace(/^ph\s+\d+\s*[a-z]*\s+/i, "").trim()
+    return cleaned
+  }
 
-  // Score each certificate
+  // Fix hyphenated numbers (e.g., "169-Kensington" -> "169 Kensington")
+  const fixHyphenatedNumbers = (addr: string): string => {
+    // "169-Kensington" -> "169 Kensington"
+    return addr.replace(/(\d+)-([a-z])/gi, "$1 $2")
+  }
+
+  // Extract first number from a range (e.g., "4401-4414" -> "4401")
+  const extractFirstFromRange = (addr: string): string => {
+    return addr.replace(/(\d+)-\d+/g, "$1")
+  }
+
+  // Fix concatenated words (e.g., "RoadLiverpool" -> "Road Liverpool")
+  const fixConcatenatedWords = (addr: string): string => {
+    // Add space between lowercase-uppercase transitions
+    let result = addr.replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Add space between word and city names that got concatenated
+    const cities = ["london", "liverpool", "manchester", "birmingham", "leeds", "sheffield", "bristol", "nottingham", "leicester", "oxford", "cambridge", "reading", "southampton", "portsmouth", "brighton", "glasgow", "edinburgh", "cardiff", "newcastle"]
+    for (const city of cities) {
+      const pattern = new RegExp(`([a-z])(${city})`, "gi")
+      result = result.replace(pattern, "$1 $2")
+    }
+    return result
+  }
+
+  // Clean property address - remove duplicates, noise, prefixes
+  const cleanPropertyAddress = (addr: string) => {
+    // Fix concatenated words BEFORE normalizing (preserves case info)
+    let cleaned = fixConcatenatedWords(addr)
+
+    cleaned = normalizeAddress(cleaned)
+
+    // Remove garbage prefixes first
+    cleaned = removeGarbagePrefixes(cleaned)
+
+    // Fix hyphenated numbers
+    cleaned = fixHyphenatedNumbers(cleaned)
+
+    // Extract first number from ranges
+    cleaned = extractFirstFromRange(cleaned)
+
+    // Remove duplicate multi-word segments (e.g., "One Hyde Park One Hyde Park" -> "One Hyde Park")
+    // Also handles "Beach Road Beach Road" -> "Beach Road"
+    let words = cleaned.split(" ")
+
+    // First check if the entire first half equals the second half
+    if (words.length >= 4 && words.length % 2 === 0) {
+      const mid = words.length / 2
+      const firstHalf = words.slice(0, mid).join(" ")
+      const secondHalf = words.slice(mid).join(" ")
+      if (firstHalf === secondHalf) {
+        words = words.slice(0, mid)
+        cleaned = words.join(" ")
+      }
+    }
+
+    // Then check for partial duplicates at any position
+    for (let len = Math.min(4, Math.floor(words.length / 2)); len >= 2; len--) {
+      for (let i = 0; i <= words.length - len * 2; i++) {
+        const seg1 = words.slice(i, i + len).join(" ")
+        const seg2 = words.slice(i + len, i + len * 2).join(" ")
+        if (seg1 === seg2) {
+          // Remove the duplicate
+          words.splice(i + len, len)
+          cleaned = words.join(" ")
+          break
+        }
+      }
+    }
+
+    // Remove duplicate single words (except numbers)
+    const parts = cleaned.split(" ")
+    const seen = new Set<string>()
+    const deduped: string[] = []
+    for (const part of parts) {
+      if (!seen.has(part) || /^\d+[a-z]?$/.test(part)) {
+        deduped.push(part)
+        seen.add(part)
+      }
+    }
+    cleaned = deduped.join(" ")
+
+    // Remove common noise words
+    cleaned = cleaned
+      .replace(/\b(the|at|in|of)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+
+    return cleaned
+  }
+
+  // Extract all numbers from address
+  const extractNumbers = (addr: string): string[] => {
+    const matches = addr.match(/\d+[a-z]?/gi) || []
+    return matches.map(m => m.toLowerCase())
+  }
+
+  // Extract street name (words before/after numbers, excluding city)
+  const extractStreetName = (addr: string): string | null => {
+    const normalized = normalizeAddress(addr)
+    // Try to find street name patterns
+    const streetSuffixPattern = "road|street|avenue|drive|lane|close|court|place|terrace|crescent|gardens|grove|park|way|walk|square|mews|row|hill|rise|view|villas|rd|st|ave|dr|ln|cl|ct|pl|ter|cres|gdns|gr|pk|sq"
+    const patterns = [
+      new RegExp(`\\d+[a-z]?\\s+([a-z]+\\s+(?:${streetSuffixPattern}))`, "i"),
+      new RegExp(`\\d+[a-z]?\\s+([a-z]+(?:\\s+[a-z]+)?)`, "i"),
+      new RegExp(`([a-z]+\\s+(?:${streetSuffixPattern}))`, "i"),
+    ]
+
+    for (const pattern of patterns) {
+      const match = normalized.match(pattern)
+      if (match) return normalizeStreetSuffix(match[1])
+    }
+    return null
+  }
+
+  // Extract flat/apartment number - including letter-only flats
+  const extractFlatNumber = (addr: string): string | null => {
+    const normalized = normalizeAddress(addr)
+    const patterns = [
+      /\bflat\s+([a-z0-9]+)/i,
+      /\bapartment\s+([a-z0-9]+)/i,
+      /\bapt\s+([a-z0-9]+)/i,
+      /\bunit\s+([a-z0-9]+)/i,
+      /\broom\s+([a-z0-9]+)/i,
+      // "A Skipworth Street" - single letter at start before street name
+      /^([a-z])\s+[a-z]+\s+(?:road|street|avenue|drive|lane|close|court|place|terrace|crescent|gardens|grove|park|way|walk|square|rd|st|ave|dr|ln|cl|ct|pl|ter|cres|gdns|gr|pk|sq)/i,
+    ]
+    for (const pattern of patterns) {
+      const match = normalized.match(pattern)
+      if (match) return match[1].toLowerCase()
+    }
+    return null
+  }
+
+  // Calculate word overlap score
+  const wordOverlapScore = (words1: string[], words2: string[]): number => {
+    const set1 = new Set(words1.filter(w => w.length > 2))
+    const set2 = new Set(words2.filter(w => w.length > 2))
+    const intersection = [...set1].filter(w => set2.has(w))
+    const union = new Set([...set1, ...set2])
+    return union.size > 0 ? intersection.length / union.size : 0
+  }
+
+  // Check if two street names match (accounting for variations)
+  const streetsMatch = (s1: string | null, s2: string | null): boolean => {
+    if (!s1 || !s2) return false
+    const norm1 = normalizeStreetSuffix(s1)
+    const norm2 = normalizeStreetSuffix(s2)
+    return norm1 === norm2 || norm1.includes(norm2) || norm2.includes(norm1)
+  }
+
+  const propertyAddr = cleanPropertyAddress(address)
+  const propertyNormalized = normalizeStreetSuffix(propertyAddr)
+  const propertyNumbers = extractNumbers(propertyAddr)
+  const propertyStreet = extractStreetName(propertyAddr)
+  const propertyFlat = extractFlatNumber(propertyAddr)
+  const propertyWords = propertyNormalized.split(" ").filter(w => w.length > 2)
+
   let bestMatch: { cert: EPCCertificate; score: number } | null = null
 
   for (const cert of certificates) {
-    const certAddress = normalizeAddress(
+    const certAddr = normalizeAddress(
       [cert.address1, cert.address2, cert.address3].filter(Boolean).join(" ")
     )
-    const certId = extractIdentifier(certAddress)
-    const certWords = certAddress.split(" ").filter(w => w.length > 2)
+    const certNormalized = normalizeStreetSuffix(certAddr)
+    const certNumbers = extractNumbers(certAddr)
+    const certStreet = extractStreetName(certAddr)
+    const certFlat = extractFlatNumber(certAddr)
+    const certWords = certNormalized.split(" ").filter(w => w.length > 2)
+
     let score = 0
 
-    // Exact match
-    if (certAddress === normalizedPropertyAddress) {
+    // Strategy 1: Exact match after normalization (100 points)
+    if (certNormalized === propertyNormalized) {
       score = 100
     }
-    // One contains the other
-    else if (certAddress.includes(normalizedPropertyAddress) ||
-             normalizedPropertyAddress.includes(certAddress)) {
+    // Strategy 2: One contains the other (90 points)
+    else if (certNormalized.includes(propertyNormalized) ||
+             propertyNormalized.includes(certNormalized)) {
       score = 90
     }
-    // Identifier matches
-    else if (propertyId && certId && propertyId === certId) {
-      // Count common significant words
-      const commonWords = propertyWords.filter(w => certWords.includes(w))
-      if (commonWords.length >= 2) {
-        score = 80
-      } else if (commonWords.length >= 1) {
-        score = 70
+    // Strategy 3: Same building number + street name match (85 points)
+    else if (propertyNumbers.length > 0 && certNumbers.length > 0) {
+      const hasMatchingNumber = propertyNumbers.some(n => certNumbers.includes(n))
+      const hasMatchingStreet = streetsMatch(propertyStreet, certStreet)
+
+      if (hasMatchingNumber && hasMatchingStreet) {
+        score = 85
+        // Bonus for flat number match
+        if (propertyFlat && certFlat && propertyFlat === certFlat) {
+          score = 88
+        }
+      }
+      // Strategy 4: Same number + high word overlap (75 points)
+      else if (hasMatchingNumber) {
+        const overlap = wordOverlapScore(propertyWords, certWords)
+        if (overlap >= 0.5) {
+          score = 75 + Math.round(overlap * 10)
+        } else if (overlap >= 0.3) {
+          score = 65 + Math.round(overlap * 10)
+        }
+      }
+    }
+    // Strategy 5: Street-only match (no number in property) - use word overlap
+    else if (propertyNumbers.length === 0) {
+      const overlap = wordOverlapScore(propertyWords, certWords)
+      // If street names match, give high score even with low overlap
+      if (streetsMatch(propertyStreet, certStreet)) {
+        score = Math.max(70, 60 + Math.round(overlap * 15))
+      } else if (overlap >= 0.5) {
+        score = 60 + Math.round(overlap * 15)
+      }
+    }
+    // Strategy 6: High word overlap regardless of numbers (55 points)
+    else {
+      const overlap = wordOverlapScore(propertyWords, certWords)
+      if (overlap >= 0.6) {
+        score = 55 + Math.round(overlap * 10)
       }
     }
 
@@ -301,7 +657,8 @@ function findMatchingCertificate(
     }
   }
 
-  return bestMatch && bestMatch.score >= 70 ? bestMatch.cert : null
+  // Lower threshold to 55 to catch more matches
+  return bestMatch && bestMatch.score >= 55 ? bestMatch.cert : null
 }
 
 /**

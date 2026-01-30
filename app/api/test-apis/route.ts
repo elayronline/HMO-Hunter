@@ -75,94 +75,128 @@ async function testSearchlandApis(property: { address: string; postcode: string 
     return results
   }
 
-  // Test Title API (owner data)
+  // Test coordinates for London N7 (Holloway Road area)
+  const testLat = 51.5489
+  const testLng = -0.1074
+
+  // Test HMO Search API (correct endpoint)
   try {
-    const titleResponse = await fetch(`${apiConfig.searchland.baseUrl}/title`, {
+    const hmoResponse = await fetch(
+      `${apiConfig.searchland.baseUrl}/hmo/search?lat=${testLat}&lng=${testLng}&radius=1000`,
+      {
+        headers: {
+          "Authorization": `Bearer ${apiConfig.searchland.apiKey}`,
+        },
+      }
+    )
+
+    results.hmoApi = {
+      endpoint: "/hmo/search",
+      status: hmoResponse.status,
+      success: hmoResponse.ok,
+    }
+
+    if (hmoResponse.ok) {
+      const data = await hmoResponse.json()
+      results.hmoApi.cost = data.cost
+      results.hmoApi.count = data.data?.length || 0
+      results.hmoApi.providesLicenceData = data.data?.length > 0
+      if (data.data?.[0]) {
+        results.hmoApi.sampleFields = Object.keys(data.data[0])
+      }
+    } else {
+      results.hmoApi.errorBody = await hmoResponse.text().catch(() => "No error body")
+    }
+  } catch (error) {
+    results.hmoApi = { success: false, error: String(error) }
+  }
+
+  // Test Titles Search API (correct endpoint)
+  try {
+    const offset = 0.0005
+    const geometry = {
+      type: "Polygon",
+      coordinates: [[
+        [testLng - offset, testLat - offset],
+        [testLng + offset, testLat - offset],
+        [testLng + offset, testLat + offset],
+        [testLng - offset, testLat + offset],
+        [testLng - offset, testLat - offset],
+      ]],
+    }
+
+    const titlesResponse = await fetch(`${apiConfig.searchland.baseUrl}/titles/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiConfig.searchland.apiKey}`,
       },
-      body: JSON.stringify({
-        address: property.address,
-        postcode: property.postcode,
-      }),
+      body: JSON.stringify({ geometry, perPage: 5 }),
     })
 
-    results.titleApi = {
-      endpoint: "/title",
+    results.titlesApi = {
+      endpoint: "/titles/search",
+      status: titlesResponse.status,
+      success: titlesResponse.ok,
+    }
+
+    if (titlesResponse.ok) {
+      const data = await titlesResponse.json()
+      results.titlesApi.cost = data.cost
+      results.titlesApi.count = data.count
+      results.titlesApi.providesOwnerData = data.data?.some((t: any) => t.ownership_category) || false
+      if (data.data?.[0]) {
+        results.titlesApi.sample = {
+          title_no: data.data[0].title_no,
+          ownership_category: data.data[0].ownership_category,
+          class_of_title: data.data[0].calculated_class_of_title,
+        }
+      }
+    } else {
+      results.titlesApi.errorBody = await titlesResponse.text().catch(() => "No error body")
+    }
+  } catch (error) {
+    results.titlesApi = { success: false, error: String(error) }
+  }
+
+  // Test Title Details API (for constraints/planning data)
+  try {
+    // Use a known title number from the search
+    const testTitleNumber = "NGL820917"
+    const titleResponse = await fetch(
+      `${apiConfig.searchland.baseUrl}/titles/get?titleNumber=${testTitleNumber}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${apiConfig.searchland.apiKey}`,
+        },
+      }
+    )
+
+    results.titleDetailsApi = {
+      endpoint: "/titles/get",
       status: titleResponse.status,
-      statusText: titleResponse.statusText,
       success: titleResponse.ok,
-      providesOwnerData: false,
     }
 
     if (titleResponse.ok) {
       const data = await titleResponse.json()
-      results.titleApi.providesOwnerData = !!(data.title?.proprietor || data.title?.owner || data.owner)
-      results.titleApi.responsePreview = JSON.stringify(data).substring(0, 200) + "..."
+      results.titleDetailsApi.cost = data.cost
+      results.titleDetailsApi.providesConstraints = !!data.data?.constraints?.length
+      results.titleDetailsApi.constraintsCount = data.data?.constraints?.length || 0
+      results.titleDetailsApi.sample = {
+        title_no: data.data?.title_no,
+        ownership: data.data?.ownership_category,
+        constraints: data.data?.constraints?.slice(0, 3),
+      }
     } else {
-      results.titleApi.errorBody = await titleResponse.text().catch(() => "No error body")
+      results.titleDetailsApi.errorBody = await titleResponse.text().catch(() => "No error body")
     }
   } catch (error) {
-    results.titleApi = { success: false, error: String(error) }
+    results.titleDetailsApi = { success: false, error: String(error) }
   }
 
-  // Test EPC API
-  try {
-    const epcResponse = await fetch(`${apiConfig.searchland.baseUrl}/epc`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiConfig.searchland.apiKey}`,
-      },
-      body: JSON.stringify({
-        address: property.address,
-        postcode: property.postcode,
-      }),
-    })
-
-    results.epcApi = {
-      endpoint: "/epc",
-      status: epcResponse.status,
-      success: epcResponse.ok,
-    }
-
-    if (epcResponse.ok) {
-      const data = await epcResponse.json()
-      results.epcApi.responsePreview = JSON.stringify(data).substring(0, 200) + "..."
-    }
-  } catch (error) {
-    results.epcApi = { success: false, error: String(error) }
-  }
-
-  // Test Planning API
-  try {
-    const planningResponse = await fetch(`${apiConfig.searchland.baseUrl}/planning`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiConfig.searchland.apiKey}`,
-      },
-      body: JSON.stringify({
-        address: property.address,
-        postcode: property.postcode,
-      }),
-    })
-
-    results.planningApi = {
-      endpoint: "/planning",
-      status: planningResponse.status,
-      success: planningResponse.ok,
-    }
-
-    if (planningResponse.ok) {
-      const data = await planningResponse.json()
-      results.planningApi.responsePreview = JSON.stringify(data).substring(0, 200) + "..."
-    }
-  } catch (error) {
-    results.planningApi = { success: false, error: String(error) }
-  }
+  // Note about EPC
+  results.epcNote = "EPC data not available from Searchland. Use UK Government EPC API instead (configured via EPC_API_KEY)."
 
   return results
 }
@@ -260,7 +294,33 @@ async function testPropertyDataApi(property: { address: string; postcode: string
 function generateRecommendations(apiTests: any) {
   const recommendations: string[] = []
 
-  // Searchland
+  // Searchland HMO API
+  if (apiTests.searchland?.hmoApi?.success) {
+    recommendations.push(`AVAILABLE: Searchland HMO API working - ${apiTests.searchland.hmoApi.count} licences found (${apiTests.searchland.hmoApi.cost} credits)`)
+  } else if (apiTests.searchland?.hmoApi?.status === 401) {
+    recommendations.push("AUTH ERROR: Searchland API key may be invalid or expired")
+  } else if (apiTests.searchland?.hmoApi) {
+    recommendations.push("ISSUE: Searchland HMO API not working - " + (apiTests.searchland.hmoApi.error || "unknown error"))
+  }
+
+  // Searchland Titles API
+  if (apiTests.searchland?.titlesApi?.success) {
+    recommendations.push(`AVAILABLE: Searchland Titles API working - ${apiTests.searchland.titlesApi.count} titles found`)
+    if (apiTests.searchland.titlesApi.providesOwnerData) {
+      recommendations.push("AVAILABLE: Owner/ownership data included in titles")
+    }
+  } else if (apiTests.searchland?.titlesApi) {
+    recommendations.push("ISSUE: Searchland Titles API not working")
+  }
+
+  // Searchland Title Details (constraints)
+  if (apiTests.searchland?.titleDetailsApi?.success) {
+    if (apiTests.searchland.titleDetailsApi.providesConstraints) {
+      recommendations.push(`AVAILABLE: Planning constraints from /titles/get - ${apiTests.searchland.titleDetailsApi.constraintsCount} constraints found`)
+    }
+  }
+
+  // Legacy check for old endpoint names (backwards compatibility)
   if (apiTests.searchland?.titleApi?.success) {
     if (apiTests.searchland.titleApi.providesOwnerData) {
       recommendations.push("AVAILABLE: Searchland Title API provides owner data - run enrichment to populate")
@@ -268,11 +328,10 @@ function generateRecommendations(apiTests: any) {
       recommendations.push("PARTIAL: Searchland Title API works but no owner data in response for test property")
     }
   } else if (apiTests.searchland?.titleApi?.status === 404) {
-    recommendations.push("NOT AVAILABLE: Searchland /title endpoint returns 404 - may not be included in your subscription")
-    recommendations.push("ALTERNATIVE: Contact Searchland support about Title API access")
+    // Old endpoint - ignore, we use new ones now
   } else if (apiTests.searchland?.titleApi?.status === 401 || apiTests.searchland?.titleApi?.status === 403) {
     recommendations.push("AUTH ERROR: Searchland API key may be invalid or expired")
-  } else {
+  } else if (apiTests.searchland?.titleApi) {
     recommendations.push("ISSUE: Searchland Title API not working - " + (apiTests.searchland?.titleApi?.error || "unknown error"))
   }
 

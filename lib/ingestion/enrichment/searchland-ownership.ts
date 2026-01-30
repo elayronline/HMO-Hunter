@@ -194,7 +194,7 @@ export class SearchlandOwnershipAdapter extends EnrichmentAdapter {
 
       // Planning constraints
       article_4_area: title.sqmt_of_title_is_planning_consideration?.sqmt_is_not_article_4 === 0,
-      planning_constraints: title.constraints ? JSON.stringify(title.constraints) : null,
+      planning_constraints: this.parseConstraints(title.constraints),
     }
 
     return enrichment
@@ -205,6 +205,17 @@ export class SearchlandOwnershipAdapter extends EnrichmentAdapter {
     if (typeof address === "string") return address
     if (Array.isArray(address)) return address.filter(Boolean).join(", ")
     return null
+  }
+
+  private parseConstraints(constraints: any): Array<{ type: string; description: string; reference?: string }> | null {
+    if (!constraints) return null
+    if (!Array.isArray(constraints)) return null
+
+    return constraints.map((c: any) => ({
+      type: c.type || c.constraint_type || "unknown",
+      description: c.description || c.name || "",
+      reference: c.reference || c.id || undefined,
+    }))
   }
 
   /**

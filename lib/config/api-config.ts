@@ -53,7 +53,8 @@ export const apiConfig = {
     },
   },
 
-  // Phase 3: Searchland API (Title, EPC, Planning)
+  // Phase 3: Searchland API (HMO, Title, Planning)
+  // Docs: https://docs.searchland.co.uk
   searchland: {
     apiKey: process.env.SEARCHLAND_API_KEY,
     baseUrl: process.env.SEARCHLAND_BASE_URL || "https://api.searchland.co.uk/v1",
@@ -63,9 +64,13 @@ export const apiConfig = {
       requestsPerDay: 10000,
     },
     endpoints: {
-      title: "/title",
-      epc: "/epc",
-      planning: "/planning",
+      // HMO licence data (Phase 1)
+      hmoSearch: "/hmo/search", // GET ?lat=&lng=&radius=
+      // Title/ownership data (Phase 3)
+      titlesSearch: "/titles/search", // GET ?lat=&lng= or POST with geometry
+      titlesGet: "/titles/get", // GET ?titleNumber=
+      // Planning constraints
+      constraintsCheck: "/constraints/check_title", // GET ?titleNumber=
     },
   },
 
