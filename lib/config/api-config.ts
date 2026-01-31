@@ -139,6 +139,25 @@ export const apiConfig = {
     enabled: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   },
 
+  // HM Land Registry Business Gateway API
+  // Docs: https://use-land-property-data.service.gov.uk/api-information
+  landRegistry: {
+    apiKey: process.env.LAND_REGISTRY_API_KEY,
+    baseUrl: "https://use-land-property-data.service.gov.uk/api/v1",
+    enabled: !!process.env.LAND_REGISTRY_API_KEY,
+    rateLimit: {
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
+    },
+    endpoints: {
+      search: "/datasets/ccod/CCOD_FULL.csv", // Corporate & Commercial Ownership Data
+      titleSearch: "/datasets/title-search",
+    },
+    pricing: {
+      costPerSearch: 3, // £3 per title search
+    },
+  },
+
   // Development Mode
   useMockData: process.env.USE_MOCK_DATA === "true",
   mockPropertyCount: Number.parseInt(process.env.MOCK_PROPERTY_COUNT || "50", 10),
@@ -197,6 +216,10 @@ export function validateApiConfig(): {
 
   if (!apiConfig.zoopla.enabled) {
     warnings.push("Zoopla API not configured. Zoopla property listings will be unavailable. Add ZOOPLA_API_KEY for Zoopla data.")
+  }
+
+  if (!apiConfig.landRegistry?.enabled) {
+    warnings.push("Land Registry API not configured. Title searches will be unavailable. Price Paid Data (free) is still accessible.")
   }
 
   if (!apiConfig.googleMaps.enabled) {
@@ -281,6 +304,12 @@ export function getApiStatus() {
         name: "Zoopla Property Listings API",
         status: apiConfig.zoopla.enabled ? "connected" : "not_configured",
         description: "Property listings from Zoopla",
+      },
+      landRegistry: {
+        enabled: apiConfig.landRegistry?.enabled || false,
+        name: "HM Land Registry",
+        status: apiConfig.landRegistry?.enabled ? "connected" : "price_paid_only",
+        description: "Price Paid Data (free) + Title Search (£3/search with API key)",
       },
     },
     mockMode: apiConfig.useMockData,

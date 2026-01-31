@@ -186,6 +186,16 @@ export type Property = {
   price_per_sqm: number | null
   last_enriched_at: string | null
   enrichment_sources: Record<string, any> | null
+  // Phase 8 - Land Registry Enrichment
+  landregistry_last_checked: string | null
+  last_sale_price: number | null
+  last_sale_date: string | null
+  property_type_lr: string | null
+  tenure_lr: string | null
+  new_build: boolean | null
+  postcode_avg_price: number | null
+  postcode_transactions: number | null
+  registered_owner: string | null
 }
 
 export type Director = {
