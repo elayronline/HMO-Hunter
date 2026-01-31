@@ -1264,12 +1264,16 @@ export default function HMOHunterPage() {
                       <span className="text-[10px] text-green-600 ml-auto">Minimal work</span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-green-400 border-2 border-green-500"></div>
+                      <div className="w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-green-500"></div>
                       <span className="text-xs text-slate-600">Value-Add</span>
                       <span className="text-[10px] text-green-600 ml-auto">Some work</span>
                     </div>
                   </div>
-                  <div className="mt-1 text-[10px] text-slate-400 text-right">{segmentCounts.opportunities} opportunities</div>
+                  <div className="mt-1.5 text-[10px] text-slate-400">
+                    <span>{segmentCounts.opportunities} opportunities</span>
+                    <span className="ml-2 text-slate-300">|</span>
+                    <span className="ml-2">Larger = more contact info</span>
+                  </div>
                 </div>
 
                 {/* RESTRICTIONS */}

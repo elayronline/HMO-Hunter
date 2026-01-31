@@ -334,85 +334,55 @@ export function MapInner({
     let borderStyle = "none"
     let markerSize = 36
 
+    // Priority order matches legend categories:
+    // 1. Article 4 (Restrictions) - Red
+    // 2. Expired Licence (Requires Action) - Amber
+    // 3. Ready to Go / Value-Add (Opportunities) - Green
+    // 4. Licensed HMO (Ready to Operate) - Teal
+
     if (isArticle4) {
-      bgColor = "#dc2626"
+      // RESTRICTIONS - Red with white border (matches legend)
+      bgColor = "#dc2626" // red-600
       textColor = "white"
       borderStyle = "3px solid #ffffff"
-      markerSize = 36
+      markerSize = 38
     } else if (hasExpiredLicence) {
-      // Expired Licence - Orange/Amber color to indicate caution
+      // REQUIRES ACTION - Amber with amber border (matches legend)
       bgColor = "#f59e0b" // amber-500
       textColor = "white"
       borderStyle = "3px solid #d97706" // amber-600
       markerSize = 40
-    } else if (isPotentialHMO && showPotentialHMO) {
+    } else if ((isPotentialHMO || isPotentialHMOStatus) && showPotentialHMO) {
+      // OPPORTUNITIES - Green colors (matches legend)
       if (isReadyToGo) {
-        // Ready to Go with complete info = BOLD bright green (best opportunities)
-        if (hasCompleteInfo) {
-          bgColor = "#16a34a" // green-600 - darkest/boldest green
-          textColor = "white"
-          borderStyle = "3px solid #15803d" // green-700
-          markerSize = 48 // Largest
-        } else if (hasPartialInfo) {
-          bgColor = "#22c55e" // green-500 - medium green
-          textColor = "white"
-          borderStyle = "3px solid #16a34a"
-          markerSize = 44
-        } else {
-          // No contact info - lighter green
-          bgColor = "#86efac" // green-300 - light green
-          textColor = "#166534" // green-800
-          borderStyle = "2px solid #4ade80"
-          markerSize = 40
-        }
+        // Ready to Go - Dark green with darker border (matches legend)
+        bgColor = "#16a34a" // green-600
+        textColor = "white"
+        borderStyle = "3px solid #15803d" // green-700
+        markerSize = hasCompleteInfo ? 44 : (hasPartialInfo ? 40 : 36)
       } else if (isValueAdd) {
-        if (hasCompleteInfo) {
-          bgColor = "#4ade80" // green-400
-          textColor = "#14532d" // green-900
-          borderStyle = "3px solid #22c55e"
-          markerSize = 42
-        } else if (hasPartialInfo) {
-          bgColor = "#86efac" // green-300
-          textColor = "#166534"
-          borderStyle = "2px solid #4ade80"
-          markerSize = 38
-        } else {
-          // No contact info - very light green
-          bgColor = "#bbf7d0" // green-200 - very light
-          textColor = "#166534"
-          borderStyle = "2px solid #86efac"
-          markerSize = 36
-        }
+        // Value-Add - Medium green with green border (matches legend)
+        bgColor = "#4ade80" // green-400
+        textColor = "#14532d" // green-900
+        borderStyle = "3px solid #22c55e" // green-500
+        markerSize = hasCompleteInfo ? 42 : (hasPartialInfo ? 38 : 34)
       } else {
-        bgColor = "#14b8a6"
+        // Unclassified potential HMO - use Ready to Go style
+        bgColor = "#16a34a" // green-600
         textColor = "white"
-        markerSize = 34
-      }
-    } else if (isPotentialHMOStatus) {
-      if (hasCompleteInfo) {
-        bgColor = "#16a34a"
-        textColor = "white"
-        borderStyle = "3px solid #15803d"
-        markerSize = 44
-      } else if (hasPartialInfo) {
-        bgColor = "#22c55e"
-        textColor = "white"
-        borderStyle = "3px solid #16a34a"
-        markerSize = 42
-      } else {
-        bgColor = "#86efac"
-        textColor = "#166534"
-        borderStyle = "2px solid #4ade80"
-        markerSize = 38
+        borderStyle = "3px solid #15803d" // green-700
+        markerSize = 36
       }
     } else if (isLicensed) {
-      bgColor = "#0f766e"
+      // READY TO OPERATE - Teal (matches legend)
+      bgColor = "#0f766e" // teal-700
       textColor = "white"
       markerSize = 38
     } else {
-      bgColor = "#14b8a6"
+      // Standard property - lighter teal (not shown in legend, minimal visibility)
+      bgColor = "#14b8a6" // teal-500
       textColor = "white"
-      markerSize = 34
+      markerSize = 32
     }
 
     // Selection ring style
