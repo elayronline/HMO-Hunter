@@ -433,18 +433,31 @@ export function PropertySidebar({
       ════════════════════════════════════════════════════════════════════ */}
       <div className="shrink-0 p-4 border-t border-slate-200 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
         <div className="flex gap-2">
-          {(property.agent_phone || property.owner_contact_phone) && (
+          {property.agent_phone ? (
             <Button
               className="flex-1 h-11 bg-teal-600 hover:bg-teal-700 text-white font-semibold"
               asChild
             >
-              <a href={`tel:${property.agent_phone || property.owner_contact_phone}`}>
+              <a href={`tel:${property.agent_phone}`}>
                 <Phone className="w-4 h-4 mr-2" />
-                Contact Agent
+                Book Viewing
               </a>
             </Button>
-          )}
-          {!property.agent_phone && !property.owner_contact_phone && (
+          ) : (property.source_url || property.zoopla_listing_url) ? (
+            <Button
+              className="flex-1 h-11 bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+              asChild
+            >
+              <a
+                href={property.source_url || property.zoopla_listing_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Book Viewing
+              </a>
+            </Button>
+          ) : (
             <Button
               variant="outline"
               onClick={onViewFullDetails}

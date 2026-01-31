@@ -34,9 +34,48 @@ export function AgentContactCard({
   const [copiedEmail, setCopiedEmail] = useState(false)
 
   const hasAgentInfo = property.agent_name || property.agent_phone || property.agent_email
+  const hasListingUrl = property.source_url || property.zoopla_listing_url
 
+  // Show fallback card if no agent info but has listing URL
   if (!hasAgentInfo) {
-    return null
+    if (!hasListingUrl) {
+      return null
+    }
+
+    // Fallback: Show "View on Zoopla/Source" card
+    return (
+      <Card className={cn("overflow-hidden", className)}>
+        <div className="p-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold">Book a Viewing</h3>
+              <p className="text-sm text-white/80">Via estate agent</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-4">
+          <p className="text-sm text-slate-600 mb-4">
+            Book a viewing through the estate agent on the original listing.
+          </p>
+          <Button
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white h-12"
+            asChild
+          >
+            <a
+              href={property.source_url || property.zoopla_listing_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View Listing & Book
+            </a>
+          </Button>
+        </div>
+      </Card>
+    )
   }
 
   const copyToClipboard = async (text: string, type: "phone" | "email") => {
@@ -141,8 +180,8 @@ export function AgentContactCard({
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold">Agent Contact</h3>
-              <p className="text-sm text-white/80">Get in touch</p>
+              <h3 className="font-bold">Book a Viewing</h3>
+              <p className="text-sm text-white/80">Via estate agent</p>
             </div>
           </div>
           {getDaysOnMarketBadge()}

@@ -520,9 +520,24 @@ export function PropertyDetailCard({
       <div className="shrink-0 p-4 border-t border-slate-200 bg-white">
         <div className="flex flex-wrap gap-2">
           {property.listing_type === "purchase" && (
-            <Button className="flex-1 min-w-[120px] h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium" aria-label="Contact agent about this property">
+            <Button
+              className="flex-1 min-w-[120px] h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium"
+              aria-label="Book a viewing for this property"
+              onClick={() => {
+                // Priority: agent phone > source URL > alert
+                if (property.agent_phone) {
+                  window.location.href = `tel:${property.agent_phone}`
+                } else if (property.source_url) {
+                  window.open(property.source_url, '_blank', 'noopener,noreferrer')
+                } else if (property.zoopla_listing_url) {
+                  window.open(property.zoopla_listing_url, '_blank', 'noopener,noreferrer')
+                } else {
+                  alert('Viewing booking not available. Try viewing the original listing.')
+                }
+              }}
+            >
               <Phone className="w-4 h-4 mr-2" aria-hidden="true" />
-              Contact
+              Book Viewing
             </Button>
           )}
           <Button variant="outline" onClick={onViewFullDetails} className="flex-1 min-w-[120px] h-10 font-medium" aria-label="View full property details">
