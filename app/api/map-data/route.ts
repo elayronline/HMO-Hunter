@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   try {
     const { data: properties, error } = await supabaseAdmin
       .from("properties")
-      .select("id, title, address, city, latitude, longitude, hmo_status, bedrooms, listing_type, price_pcm, purchase_price")
+      .select("id, title, address, city, latitude, longitude, hmo_status, bedrooms, listing_type, price_pcm, purchase_price, source_url, zoopla_listing_url, agent_phone, licensed_hmo")
       .eq("city", city)
       .eq("is_stale", false)
       .not("latitude", "is", null)
@@ -60,6 +60,12 @@ export async function GET(request: Request) {
         lng: p.longitude,
         hmo_status: p.hmo_status,
         bedrooms: p.bedrooms,
+        price: p.listing_type === 'rent' ? p.price_pcm : p.purchase_price,
+        listing_type: p.listing_type,
+        source_url: p.source_url,
+        zoopla_listing_url: p.zoopla_listing_url,
+        agent_phone: p.agent_phone,
+        licensed_hmo: p.licensed_hmo,
       })),
     })
   } catch (error) {
