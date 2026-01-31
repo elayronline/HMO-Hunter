@@ -24,4 +24,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.tsdata/ofcom/
+next-env.d.ts
+
+# local data
+data/
