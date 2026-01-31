@@ -7,8 +7,10 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Crown,
   ExternalLink,
   FileText,
+  Lock,
   Mail,
   MapPin,
   Phone,
@@ -28,6 +30,7 @@ import type { Director, Property } from "@/lib/types/database"
 interface OwnerInformationSectionProps {
   property: Property
   defaultOpen?: boolean
+  isPremium?: boolean
 }
 
 // Log contact data access for GDPR compliance
@@ -57,6 +60,7 @@ async function logContactAccess(
 export function OwnerInformationSection({
   property,
   defaultOpen = false,
+  isPremium = false,
 }: OwnerInformationSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -81,6 +85,59 @@ export function OwnerInformationSection({
     return null
   }
 
+  // Premium upgrade CTA component
+  const PremiumUpgradeCTA = () => (
+    <div className="relative">
+      {/* Blurred preview */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white z-10" />
+
+      {/* Upgrade card */}
+      <div className="relative z-20 flex flex-col items-center justify-center py-6 px-4">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-3 rounded-full mb-3">
+          <Crown className="h-6 w-6 text-white" />
+        </div>
+        <h4 className="font-bold text-gray-900 mb-1">Unlock Owner Details</h4>
+        <p className="text-sm text-gray-500 text-center mb-4 max-w-[280px]">
+          See who owns this property, company details, and director information
+        </p>
+        <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-6">
+          <Lock className="h-4 w-4 mr-2" />
+          Upgrade to Premium
+        </Button>
+      </div>
+    </div>
+  )
+
+  // Locked preview showing data exists but blurred
+  const LockedOwnerPreview = () => (
+    <div className="p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className={`p-2 rounded-lg ${isCompany ? "bg-purple-100" : "bg-blue-100"}`}>
+          {isCompany ? (
+            <Building2 className="h-5 w-5 text-purple-600" />
+          ) : (
+            <User className="h-5 w-5 text-blue-600" />
+          )}
+        </div>
+        <div className="flex-1">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">
+            {isCompany ? "Company" : "Individual"}
+          </p>
+          <p className="font-semibold text-gray-400 blur-sm select-none">
+            {isCompany ? "Company Name Available" : "Owner Name Available"}
+          </p>
+          {isCompany && (
+            <p className="text-xs text-gray-400 blur-sm select-none mt-1">
+              Co. #12345678
+            </p>
+          )}
+        </div>
+        <Lock className="h-4 w-4 text-gray-400" />
+      </div>
+      <PremiumUpgradeCTA />
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       {/* ============================================ */}
@@ -94,75 +151,89 @@ export function OwnerInformationSection({
               <FileText className="h-5 w-5 text-white" />
               <span className="text-white font-bold text-sm uppercase tracking-wide">Title Owner</span>
             </div>
-            <Badge className="bg-white/20 text-white border-white/30 text-xs">
-              Land Registry
-            </Badge>
+            <div className="flex items-center gap-2">
+              {!isPremium && hasTitleOwnerName && (
+                <Badge className="bg-amber-500 text-white border-amber-400 text-xs">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Premium
+                </Badge>
+              )}
+              <Badge className="bg-white/20 text-white border-white/30 text-xs">
+                Land Registry
+              </Badge>
+            </div>
           </div>
           <p className="text-blue-100 text-xs mt-1">Legal owner registered on property title</p>
         </div>
 
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          {/* Owner Name/Company */}
-          {hasTitleOwnerName ? (
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg ${isCompany ? "bg-purple-100" : "bg-blue-100"}`}>
-                {isCompany ? (
-                  <Building2 className="h-5 w-5 text-purple-600" />
-                ) : (
-                  <User className="h-5 w-5 text-blue-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">
-                  {isCompany ? "Company" : "Individual"}
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {property.company_name || property.owner_name}
-                </p>
-                {property.owner_address && (
-                  <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                    <MapPin className="h-3 w-3" />
-                    {property.owner_address}
+        {/* Content - Show locked or unlocked based on premium status */}
+        {hasTitleOwnerName ? (
+          isPremium ? (
+            <div className="p-4 space-y-3">
+              {/* Owner Name/Company - PREMIUM UNLOCKED */}
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${isCompany ? "bg-purple-100" : "bg-blue-100"}`}>
+                  {isCompany ? (
+                    <Building2 className="h-5 w-5 text-purple-600" />
+                  ) : (
+                    <User className="h-5 w-5 text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                    {isCompany ? "Company" : "Individual"}
                   </p>
-                )}
-                {isCompany && property.company_number && (
-                  <a
-                    href={`https://find-and-update.company-information.service.gov.uk/company/${property.company_number}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
-                  >
-                    Co. #{property.company_number}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+                  <p className="font-semibold text-gray-900">
+                    {property.company_name || property.owner_name}
+                  </p>
+                  {property.owner_address && (
+                    <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3" />
+                      {property.owner_address}
+                    </p>
+                  )}
+                  {isCompany && property.company_number && (
+                    <a
+                      href={`https://find-and-update.company-information.service.gov.uk/company/${property.company_number}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                    >
+                      Co. #{property.company_number}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
               </div>
+
+              {/* Title Owner Contact Buttons */}
+              {property.owner_contact_email && (
+                <div className="grid grid-cols-1 gap-2 pt-2 border-t border-blue-200">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Title Owner</p>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`mailto:${property.owner_contact_email}`}
+                      onClick={() => logContactAccess(property.id, property.owner_name, "email", "email", "title_owner")}
+                      className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
+                    >
+                      <Mail className="h-4 w-4" />
+                      <span className="truncate">{property.owner_contact_email}</span>
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
+            <LockedOwnerPreview />
+          )
+        ) : (
+          <div className="p-4">
             <div className="flex items-center gap-2 text-gray-500">
               <User className="h-4 w-4" />
               <span className="text-sm">Owner name not available</span>
             </div>
-          )}
-
-          {/* Title Owner Contact Buttons */}
-          {property.owner_contact_email && (
-            <div className="grid grid-cols-1 gap-2 pt-2 border-t border-blue-200">
-              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Title Owner</p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={`mailto:${property.owner_contact_email}`}
-                  onClick={() => logContactAccess(property.id, property.owner_name, "email", "email", "title_owner")}
-                  className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
-                >
-                  <Mail className="h-4 w-4" />
-                  <span className="truncate">{property.owner_contact_email}</span>
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ============================================ */}
@@ -193,7 +264,7 @@ export function OwnerInformationSection({
         <div className="p-4 space-y-3">
           {hasLicence ? (
             <>
-              {/* Licence Holder Name */}
+              {/* Licence Holder Name - Show to all users (basic info) */}
               {hasLicenceHolderName ? (
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-teal-100">
@@ -201,19 +272,26 @@ export function OwnerInformationSection({
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Licence Holder</p>
-                    <p className="font-semibold text-gray-900">{property.licence_holder_name}</p>
-                    {property.licence_holder_address && (
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                        <MapPin className="h-3 w-3" />
-                        {property.licence_holder_address}
-                      </p>
+                    {isPremium ? (
+                      <>
+                        <p className="font-semibold text-gray-900">{property.licence_holder_name}</p>
+                        {property.licence_holder_address && (
+                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                            <MapPin className="h-3 w-3" />
+                            {property.licence_holder_address}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="font-semibold text-gray-400 blur-sm select-none">Licence Holder Name</p>
                     )}
-                    {sameOwnerAndLicenceHolder && (
+                    {sameOwnerAndLicenceHolder && isPremium && (
                       <Badge className="mt-2 bg-amber-100 text-amber-700 border-amber-300 text-xs">
                         Same as Title Owner
                       </Badge>
                     )}
                   </div>
+                  {!isPremium && <Lock className="h-4 w-4 text-gray-400" />}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-gray-500">
@@ -222,7 +300,7 @@ export function OwnerInformationSection({
                 </div>
               )}
 
-              {/* Licence Type & Term Box */}
+              {/* Licence Type & Term Box - Show to all users (public info) */}
               <div className="bg-gradient-to-r from-teal-100 to-emerald-100 rounded-lg p-3 space-y-3">
                 {/* Licence Type */}
                 <div className="flex items-center gap-2">
@@ -301,8 +379,8 @@ export function OwnerInformationSection({
                 )}
               </div>
 
-              {/* Licence Holder Contact Buttons */}
-              {hasLicenceHolderContact && (
+              {/* Licence Holder Contact Buttons - PREMIUM ONLY */}
+              {hasLicenceHolderContact && isPremium && (
                 <div className="grid grid-cols-1 gap-2 pt-2 border-t border-teal-200">
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Licence Holder</p>
                   <div className="flex flex-wrap gap-2">
@@ -340,9 +418,9 @@ export function OwnerInformationSection({
       </div>
 
       {/* ============================================ */}
-      {/* EXPANDABLE DETAILS SECTION */}
+      {/* EXPANDABLE DETAILS SECTION - PREMIUM ONLY */}
       {/* ============================================ */}
-      {(isCompany || (property.directors && property.directors.length > 0)) && (
+      {isPremium && (isCompany || (property.directors && property.directors.length > 0)) && (
         <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border rounded-lg bg-white">
           <CollapsibleTrigger asChild>
             <Button
@@ -432,6 +510,27 @@ export function OwnerInformationSection({
             </div>
           </CollapsibleContent>
         </Collapsible>
+      )}
+
+      {/* Premium teaser for company details when not premium */}
+      {!isPremium && (isCompany || (property.directors && property.directors.length > 0)) && (
+        <div className="border rounded-lg bg-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-sm">Company Details & Directors</span>
+              {property.directors && property.directors.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {property.directors.length} directors
+                </Badge>
+              )}
+            </div>
+            <Badge className="bg-amber-500 text-white border-amber-400 text-xs">
+              <Lock className="h-3 w-3 mr-1" />
+              Premium
+            </Badge>
+          </div>
+        </div>
       )}
 
       {/* Privacy Notice */}

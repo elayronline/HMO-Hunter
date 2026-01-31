@@ -1706,7 +1706,7 @@ export default function HMOHunterPage() {
               {/* Owner Information in Full Details - Always show */}
               <div className="mb-6">
                 <h4 className="font-semibold text-slate-900 mb-3">Title Owner & Licence Holder</h4>
-                <OwnerInformationSection property={selectedProperty} defaultOpen={true} />
+                <OwnerInformationSection property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
               </div>
 
               {/* Yield Calculator - Premium feature */}
