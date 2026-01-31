@@ -39,8 +39,14 @@ export async function ingestLiveProperties(): Promise<{
         // Fetch insights from all three APIs
         const insights = await getFullPropertyInsights(p)
 
+        // Extract data from insights using correct paths
+        const hmoLicence = insights.propertyData?.hmoLicence
+        const valuation = insights.streetData?.valuation
+        const propertyDetails = insights.streetData?.propertyDetails
+        const bedroomCount = hmoLicence?.numberOfBedrooms || 4
+
         // Prepare property data for upsert
-        const address = p.address || insights.propertyData?.address || `Property at ${p.postcode}`
+        const address = p.address || `Property at ${p.postcode}`
         const propertyData = {
           postcode: p.postcode,
           address,
@@ -51,20 +57,20 @@ export async function ingestLiveProperties(): Promise<{
           last_synced: new Date().toISOString(),
           last_ingested_at: new Date().toISOString(),
           is_stale: false,
-          // PropertyData fields
-          hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
-          licensed_hmo: insights.propertyData?.hmoLicenseStatus === "Licensed",
-          bedrooms: insights.propertyData?.bedrooms || 4,
-          bathrooms: insights.propertyData?.bathrooms || 1,
-          property_type: insights.propertyData?.propertyType || "House",
+          // PropertyData HMO licence fields
+          hmo_status: hmoLicence ? "Licensed" : "Potential HMO",
+          licensed_hmo: !!hmoLicence,
+          bedrooms: bedroomCount,
+          bathrooms: 1,
+          property_type: propertyDetails?.propertyType || "House",
           // StreetData valuation fields
-          purchase_price: insights.streetData?.estimatedValue || null,
-          estimated_rent_per_room: insights.streetData?.rentalEstimate
-            ? Math.round(insights.streetData.rentalEstimate / (insights.propertyData?.bedrooms || 4))
+          purchase_price: valuation?.estimatedValue || null,
+          estimated_rent_per_room: valuation?.estimatedRentalValue
+            ? Math.round(valuation.estimatedRentalValue / bedroomCount)
             : null,
           // Location data (default to central London if not available)
-          latitude: insights.propertyData?.latitude || 51.5074,
-          longitude: insights.propertyData?.longitude || -0.1278,
+          latitude: 51.5074,
+          longitude: -0.1278,
           city: "London",
           country: "United Kingdom",
         }
@@ -116,8 +122,12 @@ export async function fetchAndStoreProperties(properties: PropertyInput[]): Prom
       try {
         const insights = await getFullPropertyInsights(p)
 
+        // Extract data from insights
+        const hmoLicence = insights.propertyData?.hmoLicence
+        const valuation = insights.streetData?.valuation
+
         // Store/update in Supabase
-        const addr = p.address || insights.propertyData?.address || `Property at ${p.postcode}`
+        const addr = p.address || `Property at ${p.postcode}`
         const { error } = await supabaseAdmin.from("properties").upsert({
           postcode: p.postcode,
           address: addr,
@@ -127,9 +137,9 @@ export async function fetchAndStoreProperties(properties: PropertyInput[]): Prom
           source_type: "partner_api",
           last_synced: new Date().toISOString(),
           is_stale: false,
-          hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
-          bedrooms: insights.propertyData?.bedrooms || 4,
-          purchase_price: insights.streetData?.estimatedValue || null,
+          hmo_status: hmoLicence ? "Licensed" : "Potential HMO",
+          bedrooms: hmoLicence?.numberOfBedrooms || 4,
+          purchase_price: valuation?.estimatedValue || null,
         }, { onConflict: "external_id" })
 
         if (error) throw new Error(error.message)
@@ -152,7 +162,13 @@ export async function ingestSingleProperty(postcode: string, uprn?: string): Pro
   try {
     const insights = await getFullPropertyInsights({ postcode, uprn })
 
-    const addr = insights.propertyData?.address || `Property at ${postcode}`
+    // Extract data from insights using correct paths
+    const hmoLicence = insights.propertyData?.hmoLicence
+    const valuation = insights.streetData?.valuation
+    const propertyDetails = insights.streetData?.propertyDetails
+    const bedroomCount = hmoLicence?.numberOfBedrooms || 4
+
+    const addr = `Property at ${postcode}`
     const propertyData = {
       postcode,
       address: addr,
@@ -163,17 +179,17 @@ export async function ingestSingleProperty(postcode: string, uprn?: string): Pro
       last_synced: new Date().toISOString(),
       last_ingested_at: new Date().toISOString(),
       is_stale: false,
-      hmo_status: insights.propertyData?.hmoLicenseStatus || "Potential HMO",
-      licensed_hmo: insights.propertyData?.hmoLicenseStatus === "Licensed",
-      bedrooms: insights.propertyData?.bedrooms || 4,
-      bathrooms: insights.propertyData?.bathrooms || 1,
-      property_type: insights.propertyData?.propertyType || "House",
-      purchase_price: insights.streetData?.estimatedValue || null,
-      estimated_rent_per_room: insights.streetData?.rentalEstimate
-        ? Math.round(insights.streetData.rentalEstimate / (insights.propertyData?.bedrooms || 4))
+      hmo_status: hmoLicence ? "Licensed" : "Potential HMO",
+      licensed_hmo: !!hmoLicence,
+      bedrooms: bedroomCount,
+      bathrooms: 1,
+      property_type: propertyDetails?.propertyType || "House",
+      purchase_price: valuation?.estimatedValue || null,
+      estimated_rent_per_room: valuation?.estimatedRentalValue
+        ? Math.round(valuation.estimatedRentalValue / bedroomCount)
         : null,
-      latitude: insights.propertyData?.latitude || 51.5074,
-      longitude: insights.propertyData?.longitude || -0.1278,
+      latitude: 51.5074,
+      longitude: -0.1278,
       city: "London",
       country: "United Kingdom",
     }

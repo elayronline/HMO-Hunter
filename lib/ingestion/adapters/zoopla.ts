@@ -10,7 +10,7 @@ import { apiConfig } from "@/lib/config/api-config"
  */
 export class ZooplaAdapter extends SourceAdapter {
   name = "Zoopla"
-  type = "property_listings" as const
+  type = "partner_api" as const
   phase = 1 as const
 
   private apiKey: string

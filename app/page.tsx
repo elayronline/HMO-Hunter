@@ -27,7 +27,7 @@ import {
   ArrowDownRight,
   Minus,
   LogOut,
-  User,
+  User as UserIcon,
   Home,
   X,
   ExternalLink,
@@ -157,18 +157,18 @@ export default function HMOHunterPage() {
     let mounted = true
 
     // Check auth status
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user: authUser } }: { data: { user: User | null } }) => {
       if (mounted) {
-        setUser(user)
-        if (user) {
+        setUser(authUser)
+        if (authUser) {
           fetchSavedProperties()
           // Show walkthrough for first-time users
-          if (!user.user_metadata?.onboarding_completed) {
+          if (!authUser.user_metadata?.onboarding_completed) {
             setShowWalkthrough(true)
           }
         }
       }
-    }).catch((error) => {
+    }).catch((error: Error) => {
       // Silently handle abort errors during unmount
       if (error.name !== 'AbortError') {
         console.error('Auth error:', error)
@@ -178,7 +178,7 @@ export default function HMOHunterPage() {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session: { user: User | null } | null) => {
       if (mounted) {
         setUser(session?.user ?? null)
         if (session?.user) {
@@ -198,9 +198,17 @@ export default function HMOHunterPage() {
 
   async function fetchSavedProperties() {
     const { data } = await getSavedProperties()
-    if (data) {
-      setSavedProperties(data)
-      setSavedPropertyIds(new Set(data.map((sp: SavedProperty) => sp.property.id)))
+    if (data && Array.isArray(data)) {
+      // Transform Supabase response to match SavedProperty type
+      const transformed: SavedProperty[] = data.map((item: { id: string; notes: string | null; created_at: string; property: Property | Property[] }) => ({
+        id: item.id,
+        notes: item.notes,
+        created_at: item.created_at,
+        property: Array.isArray(item.property) ? item.property[0] : item.property,
+      })).filter((sp: SavedProperty) => sp.property)
+
+      setSavedProperties(transformed)
+      setSavedPropertyIds(new Set(transformed.map((sp: SavedProperty) => sp.property.id)))
     }
   }
 
@@ -343,7 +351,7 @@ export default function HMOHunterPage() {
     setListingType("purchase")
     setPriceRange([50000, 2000000])
     setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
-    setSelectedCity(DEFAULT_CITY)
+    setSelectedLocation(DEFAULT_LOCATION)
     setAvailableNow(false)
     setStudentFriendly(false)
     setPetFriendly(false)
@@ -570,7 +578,7 @@ export default function HMOHunterPage() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5 transition-colors">
                   <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-teal-600" />
+                    <UserIcon className="w-4 h-4 text-teal-600" />
                   </div>
                   <ChevronDown className="w-4 h-4 text-slate-600" />
                 </button>

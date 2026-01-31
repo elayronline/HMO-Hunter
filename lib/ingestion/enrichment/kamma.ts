@@ -234,7 +234,12 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
     } else if (hasAdditional || hasSelective) {
       complexity = "medium"
     }
-    result.compliance_complexity = complexity
+    // Cast to allow custom Kamma fields
+    const extendedResult = result as Partial<PropertyListing> & {
+      compliance_complexity?: string
+      requires_mandatory_licensing?: boolean
+    }
+    extendedResult.compliance_complexity = complexity
 
     // Store schemes as planning constraints with full metadata
     if (schemes.length > 0) {
@@ -245,7 +250,7 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
       }))
 
       if (hasMandatory) {
-        result.requires_mandatory_licensing = true
+        extendedResult.requires_mandatory_licensing = true
       }
     }
 
@@ -310,12 +315,12 @@ export async function checkPropertyWithKamma(
 ): Promise<KammaV3DeterminationResponse | null> {
   const adapter = new KammaEnrichmentAdapter()
 
-  const mockProperty: PropertyListing = {
+  const mockProperty = {
     id: "test",
     address: address || "",
     postcode: postcode,
     uprn: uprn,
-  } as PropertyListing
+  } as unknown as PropertyListing
 
   const adapterAny = adapter as any
   return adapterAny.fetchDeterminationCheck(mockProperty)

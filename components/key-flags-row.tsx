@@ -69,10 +69,12 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
 
   // HMO Classification
   if (property.is_potential_hmo && property.hmo_classification) {
-    const classConfig = {
+    const classConfigs: Record<string, { label: string; bg: string; text: string }> = {
       ready_to_go: { label: "Ready to Go", bg: "bg-teal-100", text: "text-teal-700" },
       value_add: { label: "Value-Add", bg: "bg-blue-100", text: "text-blue-700" },
-    }[property.hmo_classification] || null
+      not_suitable: { label: "Not Suitable", bg: "bg-slate-100", text: "text-slate-700" },
+    }
+    const classConfig = classConfigs[property.hmo_classification] || null
 
     if (classConfig) {
       flags.push({

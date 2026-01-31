@@ -45,7 +45,7 @@ export default function UserDashboard() {
       
       if (data) {
         // Transform to PropertyMap format
-        const mapProperties = data.map((p) => ({
+        const mapProperties = data.map((p: { postcode: string; latitude: number; longitude: number; address: string | null; purchase_price: number | null }) => ({
           postcode: p.postcode,
           lat: Number(p.latitude),
           lng: Number(p.longitude),

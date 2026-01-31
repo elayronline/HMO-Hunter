@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Fetch properties needing enrichment
     let query = supabaseAdmin
       .from("properties")
-      .select("id, address, postcode, city, bedrooms, property_type")
+      .select("id, address, postcode, city, bedrooms, property_type, purchase_price")
       .eq("is_stale", false)
       .not("postcode", "is", null)
 

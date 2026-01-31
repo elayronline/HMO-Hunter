@@ -211,7 +211,7 @@ function findMatchingStreetDataProperty(property: any, streetDataProps: any[]): 
   if (!propAddress) return null
 
   // Extract building number (including flat numbers like "2" from "Flat 2")
-  const extractNumbers = (addr: string) => {
+  const extractNumbers = (addr: string): string[] => {
     const matches = addr.match(/\b(\d+[a-z]?)\b/g) || []
     return matches
   }

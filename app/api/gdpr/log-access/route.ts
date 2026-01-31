@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 
 /**
@@ -32,8 +31,7 @@ export async function POST(request: Request) {
     }
 
     // Get current user
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     // Get request metadata

@@ -314,8 +314,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch listings from Zoopla - use tight radius for accuracy
     const listings = await zoopla.fetch({
-      postcode,
-      listingType: listingType || "rent",
+      postcode: postcode || "",
+      listingType: listingType ?? "rent",
       radius: 0.25, // 0.25 mile radius for precision
       pageSize: 50, // Get more results to find exact match
     })
@@ -330,7 +330,7 @@ export async function GET(request: NextRequest) {
     const scoredListings = listings.map(listing => {
       const result = calculateExactMatchScore(
         address || "",
-        postcode,
+        postcode || "",
         hmoBedrooms,
         hmoPrice,
         hmoLat,

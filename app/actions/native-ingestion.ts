@@ -65,12 +65,14 @@ export async function runNativeIngestion(batchSize: number = 50, delayMs: number
       }
 
       // Add StreetData fields if available
-      if (insights.streetData) {
-        if (insights.streetData.estimatedValue) {
-          updateData.purchase_price = insights.streetData.estimatedValue
+      if (insights.streetData?.valuation) {
+        const valuation = insights.streetData.valuation
+        if (valuation.estimatedValue) {
+          updateData.purchase_price = valuation.estimatedValue
         }
-        if (insights.streetData.rentalYield) {
-          updateData.gross_yield = insights.streetData.rentalYield
+        if (valuation.estimatedRentalValue && valuation.estimatedValue) {
+          // Calculate gross yield as annual rent / purchase price
+          updateData.gross_yield = (valuation.estimatedRentalValue * 12) / valuation.estimatedValue
         }
       }
 

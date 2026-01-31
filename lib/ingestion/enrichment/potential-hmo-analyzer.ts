@@ -55,7 +55,7 @@ export class PotentialHMOAnalyzer implements EnrichmentAdapter {
     if (property.hmo_status === "Licensed HMO") {
       return {
         is_potential_hmo: false,
-        hmo_classification: null,
+        hmo_classification: undefined,
         deal_score: analysis.dealScore,
         deal_score_breakdown: analysis.breakdown,
         floor_area_band: floorAreaBand,

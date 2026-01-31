@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
             .from("properties")
             .update({
               ...propertyData,
-              images: listing.images?.length > 0 ? listing.images : existing.images,
+              images: (listing.images?.length ?? 0) > 0 ? listing.images : existing.images,
             })
             .eq("id", existing.id)
 

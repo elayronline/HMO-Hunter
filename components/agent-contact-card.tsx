@@ -65,7 +65,7 @@ export function AgentContactCard({
             asChild
           >
             <a
-              href={property.source_url || property.zoopla_listing_url}
+              href={property.source_url ?? property.zoopla_listing_url ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -213,7 +213,7 @@ export function OwnerInformationSection({
                   <div className="flex flex-wrap gap-2">
                     <a
                       href={`mailto:${property.owner_contact_email}`}
-                      onClick={() => logContactAccess(property.id, property.owner_name, "email", "email", "title_owner")}
+                      onClick={() => logContactAccess(property.id, property.owner_name ?? undefined, "email", "email", "title_owner")}
                       className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
                     >
                       <Mail className="h-4 w-4" />
@@ -387,7 +387,7 @@ export function OwnerInformationSection({
                     {property.licence_holder_phone && (
                       <a
                         href={`tel:${property.licence_holder_phone}`}
-                        onClick={() => logContactAccess(property.id, property.licence_holder_name, "phone", "call", "licence_holder")}
+                        onClick={() => logContactAccess(property.id, property.licence_holder_name ?? undefined, "phone", "call", "licence_holder")}
                         className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-sm"
                       >
                         <Phone className="h-4 w-4" />
@@ -397,7 +397,7 @@ export function OwnerInformationSection({
                     {property.licence_holder_email && (
                       <a
                         href={`mailto:${property.licence_holder_email}`}
-                        onClick={() => logContactAccess(property.id, property.licence_holder_name, "email", "email", "licence_holder")}
+                        onClick={() => logContactAccess(property.id, property.licence_holder_name ?? undefined, "email", "email", "licence_holder")}
                         className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold shadow-sm"
                       >
                         <Mail className="h-4 w-4" />

@@ -144,13 +144,17 @@ export async function POST(request: Request) {
 
     log.push(`Testing Kamma API with: ${propertyIdentifier}`)
 
-    const results = await checkPropertyWithKamma(propertyIdentifier)
+    // checkPropertyWithKamma expects postcode, uprn, address
+    const determinationResult = await checkPropertyWithKamma(postcode || "", uprn, address)
 
     log.push("")
     log.push("API Responses:")
-    log.push(`  - Licensing Check: ${results.licensing ? "Data received" : "No data"}`)
-    log.push(`  - Determination Check: ${results.determination ? "Data received" : "No data"}`)
-    log.push(`  - EPC Check: ${results.epc ? "Data received" : "No data"}`)
+    log.push(`  - Determination Check: ${determinationResult ? "Data received" : "No data"}`)
+    if (determinationResult) {
+      log.push(`  - Current Schemes: ${determinationResult.current_schemes?.length || 0}`)
+      log.push(`  - Future Schemes: ${determinationResult.future_schemes?.length || 0}`)
+      log.push(`  - Status: ${determinationResult.status?.message || "N/A"}`)
+    }
 
     // Parse into property fields
     const adapter = new KammaEnrichmentAdapter()
@@ -165,9 +169,7 @@ export async function POST(request: Request) {
       message: "Kamma API test complete",
       propertyIdentifier,
       rawResponses: {
-        licensing: results.licensing,
-        determination: results.determination,
-        epc: results.epc,
+        determination: determinationResult,
       },
       parsedFields: enrichedData,
       log,

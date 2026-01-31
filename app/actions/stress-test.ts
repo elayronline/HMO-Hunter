@@ -309,43 +309,42 @@ async function testLandRegistryLive(): Promise<APILiveTestResult> {
 }
 
 // Run health checks
-export async function runHealthCheck() {
+export async function runHealthCheck(): Promise<HealthCheckResult> {
   let dbConnected = false
   let dbError: string | undefined
+  let tableCount: number | undefined
 
   // Check database
   try {
     const supabase = await createClient()
-    const { error } = await supabase.from("properties").select("id").limit(1)
+    const { data, error } = await supabase.from("properties").select("id").limit(1)
 
     if (error) {
       dbError = error.message
     } else {
       dbConnected = true
+      tableCount = data?.length
     }
   } catch (error) {
     dbError = error instanceof Error ? error.message : "Connection failed"
   }
 
   // Check API keys
-  const configuredApis: string[] = []
-  if (process.env.PROPERTYDATA_API_KEY) configuredApis.push("PropertyData")
-  if (process.env.STREETDATA_API_KEY) configuredApis.push("StreetData")
-  if (process.env.PATMA_API_KEY) configuredApis.push("PaTMa")
-
-  const apiAdapters = configuredApis.length
-  const healthy = dbConnected && apiAdapters > 0
+  const hasPropertyData = !!process.env.PROPERTYDATA_API_KEY
+  const hasStreetData = !!process.env.STREETDATA_API_KEY
+  const hasPatma = !!process.env.PATMA_API_KEY
 
   return {
-    database: dbConnected,
-    apiAdapters,
-    configuredApis,
-    healthy,
-    message: healthy
-      ? `System is healthy. Database connected, ${apiAdapters} API(s) configured.`
-      : dbError
-        ? `Database error: ${dbError}`
-        : "No API keys configured",
+    database: {
+      connected: dbConnected,
+      tableCount,
+      error: dbError,
+    },
+    apis: {
+      propertyData: hasPropertyData,
+      streetData: hasStreetData,
+      patma: hasPatma,
+    },
   }
 }
 

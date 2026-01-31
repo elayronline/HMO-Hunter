@@ -306,9 +306,9 @@ export class SearchlandAdapter extends SourceAdapter {
       source_url: "https://searchland.co.uk",
       licence_id: record.reference,
       licence_start_date: record.licence_start,
-      licence_end_date: record.licence_expiry_parsed?.split("T")[0] || null,
+      licence_end_date: record.licence_expiry_parsed?.split("T")[0] ?? undefined,
       licence_status: licenceStatus,
-      max_occupants: maxOccupancy,
+      max_occupants: maxOccupancy ?? undefined,
       is_student_friendly: true,
       is_pet_friendly: false,
     }

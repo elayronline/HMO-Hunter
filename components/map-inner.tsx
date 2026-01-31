@@ -96,7 +96,12 @@ export function MapInner({
         console.log(`[Map] Loaded ${geojson?.features?.length || 0} Article 4 areas from static file`)
       }
 
-      // Add the source
+      // Add the source (only if geojson is valid)
+      if (!geojson) {
+        console.warn("[Map] No geojson data to load for Article 4 areas")
+        return
+      }
+
       map.addSource("article4-areas", {
         type: "geojson",
         data: geojson,
@@ -243,7 +248,7 @@ export function MapInner({
       })
 
       setArticle4Loaded(true)
-      console.log("Article 4 areas loaded:", geojson.features.length, "areas")
+      console.log("Article 4 areas loaded:", geojson?.features?.length || 0, "areas")
     } catch (err) {
       console.error("Failed to load Article 4 areas:", err)
     }

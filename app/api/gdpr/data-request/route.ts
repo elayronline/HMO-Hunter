@@ -58,27 +58,19 @@ export async function POST(request: Request) {
     // If it's a removal request, immediately mark matching properties
     if (requestType === "removal") {
       // Mark properties with matching email/phone as opted out
-      const updates: Promise<any>[] = []
-
       if (email) {
-        updates.push(
-          supabaseAdmin
-            .from("properties")
-            .update({ contact_data_opted_out: true })
-            .eq("owner_contact_email", email)
-        )
+        await supabaseAdmin
+          .from("properties")
+          .update({ contact_data_opted_out: true })
+          .eq("owner_contact_email", email)
       }
 
       if (phone) {
-        updates.push(
-          supabaseAdmin
-            .from("properties")
-            .update({ contact_data_opted_out: true })
-            .eq("owner_contact_phone", phone)
-        )
+        await supabaseAdmin
+          .from("properties")
+          .update({ contact_data_opted_out: true })
+          .eq("owner_contact_phone", phone)
       }
-
-      await Promise.all(updates)
     }
 
     // Generate reference number

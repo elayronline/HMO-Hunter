@@ -139,14 +139,12 @@ async function processProperty(
       licence_start_date: licence.licence_start,
       licence_end_date: licence.licence_expiry_parsed || licence.licence_expiry,
       max_occupants: licence.max_occupancy ? parseInt(licence.max_occupancy) : null,
-      // Note: Searchland HMO API doesn't include licence holder contact info
-      // That data is not publicly available in bulk
       licensed_hmo: true,
     }
 
-    // Update even if we just have licence data (not contact info)
+    // Update even if we just have licence data
     const hasNewData = licenceData.licence_id || licenceData.max_occupants ||
-                       licenceData.licence_end_date || licenceData.owner_name
+                       licenceData.licence_end_date
 
     if (!hasNewData) {
       log.push(`  No useful data in HMO response`)
@@ -171,12 +169,11 @@ async function processProperty(
       log.push(`  Failed to save: ${updateError.message}`)
       failed.push(property.address)
     } else {
-      const contactInfo = []
-      if (licenceData.owner_name) contactInfo.push(`Name: ${licenceData.owner_name}`)
-      if (licenceData.owner_contact_phone) contactInfo.push(`Phone: ${licenceData.owner_contact_phone}`)
-      if (licenceData.owner_contact_email) contactInfo.push(`Email: ${licenceData.owner_contact_email}`)
+      const licenceInfo = []
+      if (licenceData.licence_id) licenceInfo.push(`ID: ${licenceData.licence_id}`)
+      if (licenceData.max_occupants) licenceInfo.push(`Max: ${licenceData.max_occupants}`)
 
-      log.push(`  Enriched: ${contactInfo.join(", ") || "Licence data only"}`)
+      log.push(`  Enriched: ${licenceInfo.join(", ") || "Licence data only"}`)
       enriched.push(property.address)
     }
 
