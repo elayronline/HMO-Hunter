@@ -7,12 +7,13 @@ const SEARCHLAND_BASE_URL = "https://api.searchland.co.uk/v1"
 /**
  * POST /api/enrich-owner
  *
- * Tests and enriches property owner data from Searchland Titles API
+ * Batch enriches property owner data from Searchland Titles API
  *
  * Body: {
  *   propertyId?: string,  // Enrich a specific property
- *   limit?: number,       // Limit properties to enrich (default 5)
+ *   limit?: number,       // Limit properties to enrich (default 10)
  *   testOnly?: boolean    // Just test API connection without saving
+ *   skipAlreadyEnriched?: boolean // Skip properties with existing owner data (default true)
  * }
  */
 export async function POST(request: Request) {
@@ -21,9 +22,9 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => ({}))
-    const { propertyId, limit = 5, testOnly = false } = body
+    const { propertyId, limit = 10, testOnly = false, skipAlreadyEnriched = true } = body
 
-    log.push("[1/4] Checking API configuration...")
+    log.push("[1/5] Checking API configuration...")
 
     // Check Searchland API configuration
     if (!apiConfig.searchland.enabled || !apiConfig.searchland.apiKey) {
@@ -41,19 +42,24 @@ export async function POST(request: Request) {
     const companiesHouseEnabled = apiConfig.companiesHouse.enabled && apiConfig.companiesHouse.apiKey
     log.push("Companies House API: " + (companiesHouseEnabled ? "configured" : "not configured"))
 
-    log.push("[2/4] Fetching properties to enrich...")
+    log.push("[2/5] Fetching properties to enrich...")
 
-    // Build query for properties - only select columns that exist
+    // Build query for properties that need enrichment
     let query = supabaseAdmin
       .from("properties")
-      .select("id, address, postcode, city, latitude, longitude")
+      .select("id, address, postcode, city, latitude, longitude, owner_name, owner_type, title_last_enriched_at")
       .eq("is_stale", false)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
 
     if (propertyId) {
       query = supabaseAdmin
         .from("properties")
-        .select("id, address, postcode, city, latitude, longitude")
+        .select("id, address, postcode, city, latitude, longitude, owner_name, owner_type, title_last_enriched_at")
         .eq("id", propertyId)
+    } else if (skipAlreadyEnriched) {
+      // Only get properties that haven't been enriched for owner data
+      query = query.is("title_last_enriched_at", null)
     }
 
     const { data: properties, error: fetchError } = await query.limit(limit)
@@ -64,10 +70,11 @@ export async function POST(request: Request) {
     }
 
     if (!properties || properties.length === 0) {
-      log.push("No properties found to enrich")
+      log.push("No properties found needing owner enrichment")
       return NextResponse.json({
         success: true,
-        message: "No properties found to enrich",
+        message: "No properties found needing owner enrichment",
+        hint: "All properties may already have title_last_enriched_at set. Use skipAlreadyEnriched: false to re-enrich.",
         log,
         results: [],
       })
@@ -75,65 +82,84 @@ export async function POST(request: Request) {
 
     log.push(`Found ${properties.length} properties to enrich`)
 
-    log.push("[3/4] Testing Searchland Titles API...")
+    log.push("[3/5] Processing properties with Searchland Titles API...")
 
-    // Test with the first property
-    const testProperty = properties[0]
+    let successCount = 0
+    let failCount = 0
+    let ownersFound = 0
+    let companiesFound = 0
 
-    if (!testProperty.latitude || !testProperty.longitude) {
-      log.push(`Property ${testProperty.address} has no coordinates - cannot search titles`)
-      return NextResponse.json({
-        success: false,
-        error: "Property has no coordinates",
-        log,
-      }, { status: 400 })
-    }
+    // Process each property
+    for (let i = 0; i < properties.length; i++) {
+      const property = properties[i]
+      const propertyLog: string[] = []
 
-    // Step 1: Search for titles near the property
-    const titlesResponse = await searchTitles(
-      testProperty.longitude,
-      testProperty.latitude
-    )
+      propertyLog.push(`[${i + 1}/${properties.length}] ${property.address}`)
 
-    results.push({
-      property: testProperty.address,
-      postcode: testProperty.postcode,
-      coordinates: { lat: testProperty.latitude, lng: testProperty.longitude },
-      titleSearchResult: titlesResponse,
-    })
+      if (!property.latitude || !property.longitude) {
+        propertyLog.push("  ⚠ No coordinates - skipping")
+        failCount++
+        results.push({ property: property.address, status: "skipped", reason: "no coordinates" })
+        continue
+      }
 
-    if (titlesResponse.error) {
-      log.push("Searchland titles/search error: " + titlesResponse.error)
-    } else if (titlesResponse.data && titlesResponse.data.length > 0) {
-      log.push(`Found ${titlesResponse.data.length} titles near property`)
+      try {
+        // Search for titles at this location with a small polygon
+        const titlesResponse = await searchTitles(property.longitude, property.latitude)
 
-      // Step 2: Get full details for the first title
-      const titleNumber = titlesResponse.data[0].title_no
-      log.push(`Fetching details for title: ${titleNumber}`)
+        if (titlesResponse.error) {
+          propertyLog.push(`  ⚠ Title search error: ${titlesResponse.error}`)
+          failCount++
+          results.push({ property: property.address, status: "error", error: titlesResponse.error })
+          continue
+        }
 
-      const titleDetails = await getTitleDetails(titleNumber)
-      results.push({ titleDetails })
+        if (!titlesResponse.data || titlesResponse.data.length === 0) {
+          propertyLog.push("  ⚠ No titles found at location")
+          // Still mark as checked so we don't retry
+          await supabaseAdmin
+            .from("properties")
+            .update({ title_last_enriched_at: new Date().toISOString() })
+            .eq("id", property.id)
+          failCount++
+          results.push({ property: property.address, status: "no_titles" })
+          continue
+        }
 
-      if (titleDetails.error) {
-        log.push("Error getting title details: " + titleDetails.error)
-      } else if (titleDetails.data) {
+        // Find the best matching title (ideally matching postcode or closest)
+        const bestTitle = findBestMatchingTitle(titlesResponse.data, property.postcode)
+        propertyLog.push(`  Found ${titlesResponse.data.length} titles, using: ${bestTitle.title_no}`)
+
+        // Get full title details
+        const titleDetails = await getTitleDetails(bestTitle.title_no)
+
+        if (titleDetails.error) {
+          propertyLog.push(`  ⚠ Error getting title details: ${titleDetails.error}`)
+          failCount++
+          results.push({ property: property.address, status: "error", error: titleDetails.error })
+          continue
+        }
+
         const ownerData = extractOwnerData(titleDetails.data)
-        log.push(`Owner found: ${ownerData.owner_name || titleDetails.data.ownership_category || "Unknown"}`)
-        log.push(`Owner type: ${ownerData.owner_type}`)
-        if (ownerData.company_number) {
-          log.push(`Company number: ${ownerData.company_number}`)
-        }
-        if (ownerData.epc_rating) {
-          log.push(`EPC rating: ${ownerData.epc_rating}`)
+
+        if (ownerData.owner_name) {
+          ownersFound++
+          propertyLog.push(`  ✓ Owner: ${ownerData.owner_name}`)
+        } else {
+          propertyLog.push(`  ○ Owner type: ${ownerData.ownership_category || ownerData.owner_type}`)
         }
 
-        results.push({ ownerData })
+        if (ownerData.company_number) {
+          companiesFound++
+          propertyLog.push(`  ✓ Company: ${ownerData.company_number}`)
+        }
+
+        if (ownerData.epc_rating) {
+          propertyLog.push(`  EPC: ${ownerData.epc_rating}`)
+        }
 
         // Save to database if not test only
         if (!testOnly) {
-          log.push("[4/4] Saving owner data to database...")
-
-          // Check if owner columns exist
           const { error: updateError } = await supabaseAdmin
             .from("properties")
             .update({
@@ -147,32 +173,59 @@ export async function POST(request: Request) {
               owner_enrichment_source: "searchland",
               title_last_enriched_at: new Date().toISOString(),
             })
-            .eq("id", testProperty.id)
+            .eq("id", property.id)
 
           if (updateError) {
-            if (updateError.message.includes("does not exist")) {
-              log.push("Database columns don't exist - run migration first")
-              log.push("See /api/test-apis for migration SQL")
-            } else {
-              log.push("Failed to save: " + updateError.message)
-            }
+            propertyLog.push(`  ⚠ Save failed: ${updateError.message}`)
+            failCount++
           } else {
-            log.push("Owner data saved successfully for " + testProperty.address)
+            successCount++
+            propertyLog.push("  ✓ Saved")
           }
+        } else {
+          successCount++
         }
+
+        results.push({
+          property: property.address,
+          status: "success",
+          titleNumber: ownerData.title_number,
+          ownerName: ownerData.owner_name,
+          ownerType: ownerData.owner_type,
+          companyNumber: ownerData.company_number,
+          epcRating: ownerData.epc_rating,
+        })
+
+        // Add property log to main log
+        log.push(...propertyLog)
+
+        // Rate limiting: wait 200ms between API calls to avoid overwhelming the API
+        if (i < properties.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+
+      } catch (error) {
+        propertyLog.push(`  ⚠ Exception: ${error}`)
+        failCount++
+        results.push({ property: property.address, status: "error", error: String(error) })
+        log.push(...propertyLog)
       }
-    } else {
-      log.push("No titles found near property location")
     }
+
+    log.push("[4/5] Enrichment complete")
+    log.push(`  ✓ Success: ${successCount}`)
+    log.push(`  ⚠ Failed/Skipped: ${failCount}`)
+    log.push(`  Owners found: ${ownersFound}`)
+    log.push(`  Companies found: ${companiesFound}`)
 
     // Summary
     const summary = {
       searchlandConfigured: true,
-      searchlandApiKey: apiConfig.searchland.apiKey?.substring(0, 8) + "...",
-      companiesHouseConfigured: companiesHouseEnabled,
-      propertiesChecked: 1,
-      titlesFound: titlesResponse.data?.length || 0,
-      ownerDataFound: results.some(r => r.ownerData?.owner_name),
+      propertiesProcessed: properties.length,
+      successCount,
+      failCount,
+      ownersFound,
+      companiesFound,
       testOnly,
     }
 
@@ -182,17 +235,30 @@ export async function POST(request: Request) {
       log,
       results,
       summary,
-      correctEndpoints: {
-        titlesSearch: "POST https://api.searchland.co.uk/v1/titles/search",
-        titlesGet: "GET https://api.searchland.co.uk/v1/titles/get?titleNumber=X",
-        hmoSearch: "GET https://api.searchland.co.uk/v1/hmo/search?lng=X&lat=Y",
-      },
     })
 
   } catch (error) {
     log.push("Error: " + String(error))
     return NextResponse.json({ success: false, error: String(error), log }, { status: 500 })
   }
+}
+
+/**
+ * Find the best matching title from search results
+ */
+function findBestMatchingTitle(titles: any[], targetPostcode: string | null) {
+  if (!targetPostcode || titles.length === 1) {
+    return titles[0]
+  }
+
+  // Try to find a title that matches the postcode prefix
+  const postcodePrefix = targetPostcode.split(" ")[0].toUpperCase()
+
+  // Prefer freehold titles over leasehold
+  const freeholds = titles.filter(t => t.calculated_class_of_title === "freehold")
+  const searchIn = freeholds.length > 0 ? freeholds : titles
+
+  return searchIn[0]
 }
 
 /**
