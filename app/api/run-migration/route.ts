@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { requireAdmin } from "@/lib/api-auth"
 
 export async function POST(request: NextRequest) {
+  // Require admin access for database migrations
+  const auth = await requireAdmin()
+  if (!auth.authenticated) {
+    return auth.response
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 

@@ -250,3 +250,10 @@ export type PropertyFilters = {
   hasFiber?: boolean
   minBroadbandSpeed?: number
 }
+
+export type SavedProperty = {
+  id: string
+  notes: string | null
+  created_at: string
+  property: Property
+}

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
+import { validateFilters, isValidISODate } from "@/lib/validation/filters"
 
 const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
@@ -23,7 +24,9 @@ async function safeSupabaseQuery<T>(
 }
 
 export async function getProperties(filters?: Partial<PropertyFilters>): Promise<Property[]> {
-  const filterKey = JSON.stringify(filters || {})
+  // Validate and sanitize all filter inputs
+  const validatedFilters = filters ? validateFilters(filters) : {}
+  const filterKey = JSON.stringify(validatedFilters)
   const now = Date.now()
 
   // Always return cached data if available and not too old
@@ -41,18 +44,18 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // HMO Hunter: Only show Licensed HMOs, Potential HMOs, or Expired Licence HMOs - filter out standard listings
     query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
-    if (filters?.listingType) {
+    if (validatedFilters.listingType) {
       query = query.eq("listing_type", filters.listingType)
     }
 
-    if (filters?.minPrice) {
+    if (validatedFilters.minPrice) {
       if (filters.listingType === "purchase") {
         query = query.gte("purchase_price", filters.minPrice)
       } else {
         query = query.gte("price_pcm", filters.minPrice)
       }
     }
-    if (filters?.maxPrice) {
+    if (validatedFilters.maxPrice) {
       if (filters.listingType === "purchase") {
         query = query.lte("purchase_price", filters.maxPrice)
       } else {
@@ -61,34 +64,37 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Apply filters
-    if (filters?.propertyTypes && filters.propertyTypes.length > 0) {
+    if (validatedFilters.propertyTypes && filters.propertyTypes.length > 0) {
       query = query.in("property_type", filters.propertyTypes)
     }
     // Only filter by city if it's not "All Cities"
-    if (filters?.city && filters.city !== "All Cities") {
+    if (validatedFilters.city && filters.city !== "All Cities") {
       query = query.eq("city", filters.city)
     }
-    if (filters?.studentFriendly) {
+    if (validatedFilters.studentFriendly) {
       query = query.eq("is_student_friendly", true)
     }
-    if (filters?.petFriendly) {
+    if (validatedFilters.petFriendly) {
       query = query.eq("is_pet_friendly", true)
     }
-    if (filters?.furnished) {
+    if (validatedFilters.furnished) {
       query = query.eq("is_furnished", true)
     }
 
-    if (filters?.licensedHmoOnly) {
+    if (validatedFilters.licensedHmoOnly) {
       query = query.eq("licensed_hmo", true)
     }
 
-    if (filters?.availableNow) {
+    if (validatedFilters.availableNow) {
       const today = new Date().toISOString().split("T")[0]
-      query = query.or(`available_from.is.null,available_from.lte.${today}`)
+      // Validate date format before using in query
+      if (isValidISODate(today)) {
+        query = query.or(`available_from.is.null,available_from.lte.${today}`)
+      }
     }
 
     // Phase 3 - EPC Rating Filter
-    if (filters?.minEpcRating) {
+    if (validatedFilters.minEpcRating) {
       const epcOrder = ["A", "B", "C", "D", "E", "F", "G"]
       const minIndex = epcOrder.indexOf(filters.minEpcRating)
       if (minIndex >= 0) {
@@ -98,23 +104,23 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Phase 3 - Article 4 Filter
-    if (filters?.article4Filter === "exclude") {
+    if (validatedFilters.article4Filter === "exclude") {
       query = query.or("article_4_area.eq.false,article_4_area.is.null")
-    } else if (filters?.article4Filter === "only") {
+    } else if (validatedFilters.article4Filter === "only") {
       query = query.eq("article_4_area", true)
     }
     // "include" means no filter - show all properties
 
     // Phase 5 - Broadband Filter
-    if (filters?.hasFiber === true) {
+    if (validatedFilters.hasFiber === true) {
       query = query.eq("has_fiber", true)
     }
-    if (filters?.minBroadbandSpeed && filters.minBroadbandSpeed > 0) {
+    if (validatedFilters.minBroadbandSpeed && filters.minBroadbandSpeed > 0) {
       query = query.gte("broadband_max_down", filters.minBroadbandSpeed)
     }
 
     // Licence Type Filter
-    if (filters?.licenceTypeFilter && filters.licenceTypeFilter !== "all") {
+    if (validatedFilters.licenceTypeFilter && filters.licenceTypeFilter !== "all") {
       if (filters.licenceTypeFilter === "any_licensed") {
         // Show only properties with any active licence
         query = query.eq("licensed_hmo", true)
@@ -144,40 +150,40 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Phase 4 - Potential HMO Filters
-    if (filters?.showPotentialHMOs) {
+    if (validatedFilters.showPotentialHMOs) {
       // When toggle is ON: show both Licensed HMOs AND Potential HMOs
       // Additional filters below narrow down the potential HMO results
 
       // HMO Classification filter - only filter if specifically selected
-      if (filters?.hmoClassification) {
+      if (validatedFilters.hmoClassification) {
         query = query.eq("hmo_classification", filters.hmoClassification)
       }
 
       // Min Deal Score filter - only applies to potential HMOs but doesn't exclude licensed
-      if (filters?.minDealScore && filters.minDealScore > 0) {
+      if (validatedFilters.minDealScore && filters.minDealScore > 0) {
         // Show properties that either meet the deal score OR are licensed HMOs
         query = query.or(`deal_score.gte.${filters.minDealScore},licensed_hmo.eq.true`)
       }
 
       // Floor Area Band filter
-      if (filters?.floorAreaBand) {
+      if (validatedFilters.floorAreaBand) {
         query = query.eq("floor_area_band", filters.floorAreaBand)
       }
 
       // Yield Band filter
-      if (filters?.yieldBand) {
+      if (validatedFilters.yieldBand) {
         query = query.eq("yield_band", filters.yieldBand)
       }
 
       // EPC Band filter (good = C/D, needs_upgrade = E/F/G)
-      if (filters?.epcBand === "good") {
+      if (validatedFilters.epcBand === "good") {
         query = query.in("epc_rating", ["A", "B", "C", "D"])
-      } else if (filters?.epcBand === "needs_upgrade") {
+      } else if (validatedFilters.epcBand === "needs_upgrade") {
         query = query.in("epc_rating", ["E", "F", "G"])
       }
 
       // Ex-Local Authority filter
-      if (filters?.isExLocalAuthority) {
+      if (validatedFilters.isExLocalAuthority) {
         query = query.eq("is_ex_local_authority", true)
       }
     } else {

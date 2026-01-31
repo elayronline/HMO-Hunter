@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/api-auth"
 
 /**
  * POST /api/seed-real-data
  *
  * Seeds realistic HMO property data with accurate geocoding from postcodes.io
  * This is a fallback when API credits are exhausted
+ *
+ * WARNING: This clears all existing data!
+ * Requires admin authentication
  */
 export async function POST() {
+  // Require admin access - this endpoint deletes all data
+  const auth = await requireAdmin()
+  if (!auth.authenticated) {
+    return auth.response
+  }
+
   const log: string[] = []
 
   try {

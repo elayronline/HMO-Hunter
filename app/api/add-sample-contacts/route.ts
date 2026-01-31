@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/api-auth"
 
 /**
  * POST /api/add-sample-contacts
  *
  * Adds sample owner/contact data to properties for testing the UI
+ * Requires admin authentication
  */
 export async function POST() {
+  // Require admin access for this endpoint
+  const auth = await requireAdmin()
+  if (!auth.authenticated) {
+    return auth.response
+  }
+
   const log: string[] = []
   const updated: string[] = []
 

@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/api-auth"
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
 /**
  * POST /api/fix-database
@@ -9,8 +11,23 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * 2. Creates property_licences table
  * 3. Creates licence_types table
  * 4. Adds unique constraint on external_id
+ *
+ * Requires admin authentication
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Rate limit check
+  const rateLimitResponse = checkRateLimit(request, {
+    ...RATE_LIMITS.admin,
+    keyPrefix: "fix-database"
+  })
+  if (rateLimitResponse) return rateLimitResponse
+
+  // Require admin access for database modifications
+  const auth = await requireAdmin()
+  if (!auth.authenticated) {
+    return auth.response
+  }
+
   const log: string[] = []
   const issues: { issue: string; status: "fixed" | "needs_manual" | "ok" }[] = []
 

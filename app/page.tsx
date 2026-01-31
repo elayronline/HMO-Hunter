@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
   Bell,
@@ -50,7 +50,8 @@ import { getProperties } from "./actions/properties"
 import { getSavedProperties } from "./actions/saved-properties"
 import { SavePropertyButton } from "@/components/save-property-button"
 import { createClient } from "@/lib/supabase/client"
-import type { Property } from "@/lib/types/database"
+import type { Property, SavedProperty } from "@/lib/types/database"
+import type { User } from "@supabase/supabase-js"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
 import { DEFAULT_CITY, ALL_CITIES_OPTION, type UKCity } from "@/lib/data/uk-cities"
@@ -70,14 +71,15 @@ import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
+import { useToast } from "@/hooks/use-toast"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-  const [savedProperties, setSavedProperties] = useState<any[]>([])
+  const [user, setUser] = useState<User | null>(null)
+  const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([])
   const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set())
 
   const [showFullDetails, setShowFullDetails] = useState(false)
@@ -121,12 +123,30 @@ export default function HMOHunterPage() {
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
-  // Premium user status - TODO: Replace with actual subscription check
-  // Set to true for development, false for production default
-  const [isPremiumUser, setIsPremiumUser] = useState(true)
+  // Premium user status - check user metadata for subscription tier
+  // TODO: Implement actual subscription system with Stripe or similar
+  // For now, check user_metadata.is_premium flag (can be set via Supabase dashboard)
+  const isPremiumUser = user?.user_metadata?.is_premium === true
 
   const router = useRouter()
   const supabase = createClient()
+  const { toast } = useToast()
+
+  // Memoized callbacks for performance - prevents unnecessary re-renders
+  const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
+  const handleNavigateToDashboard = useCallback(() => router.push("/user-dashboard"), [router])
+  const handleNavigateToSaved = useCallback(() => router.push("/saved"), [router])
+  const handleOpenLeftPanel = useCallback(() => setLeftPanelOpen(true), [])
+  const handleCloseLeftPanel = useCallback(() => setLeftPanelOpen(false), [])
+  const handleOpenRightPanel = useCallback(() => setRightPanelOpen(true), [])
+  const handleCloseRightPanel = useCallback(() => setRightPanelOpen(false), [])
+  const handleToggleSearch = useCallback(() => setSearchExpanded(prev => !prev), [])
+  const handleToggleFilters = useCallback(() => setFiltersExpanded(prev => !prev), [])
+  const handleToggleRecent = useCallback(() => setRecentExpanded(prev => !prev), [])
+  const handleToggleLegend = useCallback(() => setLegendExpanded(prev => !prev), [])
+  const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
+  const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
+  const handleSelectProperty = useCallback((property: Property) => setSelectedProperty(property), [])
 
   useEffect(() => {
     let mounted = true
@@ -171,7 +191,7 @@ export default function HMOHunterPage() {
     const { data } = await getSavedProperties()
     if (data) {
       setSavedProperties(data)
-      setSavedPropertyIds(new Set(data.map((sp: any) => sp.property.id)))
+      setSavedPropertyIds(new Set(data.map((sp: SavedProperty) => sp.property.id)))
     }
   }
 
@@ -211,10 +231,17 @@ export default function HMOHunterPage() {
         if (error instanceof Error) {
           if (error.message.includes("Rate limit")) {
             // Show user-friendly message when rate limited
-            console.log("[v0] Rate limited - showing cached properties")
-            // Keep existing properties visible
+            toast({
+              title: "Please wait",
+              description: "Loading cached properties. Updates will appear shortly.",
+              variant: "default",
+            })
           } else {
-            console.log("[v0] Error loading properties:", error.message)
+            toast({
+              title: "Error loading properties",
+              description: "Please try again or refresh the page.",
+              variant: "destructive",
+            })
           }
         }
         // Don't clear existing properties on error - keep showing what we have
@@ -495,13 +522,13 @@ export default function HMOHunterPage() {
           <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">Home</button>
           <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Properties</button>
           <button
-            onClick={() => router.push("/user-dashboard")}
+            onClick={handleNavigateToDashboard}
             className="text-slate-600 hover:text-slate-900 text-sm font-medium"
           >
             Dashboard
           </button>
           <button
-            onClick={() => router.push("/saved")}
+            onClick={handleNavigateToSaved}
             className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
           >
             <Heart className="w-4 h-4" />
@@ -515,18 +542,12 @@ export default function HMOHunterPage() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* DEV: Premium Toggle - Remove in production */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
-            <span className="text-xs text-slate-600">Pro Mode:</span>
-            <Switch
-              checked={isPremiumUser}
-              onCheckedChange={setIsPremiumUser}
-              className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-500 h-5 w-9"
-            />
-            {isPremiumUser && (
+          {/* Premium badge - shown when user has premium subscription */}
+          {isPremiumUser && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
               <span className="text-xs font-bold text-amber-600">PRO</span>
-            )}
-          </div>
+            </div>
+          )}
 
           <button className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <Bell className="w-5 h-5 text-slate-600" />
@@ -556,7 +577,7 @@ export default function HMOHunterPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button onClick={() => router.push("/auth/login")} className="bg-teal-600 hover:bg-teal-700 text-white">
+            <Button onClick={handleNavigateToLogin} className="bg-teal-600 hover:bg-teal-700 text-white">
               Sign in
             </Button>
           )}
@@ -567,7 +588,7 @@ export default function HMOHunterPage() {
         {/* Left Sidebar Toggle Button */}
         {!leftPanelOpen && (
           <button
-            onClick={() => setLeftPanelOpen(true)}
+            onClick={handleOpenLeftPanel}
             className="absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
             title="Open filters"
           >
@@ -580,7 +601,7 @@ export default function HMOHunterPage() {
         <aside className="w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 relative">
           {/* Close button */}
           <button
-            onClick={() => setLeftPanelOpen(false)}
+            onClick={handleCloseLeftPanel}
             className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
             title="Close filters"
           >
@@ -590,7 +611,7 @@ export default function HMOHunterPage() {
           {/* Search Parameters */}
           <div className="p-4 border-b border-slate-200">
             <button
-              onClick={() => setSearchExpanded(!searchExpanded)}
+              onClick={handleToggleSearch}
               className="flex items-center justify-between w-full mb-4"
             >
               <div className="flex items-center gap-2">
@@ -676,7 +697,7 @@ export default function HMOHunterPage() {
           {/* Property Filters */}
           <div className="p-4 border-b border-slate-200">
             <button
-              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              onClick={handleToggleFilters}
               className="flex items-center justify-between w-full mb-4"
             >
               <div className="flex items-center gap-2">
@@ -998,7 +1019,7 @@ export default function HMOHunterPage() {
           {/* Recent Searches */}
           <div className="p-4 border-b border-slate-200">
             <button
-              onClick={() => setRecentExpanded(!recentExpanded)}
+              onClick={handleToggleRecent}
               className="flex items-center justify-between w-full"
             >
               <div className="flex items-center gap-2">
@@ -1108,7 +1129,7 @@ export default function HMOHunterPage() {
             <Card className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-full w-80 shadow-2xl bg-white border-slate-200 z-20">
               {/* Close button */}
               <button
-                onClick={() => setSelectedProperty(null)}
+                onClick={handleClearSelection}
                 className="absolute -top-2 -right-2 z-30 w-6 h-6 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
                 title="Close"
               >
@@ -1120,7 +1141,7 @@ export default function HMOHunterPage() {
                   initialSaved={savedPropertyIds.has(selectedProperty.id)}
                 />
               </div>
-              <div className="flex gap-3 p-4 cursor-pointer" onClick={() => setRightPanelOpen(true)}>
+              <div className="flex gap-3 p-4 cursor-pointer" onClick={handleOpenRightPanel}>
                 <div className="w-20 h-20 bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
                   <PropertyGallery
                     images={selectedProperty.images}
@@ -1190,7 +1211,7 @@ export default function HMOHunterPage() {
           {/* Map legend - Reorganized by user intent */}
           <Card className="absolute bottom-8 left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[280px]">
             <button
-              onClick={() => setLegendExpanded(!legendExpanded)}
+              onClick={handleToggleLegend}
               className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
             >
               <span className="font-semibold text-sm text-slate-900">Map Legend</span>
@@ -1302,7 +1323,7 @@ export default function HMOHunterPage() {
           <aside className="w-[400px] bg-white border-l border-slate-200 overflow-y-auto relative">
             {/* Close button */}
             <button
-              onClick={() => setRightPanelOpen(false)}
+              onClick={handleCloseRightPanel}
               className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
               title="Close panel"
             >
@@ -1374,7 +1395,7 @@ export default function HMOHunterPage() {
         {/* Toggle button when panel is closed */}
         {!rightPanelOpen && (
           <button
-            onClick={() => setRightPanelOpen(true)}
+            onClick={handleOpenRightPanel}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white shadow-lg rounded-l-lg p-3 hover:bg-slate-50 transition-colors border border-r-0 border-slate-200"
             title="Open property panel"
           >
@@ -1388,7 +1409,7 @@ export default function HMOHunterPage() {
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Full Property Details</h2>
-              <button onClick={() => setShowFullDetails(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={handleCloseFullDetails} className="text-slate-400 hover:text-slate-600">
                 <X className="w-6 h-6" />
               </button>
             </div>

@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/api-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function GET() {
+  // Require admin access for stress testing
+  const auth = await requireAdmin()
+  if (!auth.authenticated) {
+    return auth.response
+  }
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   // Check API configurations
