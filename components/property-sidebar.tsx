@@ -107,11 +107,12 @@ export function PropertySidebar({
     { icon: Sofa, label: "Furnished", show: property.is_furnished },
   ].filter(a => a.show)
 
-  const licenceConfig = {
+  const licenceConfigs: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
     active: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
     pending: { icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", label: "Pending" },
     expired: { icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", label: "Expired" },
-  }[property.licence_status || ""] || { icon: Info, color: "text-slate-400", bg: "bg-slate-50", label: "Unknown" }
+  }
+  const licenceConfig = licenceConfigs[property.licence_status || ""] || { icon: Info, color: "text-slate-400", bg: "bg-slate-50", label: "Unknown" }
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -449,7 +450,7 @@ export function PropertySidebar({
               asChild
             >
               <a
-                href={property.source_url || property.zoopla_listing_url}
+                href={property.source_url || property.zoopla_listing_url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
               >
