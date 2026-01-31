@@ -250,6 +250,8 @@ export type PropertyFilters = {
   // Phase 5 - Broadband filters
   hasFiber?: boolean
   minBroadbandSpeed?: number
+  // Owner data filter
+  hasOwnerData?: boolean
 }
 
 export type SavedProperty = {

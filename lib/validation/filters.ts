@@ -91,6 +91,9 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
   if (typeof filters.isExLocalAuthority === "boolean") {
     sanitized.isExLocalAuthority = filters.isExLocalAuthority
   }
+  if (typeof filters.hasOwnerData === "boolean") {
+    sanitized.hasOwnerData = filters.hasOwnerData
+  }
 
   // EPC rating - must be valid
   if (filters.minEpcRating && VALID_EPC_RATINGS.has(filters.minEpcRating)) {

@@ -196,6 +196,12 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       query = query.eq("licensed_hmo", true)
     }
 
+    // Owner Data Filter - show only properties with title owner information
+    if (validatedFilters.hasOwnerData) {
+      // Show properties that have either owner_name OR company_name populated
+      query = query.or("owner_name.not.is.null,company_name.not.is.null")
+    }
+
     const { data, error } = await safeSupabaseQuery(async () => await query)
 
     if (error) {

@@ -101,6 +101,7 @@ export default function HMOHunterPage() {
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
   const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
   const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
+  const [ownerDataFilter, setOwnerDataFilter] = useState(false)
 
   // Segment filter - main category tabs for clearer UX
   const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">("all")
@@ -239,6 +240,7 @@ export default function HMOHunterPage() {
           epcBand: epcBandFilter,
           hasFiber: broadbandFilter === "fiber" ? true : undefined,
           minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
+          hasOwnerData: ownerDataFilter || undefined,
         })
         setProperties(data)
         if (data.length > 0 && !selectedProperty) {
@@ -302,6 +304,7 @@ export default function HMOHunterPage() {
     yieldBandFilter,
     epcBandFilter,
     broadbandFilter,
+    ownerDataFilter,
   ])
 
   const handleSearch = async () => {
@@ -330,6 +333,7 @@ export default function HMOHunterPage() {
         epcBand: epcBandFilter,
         hasFiber: broadbandFilter === "fiber" ? true : undefined,
         minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
+        hasOwnerData: ownerDataFilter || undefined,
       })
       setProperties(data)
       if (data.length > 0) {
@@ -865,6 +869,32 @@ export default function HMOHunterPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Owner Data Filter Toggle */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-700">Owner Data Only</span>
+                      <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
+                    </div>
+                    {isPremiumUser ? (
+                      <Switch
+                        checked={ownerDataFilter}
+                        onCheckedChange={setOwnerDataFilter}
+                      />
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-amber-600 hover:text-amber-700 h-7"
+                        onClick={() => {/* Show upgrade modal */}}
+                      >
+                        Upgrade
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Show only listings with title owner information</p>
                 </div>
 
                 {/* Potential HMO Toggle - Pro Feature */}
