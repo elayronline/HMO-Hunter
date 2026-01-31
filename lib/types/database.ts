@@ -227,6 +227,7 @@ export type PropertyFilters = {
   maxPrice: number
   propertyTypes: string[]
   city: string
+  postcodePrefix?: string // e.g., "M14", "E1" - filters by postcode area
   availableNow: boolean
   studentFriendly: boolean
   petFriendly: boolean

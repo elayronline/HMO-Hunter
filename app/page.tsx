@@ -55,7 +55,7 @@ import type { User } from "@supabase/supabase-js"
 import { PropertyGallery } from "@/components/property-gallery"
 import { FreshnessBadge } from "@/components/freshness-badge"
 import { DEFAULT_CITY, ALL_CITIES_OPTION, type UKCity } from "@/lib/data/uk-cities"
-import { CitySearchAutocomplete } from "@/components/city-search-autocomplete"
+import { LocationSearch, DEFAULT_LOCATION, type SearchLocation, cityToSearchLocation } from "@/components/location-search"
 import { MainMapView } from "@/components/main-map-view"
 import { EPCBadge } from "@/components/epc-badge"
 import { Article4Warning } from "@/components/article4-warning"
@@ -84,7 +84,7 @@ export default function HMOHunterPage() {
 
   const [showFullDetails, setShowFullDetails] = useState(false)
 
-  const [selectedCity, setSelectedCity] = useState<UKCity>(DEFAULT_CITY)
+  const [selectedLocation, setSelectedLocation] = useState<SearchLocation>(DEFAULT_LOCATION)
 
   const [priceRange, setPriceRange] = useState([50000, 2000000])
   const priceRangeKey = priceRange.join(",")
@@ -204,7 +204,8 @@ export default function HMOHunterPage() {
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
           propertyTypes,
-          city: selectedCity.name,
+          city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
+          postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
           availableNow,
           studentFriendly,
           petFriendly,
@@ -268,7 +269,7 @@ export default function HMOHunterPage() {
     listingType,
     priceRangeKey,
     propertyTypesKey,
-    selectedCity,
+    selectedLocation,
     availableNow,
     studentFriendly,
     petFriendly,
@@ -294,7 +295,8 @@ export default function HMOHunterPage() {
         minPrice: priceRange[0],
         maxPrice: priceRange[1],
         propertyTypes,
-        city: selectedCity.name,
+        city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
+        postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
         availableNow,
         studentFriendly,
         petFriendly,
@@ -670,9 +672,9 @@ export default function HMOHunterPage() {
 
                 <div>
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Location</label>
-                  <CitySearchAutocomplete
-                    selectedCity={selectedCity}
-                    onCityChange={setSelectedCity}
+                  <LocationSearch
+                    selectedLocation={selectedLocation}
+                    onLocationChange={setSelectedLocation}
                   />
                 </div>
 
@@ -1104,7 +1106,7 @@ export default function HMOHunterPage() {
               ) : (
                 <span>
                   Showing <span className="font-bold">{segmentFilteredProperties.length}</span> properties
-                  {selectedCity.name !== "All Cities" && <span className="opacity-70"> in {selectedCity.name}</span>}
+                  {selectedLocation.name !== "All Cities" && <span className="opacity-70"> in {selectedLocation.name}</span>}
                 </span>
               )}
             </div>
@@ -1112,7 +1114,7 @@ export default function HMOHunterPage() {
 
           {/* MapLibre GL Map */}
           <MainMapView
-            selectedCity={selectedCity}
+            selectedCity={selectedLocation}
             properties={segmentFilteredProperties}
             selectedProperty={selectedProperty}
             onPropertySelect={(property) => {

@@ -45,31 +45,36 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
     if (validatedFilters.listingType) {
-      query = query.eq("listing_type", filters.listingType)
+      query = query.eq("listing_type", validatedFilters.listingType)
     }
 
     if (validatedFilters.minPrice) {
-      if (filters.listingType === "purchase") {
-        query = query.gte("purchase_price", filters.minPrice)
+      if (validatedFilters.listingType === "purchase") {
+        query = query.gte("purchase_price", validatedFilters.minPrice)
       } else {
-        query = query.gte("price_pcm", filters.minPrice)
+        query = query.gte("price_pcm", validatedFilters.minPrice)
       }
     }
     if (validatedFilters.maxPrice) {
-      if (filters.listingType === "purchase") {
-        query = query.lte("purchase_price", filters.maxPrice)
+      if (validatedFilters.listingType === "purchase") {
+        query = query.lte("purchase_price", validatedFilters.maxPrice)
       } else {
-        query = query.lte("price_pcm", filters.maxPrice)
+        query = query.lte("price_pcm", validatedFilters.maxPrice)
       }
     }
 
     // Apply filters
-    if (validatedFilters.propertyTypes && filters.propertyTypes.length > 0) {
-      query = query.in("property_type", filters.propertyTypes)
+    if (validatedFilters.propertyTypes && validatedFilters.propertyTypes.length > 0) {
+      query = query.in("property_type", validatedFilters.propertyTypes)
     }
-    // Only filter by city if it's not "All Cities"
-    if (validatedFilters.city && filters.city !== "All Cities") {
-      query = query.eq("city", filters.city)
+    // Only filter by city if it's not "All Cities" and no postcode is specified
+    if (validatedFilters.city && validatedFilters.city !== "All Cities" && !validatedFilters.postcodePrefix) {
+      query = query.eq("city", validatedFilters.city)
+    }
+    // Filter by postcode prefix (e.g., "M14", "E1 6")
+    if (validatedFilters.postcodePrefix) {
+      // Use ilike for case-insensitive prefix matching
+      query = query.ilike("postcode", `${validatedFilters.postcodePrefix}%`)
     }
     if (validatedFilters.studentFriendly) {
       query = query.eq("is_student_friendly", true)
@@ -96,7 +101,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // Phase 3 - EPC Rating Filter
     if (validatedFilters.minEpcRating) {
       const epcOrder = ["A", "B", "C", "D", "E", "F", "G"]
-      const minIndex = epcOrder.indexOf(filters.minEpcRating)
+      const minIndex = epcOrder.indexOf(validatedFilters.minEpcRating)
       if (minIndex >= 0) {
         const validRatings = epcOrder.slice(0, minIndex + 1)
         query = query.in("epc_rating", validRatings)
@@ -115,19 +120,19 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     if (validatedFilters.hasFiber === true) {
       query = query.eq("has_fiber", true)
     }
-    if (validatedFilters.minBroadbandSpeed && filters.minBroadbandSpeed > 0) {
-      query = query.gte("broadband_max_down", filters.minBroadbandSpeed)
+    if (validatedFilters.minBroadbandSpeed && validatedFilters.minBroadbandSpeed > 0) {
+      query = query.gte("broadband_max_down", validatedFilters.minBroadbandSpeed)
     }
 
     // Licence Type Filter
-    if (validatedFilters.licenceTypeFilter && filters.licenceTypeFilter !== "all") {
-      if (filters.licenceTypeFilter === "any_licensed") {
+    if (validatedFilters.licenceTypeFilter && validatedFilters.licenceTypeFilter !== "all") {
+      if (validatedFilters.licenceTypeFilter === "any_licensed") {
         // Show only properties with any active licence
         query = query.eq("licensed_hmo", true)
-      } else if (filters.licenceTypeFilter === "expired_licence") {
+      } else if (validatedFilters.licenceTypeFilter === "expired_licence") {
         // Show only properties with expired licences
         query = query.eq("licence_status", "expired")
-      } else if (filters.licenceTypeFilter === "unlicensed") {
+      } else if (validatedFilters.licenceTypeFilter === "unlicensed") {
         // Show only properties without licences
         query = query.or("licensed_hmo.eq.false,licensed_hmo.is.null")
       } else {
@@ -136,7 +141,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
         const { data: licencedPropertyIds } = await supabase
           .from("property_licences")
           .select("property_id")
-          .eq("licence_type_code", filters.licenceTypeFilter)
+          .eq("licence_type_code", validatedFilters.licenceTypeFilter)
           .eq("status", "active")
 
         if (licencedPropertyIds && licencedPropertyIds.length > 0) {
@@ -156,23 +161,23 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
       // HMO Classification filter - only filter if specifically selected
       if (validatedFilters.hmoClassification) {
-        query = query.eq("hmo_classification", filters.hmoClassification)
+        query = query.eq("hmo_classification", validatedFilters.hmoClassification)
       }
 
       // Min Deal Score filter - only applies to potential HMOs but doesn't exclude licensed
-      if (validatedFilters.minDealScore && filters.minDealScore > 0) {
+      if (validatedFilters.minDealScore && validatedFilters.minDealScore > 0) {
         // Show properties that either meet the deal score OR are licensed HMOs
-        query = query.or(`deal_score.gte.${filters.minDealScore},licensed_hmo.eq.true`)
+        query = query.or(`deal_score.gte.${validatedFilters.minDealScore},licensed_hmo.eq.true`)
       }
 
       // Floor Area Band filter
       if (validatedFilters.floorAreaBand) {
-        query = query.eq("floor_area_band", filters.floorAreaBand)
+        query = query.eq("floor_area_band", validatedFilters.floorAreaBand)
       }
 
       // Yield Band filter
       if (validatedFilters.yieldBand) {
-        query = query.eq("yield_band", filters.yieldBand)
+        query = query.eq("yield_band", validatedFilters.yieldBand)
       }
 
       // EPC Band filter (good = C/D, needs_upgrade = E/F/G)

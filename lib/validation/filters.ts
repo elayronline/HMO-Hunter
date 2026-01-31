@@ -46,6 +46,16 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
     sanitized.city = filters.city
   }
 
+  // Postcode prefix - validate format (alphanumeric, max 8 chars, UK postcode pattern)
+  if (typeof filters.postcodePrefix === "string") {
+    const cleaned = filters.postcodePrefix.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, "")
+    // UK postcode outcode pattern: 1-2 letters, 1-2 digits, optional space and more
+    const postcodePattern = /^[A-Z]{1,2}[0-9][0-9A-Z]?(\s?[0-9]?[A-Z]{0,2})?$/
+    if (cleaned.length >= 2 && cleaned.length <= 8 && postcodePattern.test(cleaned)) {
+      sanitized.postcodePrefix = cleaned
+    }
+  }
+
   // Property types - filter to valid values only
   if (Array.isArray(filters.propertyTypes)) {
     const validTypes = filters.propertyTypes.filter(t =>

@@ -3,9 +3,10 @@
 import dynamic from "next/dynamic"
 import type { Property } from "@/lib/types/database"
 import type { UKCity } from "@/lib/data/uk-cities"
+import type { SearchLocation } from "@/components/location-search"
 
 export interface MainMapViewProps {
-  selectedCity: UKCity
+  selectedCity: UKCity | SearchLocation
   properties: Property[]
   selectedProperty: Property | null
   onPropertySelect: (property: Property) => void
