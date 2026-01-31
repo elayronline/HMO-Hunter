@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -16,7 +16,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Check for messages or errors in URL params
+  useEffect(() => {
+    const urlMessage = searchParams.get("message")
+    const urlError = searchParams.get("error")
+    if (urlMessage) setMessage(urlMessage)
+    if (urlError) setError(urlError)
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,7 +88,15 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
@@ -90,6 +108,8 @@ export default function LoginPage() {
               className="border-slate-300 focus:border-teal-500 focus:ring-teal-500"
             />
           </div>
+
+          {message && <div className="text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg">{message}</div>}
 
           {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
 

@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
   const origin = requestUrl.origin
+  const next = requestUrl.searchParams.get("next") || "/"
 
   console.log("[v0] Callback route hit with code:", code ? "present" : "missing")
 
@@ -19,7 +20,20 @@ export async function GET(request: Request) {
     }
 
     console.log("[v0] Successfully exchanged code for session, user:", data.user?.email)
+
+    // Check if this is a password recovery flow
+    // The session will have the recovery type set
+    if (data.session?.user?.recovery_sent_at) {
+      console.log("[v0] Password recovery flow detected, redirecting to reset page")
+      return NextResponse.redirect(`${origin}/auth/reset-password`)
+    }
   }
 
-  return NextResponse.redirect(`${origin}/`)
+  // Check for type parameter (used by Supabase for different auth flows)
+  const type = requestUrl.searchParams.get("type")
+  if (type === "recovery") {
+    return NextResponse.redirect(`${origin}/auth/reset-password`)
+  }
+
+  return NextResponse.redirect(`${origin}${next}`)
 }
