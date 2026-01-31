@@ -31,6 +31,7 @@ import {
   Home,
   X,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,7 @@ import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
+import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
@@ -297,6 +299,29 @@ export default function HMOHunterPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push("/auth/login")
+  }
+
+  const handleResetFilters = () => {
+    setListingType("purchase")
+    setPriceRange([50000, 2000000])
+    setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
+    setSelectedCity(DEFAULT_CITY)
+    setAvailableNow(false)
+    setStudentFriendly(false)
+    setPetFriendly(false)
+    setFurnished(false)
+    setLicensedHmoOnly(false)
+    setMinEpcRating(null)
+    setArticle4Filter("include")
+    setLicenceTypeFilter("all")
+    setBroadbandFilter("all")
+    setShowPotentialHMOs(true)
+    setHmoClassificationFilter(null)
+    setFloorAreaBandFilter(null)
+    setYieldBandFilter(null)
+    setEpcBandFilter(null)
+    setMinDealScore(0)
+    setActiveSegment("all")
   }
 
   const getMonthlyRent = (p: Property): number => {
@@ -630,10 +655,20 @@ export default function HMOHunterPage() {
                   />
                 </div>
 
-                <Button onClick={handleSearch} className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-                  <Search className="w-4 h-4 mr-2" />
-                  Search
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleSearch} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
+                    <Search className="w-4 h-4 mr-2" />
+                    Search
+                  </Button>
+                  <Button
+                    onClick={handleResetFilters}
+                    variant="outline"
+                    className="px-3 border-slate-300 hover:bg-slate-100"
+                    title="Reset all filters"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -1037,6 +1072,23 @@ export default function HMOHunterPage() {
             </button>
           </div>
 
+          {/* Property Count Indicator */}
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20">
+            <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Loading...
+                </span>
+              ) : (
+                <span>
+                  Showing <span className="font-bold">{segmentFilteredProperties.length}</span> properties
+                  {selectedCity.name !== "All Cities" && <span className="opacity-70"> in {selectedCity.name}</span>}
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* MapLibre GL Map */}
           <MainMapView
             selectedCity={selectedCity}
@@ -1117,6 +1169,7 @@ export default function HMOHunterPage() {
                         Expired
                       </span>
                     )}
+                    <LicenceExpiryWarning property={selectedProperty} />
                     {selectedProperty.epc_rating && (
                       <EPCBadge
                         rating={selectedProperty.epc_rating}

@@ -75,6 +75,12 @@ export function OwnerInformationSection({
     (property.owner_name?.toLowerCase() === property.licence_holder_name?.toLowerCase() ||
      property.company_name?.toLowerCase() === property.licence_holder_name?.toLowerCase())
 
+  // If no useful owner/licence data at all, don't show the section
+  const hasAnyUsefulData = hasTitleOwnerName || hasLicence || hasLicenceHolderName || hasLicenceHolderContact
+  if (!hasAnyUsefulData) {
+    return null
+  }
+
   return (
     <div className="space-y-4">
       {/* ============================================ */}
