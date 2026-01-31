@@ -76,13 +76,13 @@ export function KammaComplianceCard({
   const getComplexityConfig = (complexity: string) => {
     switch (complexity) {
       case "low":
-        return { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Low Complexity" }
+        return { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Easy Setup", description: "Standard licensing - straightforward process" }
       case "medium":
-        return { icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", label: "Medium Complexity" }
+        return { icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", label: "Some Requirements", description: "Additional licences may be needed" }
       case "high":
-        return { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "High Complexity" }
+        return { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Complex", description: "Multiple licences and planning permission needed" }
       default:
-        return { icon: Info, color: "text-slate-600", bg: "bg-slate-50", label: "Unknown" }
+        return { icon: Info, color: "text-slate-600", bg: "bg-slate-50", label: "Unknown", description: "" }
     }
   }
 
@@ -96,16 +96,30 @@ export function KammaComplianceCard({
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold">Compliance Check</h3>
-              <p className="text-sm text-white/80">Kamma V3 Licensing API</p>
+              <h3 className="font-bold">Do I Need a Licence?</h3>
+              <p className="text-sm text-white/80">Check HMO requirements for this area</p>
             </div>
           </div>
         </div>
         <CardContent className="p-4">
           <div className="text-center py-4">
-            <p className="text-sm text-slate-600 mb-4">
-              Check HMO licensing requirements, Article 4 status, and compliance complexity for this property.
+            <p className="text-sm text-slate-600 mb-3">
+              Find out what licences you need to operate an HMO at this property:
             </p>
+            <ul className="text-sm text-slate-500 text-left mb-4 space-y-1 max-w-xs mx-auto">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Mandatory HMO licence requirements
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Additional or selective licensing
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Planning permission (Article 4) status
+              </li>
+            </ul>
             <Button
               onClick={checkCompliance}
               disabled={loading}
@@ -119,7 +133,7 @@ export function KammaComplianceCard({
               ) : (
                 <>
                   <Shield className="w-4 h-4 mr-2" />
-                  Check Compliance
+                  Check Licensing Requirements
                 </>
               )}
             </Button>
@@ -214,8 +228,8 @@ export function KammaComplianceCard({
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold">Compliance Check</h3>
-              <p className="text-sm text-white/80">Kamma V3 Results</p>
+              <h3 className="font-bold">Licensing Requirements</h3>
+              <p className="text-sm text-white/80">What you need to operate an HMO here</p>
             </div>
           </div>
           <Badge className={cn("text-xs", complexityConfig.bg, complexityConfig.color)}>
@@ -239,35 +253,45 @@ export function KammaComplianceCard({
                 "w-4 h-4",
                 compliance.licensingRequired ? "text-amber-600" : "text-emerald-600"
               )} />
-              <span className="text-xs font-medium text-slate-600">Licensing</span>
+              <span className="text-xs font-medium text-slate-600">HMO Licence</span>
             </div>
             <div className={cn(
               "text-sm font-bold",
               compliance.licensingRequired ? "text-amber-700" : "text-emerald-700"
             )}>
-              {compliance.licensingRequired ? "Required" : "Not Required"}
+              {compliance.licensingRequired ? "Yes, Required" : "Not Required"}
             </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {compliance.licensingRequired
+                ? "You must apply to the council"
+                : "No HMO licence needed"}
+            </p>
           </div>
 
           <div className={cn(
             "p-3 rounded-xl border",
             compliance.article4
               ? "bg-purple-50 border-purple-200"
-              : "bg-slate-50 border-slate-200"
+              : "bg-emerald-50 border-emerald-200"
           )}>
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className={cn(
                 "w-4 h-4",
-                compliance.article4 ? "text-purple-600" : "text-slate-400"
+                compliance.article4 ? "text-purple-600" : "text-emerald-600"
               )} />
-              <span className="text-xs font-medium text-slate-600">Article 4</span>
+              <span className="text-xs font-medium text-slate-600">Planning Permission</span>
             </div>
             <div className={cn(
               "text-sm font-bold",
-              compliance.article4 ? "text-purple-700" : "text-slate-600"
+              compliance.article4 ? "text-purple-700" : "text-emerald-700"
             )}>
-              {compliance.article4 ? "In Effect" : "Not Applicable"}
+              {compliance.article4 ? "Yes, Required" : "Not Required"}
             </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {compliance.article4
+                ? "Must apply before converting to HMO"
+                : "No planning needed for HMO use"}
+            </p>
           </div>
         </div>
 
@@ -276,31 +300,43 @@ export function KammaComplianceCard({
           <div className="p-3 bg-slate-50 rounded-xl">
             <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Applicable Licensing Schemes
+              Licences You May Need
             </h4>
             <div className="space-y-2">
-              {compliance.schemes.map((scheme, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200"
-                >
-                  <div>
-                    <div className="text-sm font-medium text-slate-800">{scheme.name}</div>
-                    <div className="text-xs text-slate-500">{scheme.authority}</div>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs",
-                      scheme.required
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-slate-50 text-slate-600"
-                    )}
+              {compliance.schemes.map((scheme, idx) => {
+                const typeLabels: Record<string, { label: string; description: string }> = {
+                  mandatory: { label: "Mandatory", description: "Required for 5+ tenants" },
+                  additional: { label: "Additional", description: "Required for 3+ tenants in this area" },
+                  selective: { label: "Selective", description: "All rentals in this area" },
+                }
+                const typeInfo = typeLabels[scheme.type.toLowerCase()] || { label: scheme.type, description: "" }
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200"
                   >
-                    {scheme.type}
-                  </Badge>
-                </div>
-              ))}
+                    <div>
+                      <div className="text-sm font-medium text-slate-800">{scheme.name}</div>
+                      <div className="text-xs text-slate-500">{scheme.authority}</div>
+                    </div>
+                    <div className="text-right">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          scheme.required
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-50 text-slate-600"
+                        )}
+                      >
+                        {typeInfo.label}
+                      </Badge>
+                      <p className="text-xs text-slate-400 mt-0.5">{typeInfo.description}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -337,7 +373,7 @@ export function KammaComplianceCard({
 
         {/* Attribution */}
         <div className="text-xs text-slate-400 text-center pt-2 border-t border-slate-100">
-          Data from Kamma V3 API · Real-time check
+          Based on latest council licensing data
         </div>
       </CardContent>
     </Card>

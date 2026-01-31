@@ -80,24 +80,24 @@ export function LicensingRequirementsCard({
       bg: "bg-emerald-50",
       border: "border-emerald-200",
       icon: CheckCircle2,
-      label: "Low Complexity",
-      description: "Standard licensing requirements",
+      label: "Easy Setup",
+      description: "Standard process - one licence or none needed",
     },
     medium: {
       color: "text-amber-700",
       bg: "bg-amber-50",
       border: "border-amber-200",
       icon: Info,
-      label: "Medium Complexity",
-      description: "Additional licensing may apply",
+      label: "Some Requirements",
+      description: "Additional licences needed for this area",
     },
     high: {
       color: "text-red-700",
       bg: "bg-red-50",
       border: "border-red-200",
       icon: AlertTriangle,
-      label: "High Complexity",
-      description: "Multiple schemes & restrictions apply",
+      label: "Complex Setup",
+      description: "Multiple licences + planning permission needed",
     },
   }
 
@@ -110,21 +110,27 @@ export function LicensingRequirementsCard({
       color: "text-red-700",
       bg: "bg-red-50",
       border: "border-red-200",
-      label: "Mandatory",
+      label: "Mandatory HMO Licence",
+      shortLabel: "Mandatory",
+      description: "Required for properties with 5+ tenants from 2+ households",
       icon: Shield,
     },
     additional: {
       color: "text-amber-700",
       bg: "bg-amber-50",
       border: "border-amber-200",
-      label: "Additional",
+      label: "Additional Licence",
+      shortLabel: "Additional",
+      description: "This council requires a licence for smaller HMOs too",
       icon: FileText,
     },
     selective: {
       color: "text-blue-700",
       bg: "bg-blue-50",
       border: "border-blue-200",
-      label: "Selective",
+      label: "Selective Licence",
+      shortLabel: "Selective",
+      description: "All private rentals in this area need a licence",
       icon: Building2,
     },
   }
@@ -146,7 +152,7 @@ export function LicensingRequirementsCard({
               <Scale className={cn("w-5 h-5", config.color)} />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900">HMO Licensing Requirements</h3>
+              <h3 className="font-semibold text-slate-900">What Licences Do I Need?</h3>
               <p className={cn("text-sm", config.color)}>{config.description}</p>
             </div>
           </div>
@@ -287,10 +293,13 @@ export function LicensingRequirementsCard({
           <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
             <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-red-800">Article 4 Direction Applies</p>
-              <p className="text-sm text-red-600">
-                Planning permission required to convert this property to an HMO.
-                This may limit or prevent HMO use.
+              <p className="font-medium text-red-800">Planning Permission Required</p>
+              <p className="text-sm text-red-600 mb-2">
+                This area has restrictions on converting properties to HMOs. You must apply
+                for planning permission from the council <strong>before</strong> operating as an HMO.
+              </p>
+              <p className="text-xs text-red-500">
+                ⚠️ This can take 8-12 weeks and may be refused. Factor this into your investment decision.
               </p>
             </div>
           </div>
@@ -298,23 +307,23 @@ export function LicensingRequirementsCard({
 
         {/* Quick Reference */}
         <div className="pt-3 border-t border-slate-100">
-          <h4 className="text-sm font-medium text-slate-500 mb-2">Quick Reference</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-slate-600">Mandatory: 5+ people</span>
+          <h4 className="text-sm font-medium text-slate-500 mb-2">What Do These Mean?</h4>
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+              <span className="text-slate-600"><strong>Mandatory:</strong> National law - required for 5+ tenants from 2+ households in a 3+ storey building</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-slate-600">Additional: 3+ people</span>
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+              <span className="text-slate-600"><strong>Additional:</strong> Council-specific - covers smaller HMOs (usually 3-4 tenants) in this area</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-slate-600">Selective: All rentals</span>
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+              <span className="text-slate-600"><strong>Selective:</strong> Council-specific - all private rentals (not just HMOs) need a licence in this area</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-500" />
-              <span className="text-slate-600">Article 4: Planning needed</span>
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+              <span className="text-slate-600"><strong>Planning Permission:</strong> Must apply to convert to HMO use - separate from licensing</span>
             </div>
           </div>
         </div>
