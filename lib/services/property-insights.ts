@@ -138,7 +138,6 @@ async function fetchPropertyDataInsights(query: PropertyQuery): Promise<Property
         numberOfBedrooms: licence.bedrooms || licence.number_of_bedrooms,
         localAuthority: licence.local_authority,
       },
-      address: licence.address,
     }
   } catch (error) {
     return {

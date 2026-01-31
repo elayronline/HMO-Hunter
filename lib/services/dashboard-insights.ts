@@ -30,15 +30,15 @@ export async function fetchAndStoreProperties(properties: PropertyInput[]): Prom
         // Store/update in Supabase
         const { error } = await supabaseAdmin.from("properties").upsert({
           postcode: p.postcode,
-          address: p.address || insights.propertyData?.address || `Property at ${p.postcode}`,
+          address: p.address || `Property at ${p.postcode}`,
           external_id: p.uprn || `LIVE-${p.postcode.replace(/\s/g, "")}`,
           source_name: "Live API",
           source_type: "partner_api",
           last_synced: new Date().toISOString(),
           is_stale: false,
-          hmo_status: insights.propertyData?.hmoLicenseStatus || null,
-          bedrooms: insights.propertyData?.bedrooms || null,
-          purchase_price: insights.streetData?.estimatedValue || null,
+          hmo_status: insights.propertyData?.hmoLicence?.status || null,
+          bedrooms: insights.propertyData?.hmoLicence?.numberOfBedrooms || null,
+          purchase_price: insights.streetData?.valuation?.estimatedValue || null,
         }, { onConflict: "external_id" })
 
         if (error) throw new Error(error.message)

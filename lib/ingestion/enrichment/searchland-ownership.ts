@@ -176,7 +176,7 @@ export class SearchlandOwnershipAdapter extends EnrichmentAdapter {
     const enrichment: Partial<PropertyListing> = {
       // Owner information
       owner_name: proprietor.name || null,
-      owner_address: this.formatAddress(proprietor.address),
+      owner_address: this.formatAddress(proprietor.address) ?? undefined,
       owner_type: ownerType,
 
       // Company information (if corporate owner)
@@ -194,7 +194,7 @@ export class SearchlandOwnershipAdapter extends EnrichmentAdapter {
 
       // Planning constraints
       article_4_area: title.sqmt_of_title_is_planning_consideration?.sqmt_is_not_article_4 === 0,
-      planning_constraints: this.parseConstraints(title.constraints),
+      planning_constraints: this.parseConstraints(title.constraints) ?? undefined,
     }
 
     return enrichment

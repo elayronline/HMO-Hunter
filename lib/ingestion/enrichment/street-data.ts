@@ -58,7 +58,6 @@ export class StreetDataEnrichment extends EnrichmentAdapter {
         property_age: this.calculatePropertyAge(match.year_built),
         property_type: this.normalizePropertyType(match.property_type),
         has_garden: match.features?.garden,
-        has_parking: match.features?.parking,
       }
     } catch (error) {
       console.error("[StreetData] Enrichment error:", error)
