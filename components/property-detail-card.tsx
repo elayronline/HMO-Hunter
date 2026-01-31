@@ -344,35 +344,45 @@ export function PropertyDetailCard({
                 </Section>
               )}
 
-              {/* Ownership */}
+              {/* Ownership - Premium Feature */}
               {(property.owner_name || property.company_name) && (
                 <Section title="Ownership">
-                  {property.company_name ? (
-                    <>
-                      <Row
-                        label="Company"
-                        value={
-                          <span className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-slate-400" />
-                            {property.company_name}
-                          </span>
-                        }
-                      />
-                      {property.company_number && (
-                        <div className="flex items-center gap-2 h-10 px-3 bg-white rounded-lg border border-slate-200 mt-2">
-                          <code className="text-sm text-slate-600 flex-1">{property.company_number}</code>
-                          <button
-                            onClick={copyCompanyNumber}
-                            className="text-slate-400 hover:text-slate-600"
-                            aria-label={copiedCompanyNumber ? "Company number copied" : "Copy company number"}
-                          >
-                            {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                          </button>
-                        </div>
-                      )}
-                    </>
+                  {isPremium ? (
+                    property.company_name ? (
+                      <>
+                        <Row
+                          label="Company"
+                          value={
+                            <span className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-slate-400" />
+                              {property.company_name}
+                            </span>
+                          }
+                        />
+                        {property.company_number && (
+                          <div className="flex items-center gap-2 h-10 px-3 bg-white rounded-lg border border-slate-200 mt-2">
+                            <code className="text-sm text-slate-600 flex-1">{property.company_number}</code>
+                            <button
+                              onClick={copyCompanyNumber}
+                              className="text-slate-400 hover:text-slate-600"
+                              aria-label={copiedCompanyNumber ? "Company number copied" : "Copy company number"}
+                            >
+                              {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <Row label="Owner" value={property.owner_name} />
+                    )
                   ) : (
-                    <Row label="Owner" value={property.owner_name} />
+                    <div className="text-center py-3">
+                      <div className="flex items-center justify-center gap-2 text-amber-600 mb-2">
+                        <Shield className="w-4 h-4" />
+                        <span className="text-sm font-medium">Premium Feature</span>
+                      </div>
+                      <p className="text-xs text-slate-500">Upgrade to see owner details</p>
+                    </div>
                   )}
                 </Section>
               )}
@@ -498,7 +508,7 @@ export function PropertyDetailCard({
               <LicenceDetailsCard propertyId={property.id} />
 
               {/* On-demand Data Enrichment */}
-              <DataEnrichmentCard property={property} />
+              <DataEnrichmentCard property={property} isPremium={isPremium} />
             </>
           )}
         </div>

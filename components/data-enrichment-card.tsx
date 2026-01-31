@@ -22,6 +22,7 @@ interface DataEnrichmentCardProps {
   property: Property
   onEnrichmentComplete?: () => void
   className?: string
+  isPremium?: boolean
 }
 
 type EnrichmentType = "broadband" | "epc" | "owner"
@@ -36,6 +37,7 @@ export function DataEnrichmentCard({
   property,
   onEnrichmentComplete,
   className,
+  isPremium = false,
 }: DataEnrichmentCardProps) {
   const [statuses, setStatuses] = useState<Record<EnrichmentType, EnrichmentStatus>>({
     broadband: { type: "broadband", status: "idle" },
@@ -71,7 +73,9 @@ export function DataEnrichmentCard({
       description: "Land Registry & Companies House",
       endpoint: "/api/enrich-owner",
       hasData: property.owner_name !== null || property.company_name !== null,
-      currentValue: property.company_name || property.owner_name || null,
+      currentValue: isPremium
+        ? (property.company_name || property.owner_name || null)
+        : (property.owner_name || property.company_name ? "Premium feature" : null),
     },
   ]
 

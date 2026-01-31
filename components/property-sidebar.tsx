@@ -365,26 +365,36 @@ export function PropertySidebar({
                 </Section>
               )}
 
-              {/* Ownership */}
+              {/* Ownership - Premium Feature */}
               {(property.owner_name || property.company_name) && (
                 <Section title="Ownership">
-                  {property.company_name ? (
-                    <>
-                      <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <Building2 className="w-4 h-4 text-slate-400" />
-                        <span className="font-medium">{property.company_name}</span>
-                      </div>
-                      {property.company_number && (
-                        <div className="flex items-center gap-2 h-9 px-3 bg-white rounded border border-slate-200 mt-2">
-                          <code className="text-xs text-slate-600 flex-1">{property.company_number}</code>
-                          <button onClick={copyCompanyNumber} className="text-slate-400 hover:text-slate-600">
-                            {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                          </button>
+                  {isPremium ? (
+                    property.company_name ? (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                          <Building2 className="w-4 h-4 text-slate-400" />
+                          <span className="font-medium">{property.company_name}</span>
                         </div>
-                      )}
-                    </>
+                        {property.company_number && (
+                          <div className="flex items-center gap-2 h-9 px-3 bg-white rounded border border-slate-200 mt-2">
+                            <code className="text-xs text-slate-600 flex-1">{property.company_number}</code>
+                            <button onClick={copyCompanyNumber} className="text-slate-400 hover:text-slate-600">
+                              {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-slate-700">{property.owner_name}</p>
+                    )
                   ) : (
-                    <p className="text-sm text-slate-700">{property.owner_name}</p>
+                    <div className="text-center py-2">
+                      <div className="flex items-center justify-center gap-2 text-amber-600 mb-1">
+                        <Shield className="w-4 h-4" />
+                        <span className="text-xs font-medium">Premium Feature</span>
+                      </div>
+                      <p className="text-xs text-slate-500">Upgrade to see owner details</p>
+                    </div>
                   )}
                 </Section>
               )}
