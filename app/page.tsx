@@ -73,7 +73,10 @@ import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
-import { HelpCircle } from "lucide-react"
+import { HelpCircle, Shield } from "lucide-react"
+import { CreditBalance } from "@/components/credit-balance"
+import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
+import { ExportButton } from "@/components/export-button"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
@@ -152,7 +155,47 @@ export default function HMOHunterPage() {
   const handleToggleLegend = useCallback(() => setLegendExpanded(prev => !prev), [])
   const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
-  const handleSelectProperty = useCallback((property: Property) => setSelectedProperty(property), [])
+
+  // Track property view and deduct credits if needed
+  const trackPropertyView = useCallback(async (propertyId: string) => {
+    if (!user) return // Don't track for non-logged-in users
+
+    try {
+      const response = await fetch('/api/track-property-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok && data.insufficientCredits) {
+        toast({
+          title: "Daily Limit Reached",
+          description: "You've used all your property views for today. Resets at midnight UTC.",
+          variant: "destructive"
+        })
+      } else if (data.warning) {
+        toast({
+          title: "Credits Running Low",
+          description: data.warning,
+        })
+      } else if (data.freeViewUsed && data.freeViewsRemaining !== undefined && data.freeViewsRemaining <= 5 && data.freeViewsRemaining > 0) {
+        toast({
+          title: "Free Views Running Low",
+          description: `${data.freeViewsRemaining} free property views remaining today`,
+        })
+      }
+    } catch (error) {
+      // Silently fail - don't block property viewing
+      console.error('Failed to track property view:', error)
+    }
+  }, [user, toast])
+
+  const handleSelectProperty = useCallback((property: Property) => {
+    setSelectedProperty(property)
+    trackPropertyView(property.id)
+  }, [trackPropertyView])
 
   useEffect(() => {
     let mounted = true
@@ -565,6 +608,9 @@ export default function HMOHunterPage() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* Credit balance - shown for logged in users */}
+          {user && <CreditBalance />}
+
           {/* Premium badge - shown when user has premium subscription */}
           {isPremiumUser && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
@@ -593,6 +639,12 @@ export default function HMOHunterPage() {
                   <p className="text-xs text-slate-500">Signed in</p>
                 </div>
                 <DropdownMenuSeparator />
+                {user.user_metadata?.is_admin && (
+                  <DropdownMenuItem onClick={() => router.push("/admin")}>
+                    <Shield className="w-4 h-4 mr-2" />
+                    Admin Portal
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => router.push("/help")}>
                   <HelpCircle className="w-4 h-4 mr-2" />
                   Help
@@ -720,6 +772,57 @@ export default function HMOHunterPage() {
               </div>
             )}
           </div>
+
+          {/* Saved Searches */}
+          <SavedSearches
+            currentFilters={{
+              listingType,
+              priceRange,
+              propertyTypes,
+              selectedLocation,
+              availableNow,
+              studentFriendly,
+              petFriendly,
+              furnished,
+              licensedHmoOnly,
+              minEpcRating,
+              article4Filter,
+              licenceTypeFilter,
+              broadbandFilter,
+              ownerDataFilter,
+              activeSegment,
+              showPotentialHMOs,
+              hmoClassificationFilter,
+              floorAreaBandFilter,
+              yieldBandFilter,
+              epcBandFilter,
+              minDealScore,
+            }}
+            onLoadFilters={(filters: SearchFilters) => {
+              setListingType(filters.listingType)
+              setPriceRange(filters.priceRange)
+              setPropertyTypes(filters.propertyTypes)
+              setSelectedLocation(filters.selectedLocation)
+              setAvailableNow(filters.availableNow)
+              setStudentFriendly(filters.studentFriendly)
+              setPetFriendly(filters.petFriendly)
+              setFurnished(filters.furnished)
+              setLicensedHmoOnly(filters.licensedHmoOnly)
+              setMinEpcRating(filters.minEpcRating as any)
+              setArticle4Filter(filters.article4Filter as any)
+              setLicenceTypeFilter(filters.licenceTypeFilter)
+              setBroadbandFilter(filters.broadbandFilter as any)
+              setOwnerDataFilter(filters.ownerDataFilter)
+              setActiveSegment(filters.activeSegment as any)
+              setShowPotentialHMOs(filters.showPotentialHMOs)
+              setHmoClassificationFilter(filters.hmoClassificationFilter as any)
+              setFloorAreaBandFilter(filters.floorAreaBandFilter as any)
+              setYieldBandFilter(filters.yieldBandFilter as any)
+              setEpcBandFilter(filters.epcBandFilter as any)
+              setMinDealScore(filters.minDealScore)
+            }}
+            isLoggedIn={!!user}
+          />
 
           {/* Property Filters */}
           <div className="p-4 border-b border-slate-200">
@@ -1146,8 +1249,8 @@ export default function HMOHunterPage() {
             </button>
           </div>
 
-          {/* Property Count Indicator */}
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20">
+          {/* Property Count Indicator & Export */}
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
             <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -1161,6 +1264,18 @@ export default function HMOHunterPage() {
                 </span>
               )}
             </div>
+            {user && segmentFilteredProperties.length > 0 && (
+              <ExportButton
+                filters={{
+                  listingType,
+                  city: selectedLocation.name,
+                  minPrice: priceRange[0],
+                  maxPrice: priceRange[1],
+                  licensedHmoOnly,
+                }}
+                disabled={loading}
+              />
+            )}
           </div>
 
           {/* MapLibre GL Map */}

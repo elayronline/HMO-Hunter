@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { checkResourceCap, deductCredits, updateResourceCount } from "@/lib/credits"
+import { validateBody } from "@/lib/validation/api-validation"
+import { priceAlertCreateSchema, priceAlertUpdateSchema } from "@/lib/validation/schemas"
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -45,31 +48,48 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Validate request body
+  const validation = await validateBody(request, priceAlertCreateSchema)
+  if (!validation.success) {
+    return validation.error
+  }
+
+  const {
+    alert_type,
+    property_id,
+    search_criteria,
+    target_price,
+    price_direction,
+    postcode,
+    area,
+    radius_miles,
+    notify_email,
+    notify_push,
+    frequency,
+  } = validation.data
+
   try {
-    const body = await request.json()
 
-    const {
-      alert_type,
-      property_id,
-      search_criteria,
-      target_price,
-      price_direction,
-      postcode,
-      area,
-      radius_miles,
-      notify_email = true,
-      notify_push = false,
-      frequency = "instant",
-    } = body
-
-    // Validate alert type
-    if (!["price_drop", "new_listing", "price_threshold", "area_watch"].includes(alert_type)) {
-      return NextResponse.json({ error: "Invalid alert type" }, { status: 400 })
+    // Check resource cap (10 active price alerts max)
+    const capCheck = await checkResourceCap(user.id, 'price_alerts')
+    if (!capCheck.success) {
+      return NextResponse.json({
+        error: capCheck.error || "You've reached your price alerts limit (10)",
+        limitReached: true,
+        current: capCheck.current,
+        limit: capCheck.limit,
+      }, { status: 429 })
     }
 
-    // For price_drop alerts, property_id is required
-    if (alert_type === "price_drop" && !property_id) {
-      return NextResponse.json({ error: "Property ID required for price drop alerts" }, { status: 400 })
+    // Deduct 5 credits for creating a price alert
+    const creditResult = await deductCredits(user.id, 'create_price_alert')
+    if (!creditResult.success) {
+      return NextResponse.json({
+        error: creditResult.error || "Insufficient credits",
+        insufficientCredits: true,
+        creditsRemaining: creditResult.credits_remaining,
+        resetAt: creditResult.reset_at,
+      }, { status: 429 })
     }
 
     const { data: alert, error } = await supabase
@@ -123,7 +143,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(alert, { status: 201 })
+    // Update resource count
+    await updateResourceCount(user.id, 'price_alerts', 1)
+
+    return NextResponse.json({
+      ...alert,
+      creditsRemaining: creditResult.credits_remaining,
+      warning: creditResult.warning,
+    }, { status: 201 })
   } catch (error) {
     console.error("[PriceAlerts] Error:", error)
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
@@ -156,6 +183,9 @@ export async function DELETE(request: NextRequest) {
     console.error("[PriceAlerts] Error deleting alert:", error)
     return NextResponse.json({ error: "Failed to delete alert" }, { status: 500 })
   }
+
+  // Decrement resource count
+  await updateResourceCount(user.id, 'price_alerts', -1)
 
   return NextResponse.json({ success: true })
 }

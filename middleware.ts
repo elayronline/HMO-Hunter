@@ -1,7 +1,33 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Apply rate limiting to API routes
+  if (pathname.startsWith("/api/")) {
+    let rateLimitConfig = RATE_LIMITS.standard
+
+    // Stricter limits for sensitive endpoints
+    if (pathname.includes("/auth/")) {
+      rateLimitConfig = RATE_LIMITS.auth
+    } else if (pathname.includes("/enrich")) {
+      rateLimitConfig = RATE_LIMITS.enrichment
+    } else if (pathname.includes("/admin")) {
+      rateLimitConfig = RATE_LIMITS.admin
+    }
+
+    const rateLimitResponse = checkRateLimit(request, {
+      ...rateLimitConfig,
+      keyPrefix: pathname
+    })
+
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

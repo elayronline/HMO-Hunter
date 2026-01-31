@@ -42,11 +42,11 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-semibold mb-3">2. What Personal Data We Collect</h2>
 
             <h3 className="font-medium text-gray-900 mt-4 mb-2">2.1 Property Owner Data</h3>
-            <p className="text-gray-700 mb-2">We collect the following data about property owners from public registers and licensed data providers:</p>
+            <p className="text-gray-700 mb-2">We collect the following data about property owners from official public registers and licensed data providers:</p>
             <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
-              <li>Owner names (from Land Registry)</li>
+              <li>Owner names (from official property registers)</li>
               <li>Registered addresses</li>
-              <li>Company details for corporate landlords (from Companies House)</li>
+              <li>Company details for corporate landlords (from official company registers)</li>
               <li>Contact telephone numbers (from licensed tracing services)</li>
               <li>Contact email addresses (from licensed tracing services)</li>
               <li>HMO licence information (from council public registers)</li>
@@ -203,8 +203,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-semibold mb-3">8. Data Sources</h2>
             <p className="text-gray-700 mb-2">We obtain property owner data from the following sources:</p>
             <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
-              <li><strong>HM Land Registry</strong> - Owner names and registered addresses (public record)</li>
-              <li><strong>Companies House</strong> - Company details and directors (public record)</li>
+              <li><strong>Official Property Registers</strong> - Owner names and registered addresses (public record)</li>
+              <li><strong>Company Registers</strong> - Company details and directors (public record)</li>
               <li><strong>Council HMO Registers</strong> - Licence holder names (public record)</li>
               <li><strong>Licensed Data Providers</strong> - Contact details from GDPR-compliant tracing services</li>
             </ul>

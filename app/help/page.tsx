@@ -68,7 +68,7 @@ const faqCategories = [
     questions: [
       {
         q: "Where does the property data come from?",
-        a: "We aggregate data from multiple sources including property listings, council HMO licence registers, Land Registry records, and EPC databases. Data is regularly updated to ensure accuracy."
+        a: "We aggregate data from multiple verified sources including property listings and official council records. Data is regularly updated to ensure accuracy."
       },
       {
         q: "What is a 'Potential HMO'?",

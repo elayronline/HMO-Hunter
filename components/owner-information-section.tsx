@@ -7,6 +7,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Copy,
   Crown,
   ExternalLink,
   FileText,
@@ -25,6 +26,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { toast } from "@/hooks/use-toast"
 import type { Director, Property } from "@/lib/types/database"
 
 interface OwnerInformationSectionProps {
@@ -33,27 +35,68 @@ interface OwnerInformationSectionProps {
   isPremium?: boolean
 }
 
-// Log contact data access for GDPR compliance
-async function logContactAccess(
+// Track contact data access and deduct credits
+async function trackContactAccess(
   propertyId: string,
   contactName: string | undefined,
-  dataType: string,
-  accessType: "view" | "call" | "email" | "copy",
-  contactCategory: "title_owner" | "licence_holder"
-) {
+  contactType: string,
+  action: "view" | "call" | "email" | "copy"
+): Promise<{ success: boolean; warning?: string }> {
   try {
-    await fetch("/api/gdpr/log-access", {
+    const response = await fetch("/api/track-contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         propertyId,
-        ownerName: contactName,
-        dataAccessed: [dataType, contactCategory],
-        accessType,
+        contactName,
+        contactType,
+        action,
       }),
     })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      if (data.insufficientCredits) {
+        toast({
+          title: "Insufficient Credits",
+          description: "You don't have enough credits for this action.",
+          variant: "destructive"
+        })
+        return { success: false }
+      }
+      return { success: false }
+    }
+
+    if (data.warning) {
+      toast({
+        title: "Credits Running Low",
+        description: data.warning,
+      })
+    }
+
+    return { success: true, warning: data.warning }
   } catch (error) {
-    console.error("Failed to log access:", error)
+    console.error("Failed to track access:", error)
+    return { success: true } // Allow action even if tracking fails
+  }
+}
+
+// Copy to clipboard with credit tracking
+async function copyToClipboard(
+  text: string,
+  propertyId: string,
+  contactName: string | undefined,
+  contactType: string
+) {
+  const result = await trackContactAccess(propertyId, contactName, contactType, "copy")
+
+  if (result.success) {
+    await navigator.clipboard.writeText(text)
+    toast({
+      title: "Copied",
+      description: `${contactType} copied to clipboard`,
+    })
   }
 }
 
@@ -213,12 +256,19 @@ export function OwnerInformationSection({
                   <div className="flex flex-wrap gap-2">
                     <a
                       href={`mailto:${property.owner_contact_email}`}
-                      onClick={() => logContactAccess(property.id, property.owner_name ?? undefined, "email", "email", "title_owner")}
+                      onClick={() => trackContactAccess(property.id, property.owner_name ?? undefined, "email", "email")}
                       className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm"
                     >
                       <Mail className="h-4 w-4" />
                       <span className="truncate">{property.owner_contact_email}</span>
                     </a>
+                    <button
+                      onClick={() => copyToClipboard(property.owner_contact_email!, property.id, property.owner_name ?? undefined, "Email")}
+                      className="flex items-center justify-center gap-2 px-3 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
+                      title="Copy email"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -385,24 +435,42 @@ export function OwnerInformationSection({
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Licence Holder</p>
                   <div className="flex flex-wrap gap-2">
                     {property.licence_holder_phone && (
-                      <a
-                        href={`tel:${property.licence_holder_phone}`}
-                        onClick={() => logContactAccess(property.id, property.licence_holder_name ?? undefined, "phone", "call", "licence_holder")}
-                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-sm"
-                      >
-                        <Phone className="h-4 w-4" />
-                        <span>{property.licence_holder_phone}</span>
-                      </a>
+                      <>
+                        <a
+                          href={`tel:${property.licence_holder_phone}`}
+                          onClick={() => trackContactAccess(property.id, property.licence_holder_name ?? undefined, "phone", "call")}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-sm"
+                        >
+                          <Phone className="h-4 w-4" />
+                          <span>{property.licence_holder_phone}</span>
+                        </a>
+                        <button
+                          onClick={() => copyToClipboard(property.licence_holder_phone!, property.id, property.licence_holder_name ?? undefined, "Phone")}
+                          className="flex items-center justify-center gap-2 px-3 py-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors"
+                          title="Copy phone"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </>
                     )}
                     {property.licence_holder_email && (
-                      <a
-                        href={`mailto:${property.licence_holder_email}`}
-                        onClick={() => logContactAccess(property.id, property.licence_holder_name ?? undefined, "email", "email", "licence_holder")}
-                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold shadow-sm"
-                      >
-                        <Mail className="h-4 w-4" />
-                        <span className="truncate">{property.licence_holder_email}</span>
-                      </a>
+                      <>
+                        <a
+                          href={`mailto:${property.licence_holder_email}`}
+                          onClick={() => trackContactAccess(property.id, property.licence_holder_name ?? undefined, "email", "email")}
+                          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold shadow-sm"
+                        >
+                          <Mail className="h-4 w-4" />
+                          <span className="truncate">{property.licence_holder_email}</span>
+                        </a>
+                        <button
+                          onClick={() => copyToClipboard(property.licence_holder_email!, property.id, property.licence_holder_name ?? undefined, "Email")}
+                          className="flex items-center justify-center gap-2 px-3 py-3 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+                          title="Copy email"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

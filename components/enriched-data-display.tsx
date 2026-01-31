@@ -117,11 +117,10 @@ export function EnrichedDataDisplay({
           </div>
         )}
 
-        {/* StreetData Section - only show if has data */}
+        {/* Property Details Section - only show if has data */}
         {hasStreetData && (
           <DataSection
             title="Property Details"
-            source="StreetData"
             icon={Home}
             isEnriched={hasStreetData}
             enrichedAt={property.streetdata_enriched_at}
@@ -151,11 +150,10 @@ export function EnrichedDataDisplay({
           </DataSection>
         )}
 
-        {/* PaTMa Section - only show if has data */}
+        {/* Price Analytics Section - only show if has data */}
         {hasPaTMa && (
           <DataSection
             title="Price Analytics"
-            source="PaTMa"
             icon={TrendingUp}
             isEnriched={hasPaTMa}
             enrichedAt={property.patma_enriched_at}
@@ -205,11 +203,10 @@ export function EnrichedDataDisplay({
           </DataSection>
         )}
 
-        {/* PropertyData HMO Section - only show if has data */}
+        {/* HMO Licence Section - only show if has data */}
         {hasPropertyData && (
           <DataSection
             title="HMO Licence Register"
-            source="PropertyData"
             icon={Shield}
             isEnriched={hasPropertyData}
             enrichedAt={property.propertydata_enriched_at}
@@ -257,11 +254,10 @@ export function EnrichedDataDisplay({
           </DataSection>
         )}
 
-        {/* Zoopla Section - only show if has data */}
+        {/* Market Data Section - only show if has data */}
         {hasZoopla && (
           <DataSection
             title="Market Data"
-            source="Zoopla"
             icon={TrendingUp}
             isEnriched={hasZoopla}
             enrichedAt={property.zoopla_enriched_at}
@@ -288,7 +284,7 @@ export function EnrichedDataDisplay({
                 {property.zoopla_zed_index && (
                   <DataItem
                     icon={TrendingUp}
-                    label="Zed Index"
+                    label="Market Index"
                     value={formatCurrency(property.zoopla_zed_index)}
                   />
                 )}
@@ -306,16 +302,6 @@ export function EnrichedDataDisplay({
                   <DataItem icon={Building2} label="Agent Phone" value={property.zoopla_agent_phone} />
                 )}
               </div>
-              {property.zoopla_listing_url && (
-                <a
-                  href={property.zoopla_listing_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1 text-sm text-blue-600 hover:text-blue-700 pt-2 border-t border-slate-100"
-                >
-                  View on Zoopla <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
             </div>
           </DataSection>
         )}
@@ -327,7 +313,6 @@ export function EnrichedDataDisplay({
 // Helper Components
 function DataSection({
   title,
-  source,
   icon: Icon,
   isEnriched,
   enrichedAt,
@@ -336,7 +321,6 @@ function DataSection({
   children,
 }: {
   title: string
-  source: string
   icon: any
   isEnriched: boolean
   enrichedAt: string | null
@@ -362,10 +346,11 @@ function DataSection({
           </div>
           <div>
             <div className="text-sm font-medium text-slate-800">{title}</div>
-            <div className="text-xs text-slate-500">
-              {source}
-              {enrichedAt && ` • Updated ${new Date(enrichedAt).toLocaleDateString()}`}
-            </div>
+            {enrichedAt && (
+              <div className="text-xs text-slate-500">
+                Updated {new Date(enrichedAt).toLocaleDateString()}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -599,7 +599,7 @@ export function PropertyDetailCard({
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1 text-xs text-slate-500 hover:text-teal-600 mt-3"
           >
-            View original listing <ExternalLink className="w-3 h-3" />
+            View listing <ExternalLink className="w-3 h-3" />
           </a>
         )}
       </div>

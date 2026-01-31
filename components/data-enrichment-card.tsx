@@ -70,7 +70,7 @@ export function DataEnrichmentCard({
       type: "owner" as EnrichmentType,
       icon: User,
       label: "Owner Info",
-      description: "Land Registry & Companies House",
+      description: "Property ownership details",
       endpoint: "/api/enrich-owner",
       hasData: property.owner_name !== null || property.company_name !== null,
       currentValue: isPremium
@@ -255,7 +255,7 @@ export function DataEnrichmentCard({
 
         {/* Info Text */}
         <div className="text-xs text-slate-400 text-center pt-2 border-t border-slate-100">
-          Data from gov.uk, Land Registry, Ofcom
+          Verified property data sources
         </div>
       </CardContent>
     </Card>

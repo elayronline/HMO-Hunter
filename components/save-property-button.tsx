@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { saveProperty, unsaveProperty } from "@/app/actions/saved-properties"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 
 interface SavePropertyButtonProps {
   propertyId: string
@@ -30,11 +31,35 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
         if (result.error) {
           if (result.error === "You must be logged in to save properties") {
             router.push("/auth/login")
+          } else if ((result as any).limitReached) {
+            toast({
+              title: "Saved Properties Limit Reached",
+              description: `You've reached your limit of ${(result as any).limit} saved properties. Remove some to save more.`,
+              variant: "destructive",
+            })
+          } else if ((result as any).insufficientCredits) {
+            toast({
+              title: "Daily Credits Exhausted",
+              description: "You've used all your credits for today. Resets at midnight UTC.",
+              variant: "destructive",
+            })
           } else {
             console.error("[v0] Error saving property:", result.error)
+            toast({
+              title: "Error",
+              description: result.error,
+              variant: "destructive",
+            })
           }
         } else {
           setIsSaved(true)
+          // Show warning if credits are running low
+          if ((result as any).warning) {
+            toast({
+              title: "Credits Running Low",
+              description: (result as any).warning,
+            })
+          }
         }
       }
     })

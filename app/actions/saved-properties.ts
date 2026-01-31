@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { checkResourceCap, deductCredits, updateResourceCount } from "@/lib/credits"
 
 export async function saveProperty(propertyId: string, notes?: string) {
   try {
@@ -14,6 +15,28 @@ export async function saveProperty(propertyId: string, notes?: string) {
 
     if (authError || !user) {
       return { error: "You must be logged in to save properties" }
+    }
+
+    // Check resource cap (100 saved properties max)
+    const capCheck = await checkResourceCap(user.id, 'saved_properties')
+    if (!capCheck.success) {
+      return {
+        error: capCheck.error || "You've reached your saved properties limit (100)",
+        limitReached: true,
+        current: capCheck.current,
+        limit: capCheck.limit,
+      }
+    }
+
+    // Deduct 1 credit for saving a property
+    const creditResult = await deductCredits(user.id, 'save_property')
+    if (!creditResult.success) {
+      return {
+        error: creditResult.error || "Insufficient credits",
+        insufficientCredits: true,
+        creditsRemaining: creditResult.credits_remaining,
+        resetAt: creditResult.reset_at,
+      }
     }
 
     const { data, error } = await supabase
@@ -33,8 +56,15 @@ export async function saveProperty(propertyId: string, notes?: string) {
       return { error: error.message }
     }
 
+    // Update resource count
+    await updateResourceCount(user.id, 'saved_properties', 1)
+
     revalidatePath("/")
-    return { data }
+    return {
+      data,
+      creditsRemaining: creditResult.credits_remaining,
+      warning: creditResult.warning,
+    }
   } catch (error: any) {
     if (error?.name === 'AbortError') {
       return { error: "Request was cancelled" }
@@ -65,6 +95,9 @@ export async function unsaveProperty(propertyId: string) {
     if (error) {
       return { error: error.message }
     }
+
+    // Decrement resource count
+    await updateResourceCount(user.id, 'saved_properties', -1)
 
     revalidatePath("/")
     return { success: true }
