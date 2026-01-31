@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -13,7 +12,12 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
-  Sparkles
+  Sparkles,
+  MousePointer2,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react"
 
 interface OnboardingWalkthroughProps {
@@ -21,50 +25,132 @@ interface OnboardingWalkthroughProps {
   onComplete: () => void
 }
 
-const steps = [
+type HighlightPosition = "center" | "top-left" | "top-center" | "top-right" | "left" | "right" | "bottom-left" | "bottom-center"
+type ArrowDirection = "up" | "down" | "left" | "right" | "none"
+
+interface Step {
+  icon: typeof Sparkles
+  title: string
+  description: string
+  color: string
+  bgColor: string
+  highlight: HighlightPosition
+  arrow: ArrowDirection
+  targetHint: string
+}
+
+const steps: Step[] = [
   {
     icon: Sparkles,
     title: "Welcome to HMO Hunter",
     description: "Your smart platform for finding HMO investment opportunities. Let's take a quick tour to get you started.",
     color: "text-teal-600",
     bgColor: "bg-teal-100",
+    highlight: "center",
+    arrow: "none",
+    targetHint: "",
   },
   {
     icon: MapPin,
     title: "Interactive Property Map",
-    description: "Browse properties on our interactive map. Each pin represents a property - click to see details. Colors indicate property status: green for licensed HMOs, blue for opportunities.",
+    description: "This is your main map view. Each pin represents a property - click any pin to see details. Green = Licensed HMO, Blue = Opportunity.",
     color: "text-blue-600",
     bgColor: "bg-blue-100",
+    highlight: "right",
+    arrow: "right",
+    targetHint: "The map is in the center of your screen",
   },
   {
     icon: Filter,
-    title: "Smart Filters",
-    description: "Use the category tabs to filter properties: Licensed HMOs, Potential Opportunities, Restricted Areas, and more. Narrow down to exactly what you're looking for.",
+    title: "Filter Tabs",
+    description: "Use these tabs above the map to filter: All, Licensed HMOs, Expired, Opportunities, and Restricted areas.",
     color: "text-purple-600",
     bgColor: "bg-purple-100",
+    highlight: "top-center",
+    arrow: "up",
+    targetHint: "Look for the tabs at the top of the map",
   },
   {
     icon: FileText,
-    title: "Property Details",
-    description: "Click any property to view full details in the sidebar: pricing, bedrooms, yield estimates, HMO licence status, and area insights.",
+    title: "Property Details Sidebar",
+    description: "When you click a property, details appear in the right sidebar: pricing, bedrooms, yield estimates, and compliance info.",
     color: "text-orange-600",
     bgColor: "bg-orange-100",
+    highlight: "left",
+    arrow: "right",
+    targetHint: "The sidebar opens on the right when you click a property",
   },
   {
     icon: Bookmark,
     title: "Save Properties",
-    description: "Found something interesting? Click the bookmark icon to save properties for later. Access your saved list anytime from the Saved page.",
+    description: "Click the bookmark icon on any property to save it. Find your saved properties in the 'Saved' page from the menu.",
     color: "text-pink-600",
     bgColor: "bg-pink-100",
+    highlight: "top-right",
+    arrow: "up",
+    targetHint: "Look for the bookmark icon on property cards",
   },
   {
     icon: Crown,
     title: "You're Ready!",
-    description: "Start exploring properties now. Need help? Click the Help link in the menu anytime. Happy hunting!",
+    description: "Start exploring! Click any pin on the map to begin. Need help? Click your profile icon and select 'Help'.",
     color: "text-amber-600",
     bgColor: "bg-amber-100",
+    highlight: "center",
+    arrow: "none",
+    targetHint: "",
   },
 ]
+
+const ArrowIcon = ({ direction }: { direction: ArrowDirection }) => {
+  switch (direction) {
+    case "up": return <ArrowUp className="h-6 w-6 animate-bounce" />
+    case "down": return <ArrowDown className="h-6 w-6 animate-bounce" />
+    case "left": return <ArrowLeft className="h-6 w-6 animate-pulse" />
+    case "right": return <ArrowRight className="h-6 w-6 animate-pulse" />
+    default: return null
+  }
+}
+
+const getPositionClasses = (position: HighlightPosition): string => {
+  switch (position) {
+    case "center":
+      return "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+    case "top-left":
+      return "top-24 left-8"
+    case "top-center":
+      return "top-24 left-1/2 -translate-x-1/2"
+    case "top-right":
+      return "top-24 right-8"
+    case "left":
+      return "top-1/2 left-8 -translate-y-1/2"
+    case "right":
+      return "top-1/2 right-8 -translate-y-1/2"
+    case "bottom-left":
+      return "bottom-24 left-8"
+    case "bottom-center":
+      return "bottom-24 left-1/2 -translate-x-1/2"
+    default:
+      return "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+  }
+}
+
+const getArrowPositionClasses = (position: HighlightPosition, direction: ArrowDirection): string => {
+  if (direction === "none") return "hidden"
+
+  switch (position) {
+    case "right":
+      return "absolute top-1/2 -right-12 -translate-y-1/2 text-white"
+    case "left":
+      return "absolute top-1/2 -left-12 -translate-y-1/2 text-white rotate-180"
+    case "top-center":
+      return "absolute -top-12 left-1/2 -translate-x-1/2 text-white"
+    case "top-right":
+      return "absolute -top-12 right-8 text-white"
+    default:
+      return "hidden"
+  }
+}
 
 export function OnboardingWalkthrough({ isOpen, onComplete }: OnboardingWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0)
@@ -100,96 +186,158 @@ export function OnboardingWalkthrough({ isOpen, onComplete }: OnboardingWalkthro
     }
   }
 
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen || isClosing) return
+      if (e.key === "ArrowRight" || e.key === "Enter") nextStep()
+      if (e.key === "ArrowLeft") prevStep()
+      if (e.key === "Escape") handleSkip()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen, isClosing, currentStep])
+
+  if (!isOpen || isClosing) return null
+
   const step = steps[currentStep]
   const Icon = step.icon
   const isLastStep = currentStep === steps.length - 1
   const isFirstStep = currentStep === 0
 
   return (
-    <Dialog open={isOpen && !isClosing} onOpenChange={() => {}}>
-      <DialogContent
-        className="sm:max-w-md p-0 gap-0 overflow-hidden"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        {/* Skip button */}
-        <button
-          onClick={handleSkip}
-          className="absolute right-4 top-4 z-10 text-slate-400 hover:text-slate-600 transition-colors"
-          aria-label="Skip tour"
-        >
-          <X className="h-5 w-5" />
-        </button>
+    <div className="fixed inset-0 z-[100]">
+      {/* Dark overlay */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={handleSkip}
+      />
 
-        {/* Content */}
-        <div className="p-8 pt-10">
-          {/* Icon */}
-          <div className="flex justify-center mb-6">
-            <div className={`${step.bgColor} p-4 rounded-full`}>
-              <Icon className={`h-10 w-10 ${step.color}`} />
+      {/* Floating tooltip card */}
+      <div className={`fixed ${getPositionClasses(step.highlight)} z-[101] w-[90vw] max-w-md`}>
+        {/* Arrow pointing to target */}
+        <div className={getArrowPositionClasses(step.highlight, step.arrow)}>
+          <ArrowIcon direction={step.arrow} />
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+          {/* Skip button */}
+          <button
+            onClick={handleSkip}
+            className="absolute right-4 top-4 z-10 text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="Skip tour"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Content */}
+          <div className="p-6 pt-8">
+            {/* Icon and title row */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className={`${step.bgColor} p-3 rounded-xl shrink-0`}>
+                <Icon className={`h-6 w-6 ${step.color}`} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {step.title}
+                </h2>
+                {step.targetHint && (
+                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                    <MousePointer2 className="h-3 w-3" />
+                    {step.targetHint}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-slate-600 text-sm leading-relaxed mb-6">
+              {step.description}
+            </p>
+
+            {/* Progress bar */}
+            <div className="flex gap-1.5 mb-5">
+              {steps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 flex-1 rounded-full transition-all ${
+                    index <= currentStep ? "bg-teal-500" : "bg-slate-200"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Navigation buttons */}
+            <div className="flex gap-3">
+              {!isFirstStep && (
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  size="sm"
+                  className="flex-1"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back
+                </Button>
+              )}
+
+              <Button
+                onClick={nextStep}
+                size="sm"
+                className={`flex-1 bg-teal-600 hover:bg-teal-700 ${isFirstStep ? 'w-full' : ''}`}
+              >
+                {isLastStep ? (
+                  <>
+                    Get Started
+                    <Sparkles className="h-4 w-4 ml-1" />
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Step counter and keyboard hint */}
+            <div className="flex justify-between items-center mt-4">
+              <p className="text-xs text-slate-400">
+                Step {currentStep + 1} of {steps.length}
+              </p>
+              <p className="text-xs text-slate-400">
+                Press → to continue
+              </p>
             </div>
           </div>
-
-          {/* Title */}
-          <h2 className="text-xl font-bold text-slate-900 text-center mb-3">
-            {step.title}
-          </h2>
-
-          {/* Description */}
-          <p className="text-slate-600 text-center text-sm leading-relaxed mb-8">
-            {step.description}
-          </p>
-
-          {/* Progress dots */}
-          <div className="flex justify-center gap-2 mb-6">
-            {steps.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentStep(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentStep
-                    ? "w-6 bg-teal-600"
-                    : "w-2 bg-slate-200 hover:bg-slate-300"
-                }`}
-                aria-label={`Go to step ${index + 1}`}
-              />
-            ))}
-          </div>
-
-          {/* Navigation buttons */}
-          <div className="flex gap-3">
-            {!isFirstStep && (
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                className="flex-1"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-            )}
-
-            <Button
-              onClick={nextStep}
-              className={`flex-1 bg-teal-600 hover:bg-teal-700 ${isFirstStep ? 'w-full' : ''}`}
-            >
-              {isLastStep ? (
-                "Get Started"
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Step counter */}
-          <p className="text-xs text-slate-400 text-center mt-4">
-            Step {currentStep + 1} of {steps.length}
-          </p>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Highlight pulse rings for non-center positions */}
+      {step.highlight !== "center" && (
+        <div className={`fixed ${getHighlightRingPosition(step.highlight)} z-[99] pointer-events-none`}>
+          <div className="relative">
+            <div className="absolute inset-0 w-32 h-32 rounded-full border-4 border-teal-400 animate-ping opacity-20" />
+            <div className="absolute inset-0 w-32 h-32 rounded-full border-2 border-teal-400 opacity-40" />
+          </div>
+        </div>
+      )}
+    </div>
   )
+}
+
+function getHighlightRingPosition(position: HighlightPosition): string {
+  switch (position) {
+    case "top-center":
+      return "top-16 left-1/2 -translate-x-1/2"
+    case "top-right":
+      return "top-16 right-16"
+    case "right":
+      return "top-1/2 right-16 -translate-y-1/2"
+    case "left":
+      return "top-1/2 left-72 -translate-y-1/2"
+    default:
+      return "hidden"
+  }
 }
