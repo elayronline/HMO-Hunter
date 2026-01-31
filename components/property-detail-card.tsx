@@ -120,28 +120,18 @@ export function PropertyDetailCard({
 
   // Share handler
   const handleShare = async () => {
-    const shareData = {
-      title: `${property.bedrooms} bed property - ${property.address}`,
-      text: `Check out this ${property.bedrooms} bedroom property at ${property.address}`,
-      url: property.source_url || window.location.href,
-    }
+    const url = property.source_url || window.location.href
 
     try {
-      if (navigator.share && navigator.canShare?.(shareData)) {
-        await navigator.share(shareData)
-      } else {
-        await navigator.clipboard.writeText(shareData.url)
-        toast.success("Link copied to clipboard")
-      }
+      await navigator.clipboard.writeText(url)
+      toast.success("Link copied to clipboard!")
+      // Also show alert as backup visual feedback
+      console.log("[Share] Copied:", url)
     } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        try {
-          await navigator.clipboard.writeText(shareData.url)
-          toast.success("Link copied to clipboard")
-        } catch {
-          toast.error("Failed to share")
-        }
-      }
+      console.error("[Share] Failed:", error)
+      toast.error("Failed to copy link")
+      // Show alert as fallback
+      alert(`Copy this link:\n${url}`)
     }
   }
 
@@ -592,12 +582,6 @@ export function PropertyDetailCard({
             Full Details
             <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
           </Button>
-          <div className="relative h-10 w-10 shrink-0">
-            <SavePropertyButton
-              propertyId={property.id}
-              initialSaved={isSaved}
-            />
-          </div>
           <Button
             variant="outline"
             size="icon"
