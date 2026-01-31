@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   BedDouble,
   Bath,
@@ -70,6 +70,53 @@ export function PropertyDetailCard({
 }: PropertyDetailCardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("analysis")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
+  const [isEnriching, setIsEnriching] = useState(false)
+  const [enrichedProperty, setEnrichedProperty] = useState<Property>(property)
+
+  // Auto-enrich property data when viewed
+  useEffect(() => {
+    const shouldEnrich = () => {
+      // Check if any enrichment is missing or stale (> 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const needsStreetData = !property.streetdata_enriched_at || property.streetdata_enriched_at < sevenDaysAgo
+      const needsPaTMa = !property.patma_enriched_at || property.patma_enriched_at < sevenDaysAgo
+      const needsPropertyData = !property.propertydata_enriched_at || property.propertydata_enriched_at < sevenDaysAgo
+      return needsStreetData || needsPaTMa || needsPropertyData
+    }
+
+    const enrichProperty = async () => {
+      if (!shouldEnrich() || isEnriching) return
+
+      setIsEnriching(true)
+      try {
+        const response = await fetch("/api/enrich-batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ propertyIds: [property.id] }),
+        })
+
+        if (response.ok) {
+          // Fetch updated property data
+          const updatedResponse = await fetch(`/api/property/${property.id}`)
+          if (updatedResponse.ok) {
+            const data = await updatedResponse.json()
+            if (data.property) {
+              setEnrichedProperty(data.property)
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Auto-enrichment failed:", error)
+      } finally {
+        setIsEnriching(false)
+      }
+    }
+
+    enrichProperty()
+  }, [property.id])
+
+  // Use enriched property data for display
+  const displayProperty = enrichedProperty
 
   // Share handler
   const handleShare = async () => {
@@ -390,8 +437,8 @@ export function PropertyDetailCard({
 
               <AgentContactCard property={property} />
 
-              {/* Enriched Data from APIs */}
-              <EnrichedDataDisplay property={property} />
+              {/* Enriched Data from APIs - auto-loads when property is viewed */}
+              <EnrichedDataDisplay property={displayProperty} isLoading={isEnriching} />
             </>
           )}
 

@@ -29,15 +29,16 @@ import type { Property } from "@/lib/types/database"
 interface EnrichedDataDisplayProps {
   property: Property
   onRefresh?: () => void
+  isLoading?: boolean
   className?: string
 }
 
 export function EnrichedDataDisplay({
   property,
   onRefresh,
+  isLoading = false,
   className,
 }: EnrichedDataDisplayProps) {
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     streetdata: true,
     patma: true,
@@ -47,20 +48,6 @@ export function EnrichedDataDisplay({
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
-  }
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await fetch("/api/enrich-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyId: property.id }),
-      })
-      onRefresh?.()
-    } finally {
-      setIsRefreshing(false)
-    }
   }
 
   const formatDate = (dateStr: string | null) => {
@@ -85,6 +72,11 @@ export function EnrichedDataDisplay({
 
   const enrichedCount = [hasStreetData, hasPaTMa, hasPropertyData, hasZoopla].filter(Boolean).length
 
+  // Don't render if no enrichment data and not loading
+  if (enrichedCount === 0 && !isLoading) {
+    return null
+  }
+
   return (
     <Card className={cn("overflow-hidden", className)}>
       {/* Header */}
@@ -92,50 +84,50 @@ export function EnrichedDataDisplay({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
-              <TrendingUp className="w-5 h-5" />
+              {isLoading ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : (
+                <TrendingUp className="w-5 h-5" />
+              )}
             </div>
             <div>
-              <h3 className="font-bold">Enriched Property Data</h3>
-              <p className="text-sm text-white/80">Data from 4 premium sources</p>
+              <h3 className="font-bold">Property Insights</h3>
+              <p className="text-sm text-white/80">
+                {isLoading ? "Loading data..." : `${enrichedCount} data source${enrichedCount !== 1 ? 's' : ''}`}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className={cn(
-              "border",
-              enrichedCount === 4
-                ? "bg-emerald-500/20 text-white border-emerald-300"
-                : enrichedCount > 0
-                ? "bg-amber-500/20 text-white border-amber-300"
-                : "bg-red-500/20 text-white border-red-300"
-            )}>
-              {enrichedCount}/4 sources
+          {enrichedCount > 0 && (
+            <Badge className="bg-emerald-500/20 text-white border border-emerald-300">
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Enriched
             </Badge>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="h-8 bg-white/20 hover:bg-white/30 text-white border-0"
-            >
-              <RefreshCw className={cn("w-4 h-4 mr-1", isRefreshing && "animate-spin")} />
-              Refresh
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
       <CardContent className="p-4 space-y-3">
-        {/* StreetData Section */}
-        <DataSection
-          title="Property Details"
-          source="StreetData"
-          icon={Home}
-          isEnriched={hasStreetData}
-          enrichedAt={property.streetdata_enriched_at}
-          isExpanded={expandedSections.streetdata}
-          onToggle={() => toggleSection("streetdata")}
-        >
-          {hasStreetData ? (
+        {/* Loading state */}
+        {isLoading && enrichedCount === 0 && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 text-slate-500">
+              <RefreshCw className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Fetching property insights...</span>
+            </div>
+          </div>
+        )}
+
+        {/* StreetData Section - only show if has data */}
+        {hasStreetData && (
+          <DataSection
+            title="Property Details"
+            source="StreetData"
+            icon={Home}
+            isEnriched={hasStreetData}
+            enrichedAt={property.streetdata_enriched_at}
+            isExpanded={expandedSections.streetdata}
+            onToggle={() => toggleSection("streetdata")}
+          >
             <div className="grid grid-cols-2 gap-3">
               {property.construction_age_band && (
                 <DataItem icon={Calendar} label="Built" value={property.construction_age_band} />
@@ -156,22 +148,20 @@ export function EnrichedDataDisplay({
                 <DataItem icon={MapPin} label="Garden" value={property.has_outdoor_space ? "Yes" : "No"} />
               )}
             </div>
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-4">No StreetData enrichment yet</p>
-          )}
-        </DataSection>
+          </DataSection>
+        )}
 
-        {/* PaTMa Section */}
-        <DataSection
-          title="Price Analytics"
-          source="PaTMa"
-          icon={TrendingUp}
-          isEnriched={hasPaTMa}
-          enrichedAt={property.patma_enriched_at}
-          isExpanded={expandedSections.patma}
-          onToggle={() => toggleSection("patma")}
-        >
-          {hasPaTMa ? (
+        {/* PaTMa Section - only show if has data */}
+        {hasPaTMa && (
+          <DataSection
+            title="Price Analytics"
+            source="PaTMa"
+            icon={TrendingUp}
+            isEnriched={hasPaTMa}
+            enrichedAt={property.patma_enriched_at}
+            isExpanded={expandedSections.patma}
+            onToggle={() => toggleSection("patma")}
+          >
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 {property.patma_asking_price_median && (
@@ -212,23 +202,21 @@ export function EnrichedDataDisplay({
                 </div>
               )}
             </div>
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-4">No PaTMa price data yet</p>
-          )}
-        </DataSection>
+          </DataSection>
+        )}
 
-        {/* PropertyData HMO Section */}
-        <DataSection
-          title="HMO Licence Register"
-          source="PropertyData"
-          icon={Shield}
-          isEnriched={hasPropertyData}
-          enrichedAt={property.propertydata_enriched_at}
-          isExpanded={expandedSections.propertydata}
-          onToggle={() => toggleSection("propertydata")}
-        >
-          {hasPropertyData ? (
-            property.hmo_licence_reference ? (
+        {/* PropertyData HMO Section - only show if has data */}
+        {hasPropertyData && (
+          <DataSection
+            title="HMO Licence Register"
+            source="PropertyData"
+            icon={Shield}
+            isEnriched={hasPropertyData}
+            enrichedAt={property.propertydata_enriched_at}
+            isExpanded={expandedSections.propertydata}
+            onToggle={() => toggleSection("propertydata")}
+          >
+            {property.hmo_licence_reference ? (
               <div className="space-y-3">
                 <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                   <div className="flex items-center gap-2 text-emerald-700">
@@ -262,26 +250,24 @@ export function EnrichedDataDisplay({
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center gap-2 text-slate-600">
                   <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm">No HMO licence found in national register</span>
+                  <span className="text-sm">No HMO licence found in register</span>
                 </div>
               </div>
-            )
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-4">No HMO register data yet</p>
-          )}
-        </DataSection>
+            )}
+          </DataSection>
+        )}
 
-        {/* Zoopla Section */}
-        <DataSection
-          title="Market Data"
-          source="Zoopla"
-          icon={TrendingUp}
-          isEnriched={hasZoopla}
-          enrichedAt={property.zoopla_enriched_at}
-          isExpanded={expandedSections.zoopla}
-          onToggle={() => toggleSection("zoopla")}
-        >
-          {hasZoopla ? (
+        {/* Zoopla Section - only show if has data */}
+        {hasZoopla && (
+          <DataSection
+            title="Market Data"
+            source="Zoopla"
+            icon={TrendingUp}
+            isEnriched={hasZoopla}
+            enrichedAt={property.zoopla_enriched_at}
+            isExpanded={expandedSections.zoopla}
+            onToggle={() => toggleSection("zoopla")}
+          >
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 {property.zoopla_price_pcm && (
@@ -331,15 +317,8 @@ export function EnrichedDataDisplay({
                 </a>
               )}
             </div>
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-4">No Zoopla data yet</p>
-          )}
-        </DataSection>
-
-        {/* Info Footer */}
-        <div className="text-xs text-slate-400 text-center pt-2 border-t border-slate-100">
-          Data from StreetData, PaTMa, PropertyData, Zoopla APIs
-        </div>
+          </DataSection>
+        )}
       </CardContent>
     </Card>
   )
