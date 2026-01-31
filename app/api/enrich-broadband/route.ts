@@ -60,8 +60,12 @@ export async function POST(request: Request) {
     const limit = Math.min(body.limit || body.enrichCount || 50, 500)
     const propertyId = body.propertyId
     const postcode = body.postcode
+    const retryFailed = body.retryFailed || false
 
     log.push("Starting broadband enrichment (OFCOM Connected Nations 2024)...")
+    if (retryFailed) {
+      log.push("Retry mode: re-checking previously failed properties...")
+    }
 
     // Load CSV cache if not already loaded
     if (!cacheLoaded) {
@@ -106,6 +110,12 @@ export async function POST(request: Request) {
 
     if (propertyId) {
       query = query.eq("id", propertyId)
+    } else if (retryFailed) {
+      // Retry properties that were checked but have no data
+      query = query
+        .not("broadband_last_checked", "is", null)
+        .is("has_fiber", null)
+        .limit(limit)
     } else {
       query = query.is("broadband_last_checked", null).limit(limit)
     }
@@ -170,8 +180,15 @@ export async function POST(request: Request) {
         log.push(`  ${property.address}: ${updateData.broadband_max_down}Mbps, fiber=${updateData.has_fiber}`)
         updated.push(property.address)
       } else {
-        log.push(`  ${property.address}: No data for ${pc}`)
-        failed.push(property.address)
+        // Mark as N/A - no data available (new development or not in OFCOM dataset)
+        updateData.broadband_max_down = 0  // 0 indicates N/A / no data
+        updateData.broadband_max_up = 0
+        updateData.has_fiber = false  // Set to false to prevent re-processing
+        updateData.has_superfast = false
+        updateData.broadband_superfast_down = 0
+        updateData.broadband_ultrafast_down = 0
+        log.push(`  ${property.address}: Marked as N/A (${pc} not in dataset)`)
+        updated.push(property.address)
       }
 
       await supabaseAdmin
