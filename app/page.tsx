@@ -72,6 +72,8 @@ import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
+import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
+import { HelpCircle } from "lucide-react"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
@@ -123,6 +125,9 @@ export default function HMOHunterPage() {
 
   const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
+  // Onboarding walkthrough state
+  const [showWalkthrough, setShowWalkthrough] = useState(false)
+
   // Premium user status - check user metadata for subscription tier
   // TODO: Implement actual subscription system with Stripe or similar
   // For now, check user_metadata.is_premium flag (can be set via Supabase dashboard)
@@ -157,6 +162,10 @@ export default function HMOHunterPage() {
         setUser(user)
         if (user) {
           fetchSavedProperties()
+          // Show walkthrough for first-time users
+          if (!user.user_metadata?.onboarding_completed) {
+            setShowWalkthrough(true)
+          }
         }
       }
     }).catch((error) => {
@@ -572,6 +581,10 @@ export default function HMOHunterPage() {
                   <p className="text-xs text-slate-500">Signed in</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/help")}>
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Help
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign out
@@ -1753,6 +1766,12 @@ export default function HMOHunterPage() {
           </div>
         </div>
       )}
+
+      {/* Onboarding Walkthrough - shown on first login */}
+      <OnboardingWalkthrough
+        isOpen={showWalkthrough}
+        onComplete={() => setShowWalkthrough(false)}
+      />
     </div>
   )
 }
