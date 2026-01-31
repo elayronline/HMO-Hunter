@@ -65,6 +65,11 @@ export function PropertyGallery({
   const [zooplaImages, setZooplaImages] = useState<string[]>([])
   const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "none">("none")
   const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
+  const handleImageError = (imageUrl: string) => {
+    setFailedImages(prev => new Set(prev).add(imageUrl))
+  }
 
   // Fetch Zoopla images if no real images available
   useEffect(() => {
@@ -180,12 +185,22 @@ export function PropertyGallery({
   return (
     <>
       <div className="relative w-full h-48 rounded-lg overflow-hidden group">
-        <img
-          src={currentMedia[selectedIndex] || "/placeholder.svg"}
-          alt={`${propertyTitle} - ${viewMode === "photos" ? "Photo" : "Floor plan"} ${selectedIndex + 1}`}
-          className="w-full h-full object-cover cursor-pointer"
-          onClick={() => setShowFullscreen(true)}
-        />
+        {failedImages.has(currentMedia[selectedIndex] || "") ? (
+          <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+            <div className="text-center text-slate-400">
+              <Home className="w-10 h-10 mx-auto mb-2" />
+              <p className="text-sm">Image unavailable</p>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={currentMedia[selectedIndex] || "/placeholder.svg"}
+            alt={`${propertyTitle} - ${viewMode === "photos" ? "Photo" : "Floor plan"} ${selectedIndex + 1}`}
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={() => setShowFullscreen(true)}
+            onError={() => handleImageError(currentMedia[selectedIndex] || "")}
+          />
+        )}
 
         {/* Image source badge */}
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
@@ -226,8 +241,9 @@ export function PropertyGallery({
                 goToPrevious()
               }}
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Previous image"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
             </button>
             <button
               onClick={(e) => {
@@ -235,8 +251,9 @@ export function PropertyGallery({
                 goToNext()
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Next image"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" aria-hidden="true" />
             </button>
           </>
         )}
@@ -286,12 +303,20 @@ export function PropertyGallery({
                   ? "border-teal-600 ring-2 ring-teal-600/30"
                   : "border-slate-200 hover:border-slate-300"
               }`}
+              aria-label={`View image ${index + 1}`}
             >
-              <img
-                src={media || "/placeholder.svg"}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {failedImages.has(media || "") ? (
+                <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                  <Home className="w-4 h-4 text-slate-400" />
+                </div>
+              ) : (
+                <img
+                  src={media || "/placeholder.svg"}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={() => handleImageError(media || "")}
+                />
+              )}
             </button>
           ))}
         </div>
@@ -308,19 +333,28 @@ export function PropertyGallery({
           <button
             onClick={() => setShowFullscreen(false)}
             className="absolute top-4 right-4 text-white hover:text-slate-300 transition-colors z-10"
+            aria-label="Close fullscreen view"
           >
-            <X className="w-8 h-8" />
+            <X className="w-8 h-8" aria-hidden="true" />
           </button>
 
           <div
             className="relative w-full h-full flex items-center justify-center p-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={currentMedia[selectedIndex] || "/placeholder.svg"}
-              alt={`${propertyTitle} - Full size`}
-              className="max-w-full max-h-full object-contain"
-            />
+            {failedImages.has(currentMedia[selectedIndex] || "") ? (
+              <div className="text-center text-white">
+                <Home className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Image unavailable</p>
+              </div>
+            ) : (
+              <img
+                src={currentMedia[selectedIndex] || "/placeholder.svg"}
+                alt={`${propertyTitle} - Full size`}
+                className="max-w-full max-h-full object-contain"
+                onError={() => handleImageError(currentMedia[selectedIndex] || "")}
+              />
+            )}
 
             {currentMedia.length > 1 && (
               <>

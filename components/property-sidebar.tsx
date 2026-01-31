@@ -41,6 +41,8 @@ interface PropertySidebarProps {
   property: Property
   onClose: () => void
   onViewFullDetails: () => void
+  onSave?: () => void
+  onShare?: () => void
   isPremium?: boolean
   isSaved?: boolean
   className?: string
@@ -52,12 +54,41 @@ export function PropertySidebar({
   property,
   onClose,
   onViewFullDetails,
+  onSave,
+  onShare,
   isPremium = false,
   isSaved = false,
   className,
 }: PropertySidebarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
+  const [showShareToast, setShowShareToast] = useState(false)
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/property/${property.id}`
+    const shareText = `${property.address}, ${property.postcode} - ${property.bedrooms} bed ${property.property_type}`
+
+    // Try native share first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: property.address, text: shareText, url: shareUrl })
+        return
+      } catch (err) {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setShowShareToast(true)
+      setTimeout(() => setShowShareToast(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy:", err)
+    }
+
+    onShare?.()
+  }
 
   const copyCompanyNumber = () => {
     if (property.company_number) {
@@ -413,11 +444,28 @@ export function PropertySidebar({
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           )}
-          <Button variant="outline" size="icon" className="h-11 w-11 shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            onClick={onSave}
+            aria-label={isSaved ? "Remove from saved properties" : "Save property"}
+          >
             <Heart className={cn("w-4 h-4", isSaved && "fill-red-500 text-red-500")} />
           </Button>
-          <Button variant="outline" size="icon" className="h-11 w-11 shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0 relative"
+            onClick={handleShare}
+            aria-label="Share property"
+          >
             <Share2 className="w-4 h-4" />
+            {showShareToast && (
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                Link copied!
+              </span>
+            )}
           </Button>
         </div>
         {property.source_url && (

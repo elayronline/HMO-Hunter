@@ -158,8 +158,8 @@ export default function SavedPropertiesPage() {
                     <div className="absolute bottom-3 left-3">
                       <span className="bg-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
                         {property.listing_type === "purchase"
-                          ? `£${property.purchase_price?.toLocaleString()}`
-                          : `£${property.price_pcm?.toLocaleString()}/mo`
+                          ? (property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "POA")
+                          : (property.price_pcm ? `£${property.price_pcm.toLocaleString()}/mo` : "POA")
                         }
                       </span>
                     </div>

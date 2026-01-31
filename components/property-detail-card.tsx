@@ -24,7 +24,6 @@ import {
   Copy,
   Check,
   Info,
-  Heart,
   Share2,
   ChevronRight,
   Zap,
@@ -41,6 +40,8 @@ import { KammaComplianceCard } from "@/components/kamma-compliance-card"
 import { LicenceDetailsCard } from "@/components/licence-details-card"
 import { DataEnrichmentCard } from "@/components/data-enrichment-card"
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
+import { SavePropertyButton } from "@/components/save-property-button"
+import { toast } from "sonner"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -54,6 +55,7 @@ interface PropertyDetailCardProps {
   property: Property
   onViewFullDetails: () => void
   isPremium?: boolean
+  isSaved?: boolean
   className?: string
 }
 
@@ -63,10 +65,38 @@ export function PropertyDetailCard({
   property,
   onViewFullDetails,
   isPremium = false,
+  isSaved = false,
   className,
 }: PropertyDetailCardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("analysis")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
+
+  // Share handler
+  const handleShare = async () => {
+    const shareData = {
+      title: `${property.bedrooms} bed property - ${property.address}`,
+      text: `Check out this ${property.bedrooms} bedroom property at ${property.address}`,
+      url: property.source_url || window.location.href,
+    }
+
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(shareData.url)
+        toast.success("Link copied to clipboard")
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(shareData.url)
+          toast.success("Link copied to clipboard")
+        } catch {
+          toast.error("Failed to share")
+        }
+      }
+    }
+  }
 
   // Calculations
   const monthlyRent = property.listing_type === "purchase"
@@ -124,7 +154,10 @@ export function PropertyDetailCard({
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-slate-900">
-              £{(property.listing_type === "purchase" ? property.purchase_price : property.price_pcm)?.toLocaleString()}
+              {(() => {
+                const price = property.listing_type === "purchase" ? property.purchase_price : property.price_pcm
+                return price ? `£${price.toLocaleString()}` : "Price on application"
+              })()}
             </span>
             <span className="text-sm text-slate-500">
               {property.listing_type === "purchase" ? "asking" : "/mo"}
@@ -168,20 +201,20 @@ export function PropertyDetailCard({
         </div>
 
         {/* Row 4: Tags */}
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Property status tags">
           {property.licensed_hmo && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
-              <Shield className="w-3 h-3" /> Licensed
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-emerald-50 text-emerald-700" role="listitem">
+              <Shield className="w-3 h-3" aria-hidden="true" /> Licensed
             </span>
           )}
           {property.licence_status === "expired" && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-amber-50 text-amber-700">
-              <AlertTriangle className="w-3 h-3" /> Expired
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-amber-50 text-amber-700" role="listitem">
+              <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Expired Licence
             </span>
           )}
           {property.article_4_area && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-purple-50 text-purple-700">
-              <AlertCircle className="w-3 h-3" /> Article 4
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-purple-50 text-purple-700" role="listitem">
+              <AlertCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Area
             </span>
           )}
         </div>
@@ -213,7 +246,7 @@ export function PropertyDetailCard({
       {/* ═══════════════════════════════════════════════════════════════════
           TABS
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="shrink-0 grid grid-cols-3 border-b border-slate-200">
+      <div className="shrink-0 grid grid-cols-3 border-b border-slate-200" role="tablist">
         {[
           { id: "analysis" as TabType, label: "Analysis" },
           { id: "details" as TabType, label: "Details" },
@@ -221,6 +254,9 @@ export function PropertyDetailCard({
         ].map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`tabpanel-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "py-3 text-sm font-medium text-center transition-colors relative",
@@ -229,7 +265,7 @@ export function PropertyDetailCard({
           >
             {tab.label}
             {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-teal-600 rounded-full" />
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-teal-600 rounded-full" aria-hidden="true" />
             )}
           </button>
         ))}
@@ -325,8 +361,12 @@ export function PropertyDetailCard({
                       {property.company_number && (
                         <div className="flex items-center gap-2 h-10 px-3 bg-white rounded-lg border border-slate-200 mt-2">
                           <code className="text-sm text-slate-600 flex-1">{property.company_number}</code>
-                          <button onClick={copyCompanyNumber} className="text-slate-400 hover:text-slate-600">
-                            {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          <button
+                            onClick={copyCompanyNumber}
+                            className="text-slate-400 hover:text-slate-600"
+                            aria-label={copiedCompanyNumber ? "Company number copied" : "Copy company number"}
+                          >
+                            {copiedCompanyNumber ? <Check className="w-4 h-4 text-emerald-600" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
                           </button>
                         </div>
                       )}
@@ -468,21 +508,30 @@ export function PropertyDetailCard({
           FOOTER
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="shrink-0 p-4 border-t border-slate-200 bg-white">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {property.listing_type === "purchase" && (
-            <Button className="flex-1 h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium">
-              <Phone className="w-4 h-4 mr-2" />
+            <Button className="flex-1 min-w-[120px] h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium" aria-label="Contact agent about this property">
+              <Phone className="w-4 h-4 mr-2" aria-hidden="true" />
               Contact
             </Button>
           )}
-          <Button variant="outline" onClick={onViewFullDetails} className="flex-1 h-10 font-medium">
+          <Button variant="outline" onClick={onViewFullDetails} className="flex-1 min-w-[120px] h-10 font-medium" aria-label="View full property details">
             Full Details
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
           </Button>
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
-            <Heart className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+          <div className="relative h-10 w-10 shrink-0">
+            <SavePropertyButton
+              propertyId={property.id}
+              initialSaved={isSaved}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 shrink-0"
+            onClick={handleShare}
+            aria-label="Share property"
+          >
             <Share2 className="w-4 h-4" />
           </Button>
         </div>

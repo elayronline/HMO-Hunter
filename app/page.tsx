@@ -1164,8 +1164,8 @@ export default function HMOHunterPage() {
                 <div className="flex-1 min-w-0">
                   <div className="text-lg font-bold text-slate-900 mb-1">
                     {selectedProperty.listing_type === "purchase"
-                      ? `£${selectedProperty.purchase_price?.toLocaleString()}`
-                      : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
+                      ? (selectedProperty.purchase_price ? `£${selectedProperty.purchase_price.toLocaleString()}` : "POA")
+                      : (selectedProperty.price_pcm ? `£${selectedProperty.price_pcm.toLocaleString()} pcm` : "POA")}
                   </div>
                   <div className="text-sm text-slate-600 leading-snug truncate">
                     {selectedProperty.address}
@@ -1326,14 +1326,15 @@ export default function HMOHunterPage() {
 
         {/* Right Sidebar */}
         {rightPanelOpen && (
-          <aside className="w-[400px] bg-white border-l border-slate-200 overflow-y-auto relative">
+          <aside className="w-full md:w-[400px] fixed md:relative inset-0 md:inset-auto z-40 md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
             {/* Close button */}
             <button
               onClick={handleCloseRightPanel}
-              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+              className="absolute top-3 right-3 z-10 p-2 md:p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
               title="Close panel"
+              aria-label="Close property details"
             >
-              <X className="w-4 h-4 text-slate-600" />
+              <X className="w-5 h-5 md:w-4 md:h-4 text-slate-600" />
             </button>
             {selectedProperty ? (
               <div>
@@ -1370,6 +1371,7 @@ export default function HMOHunterPage() {
                     property={selectedProperty}
                     onViewFullDetails={() => setShowFullDetails(true)}
                     isPremium={isPremiumUser}
+                    isSaved={savedPropertyIds.has(selectedProperty.id)}
                   />
                 </div>
 
@@ -1459,8 +1461,8 @@ export default function HMOHunterPage() {
               <div className="mb-6">
                 <div className="text-3xl font-bold text-teal-600 mb-2">
                   {selectedProperty.listing_type === "purchase"
-                    ? `£${selectedProperty.purchase_price?.toLocaleString()}`
-                    : `£${selectedProperty.price_pcm?.toLocaleString()} pcm`}
+                    ? (selectedProperty.purchase_price ? `£${selectedProperty.purchase_price.toLocaleString()}` : "Price on application")
+                    : (selectedProperty.price_pcm ? `£${selectedProperty.price_pcm.toLocaleString()} pcm` : "Price on application")}
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-2">{selectedProperty.title}</h3>
                 <p className="text-slate-600">

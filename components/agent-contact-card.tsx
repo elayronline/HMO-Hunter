@@ -16,7 +16,7 @@ import {
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatUKPhone } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
 
 interface AgentContactCardProps {
@@ -112,7 +112,7 @@ export function AgentContactCard({
               href={`tel:${property.agent_phone}`}
               className="text-sm text-teal-600 hover:text-teal-700"
             >
-              {property.agent_phone}
+              {formatUKPhone(property.agent_phone)}
             </a>
           )}
         </div>
@@ -197,7 +197,7 @@ export function AgentContactCard({
               >
                 <a href={`tel:${property.agent_phone}`}>
                   <Phone className="w-4 h-4 mr-2" />
-                  {property.agent_phone}
+                  {formatUKPhone(property.agent_phone)}
                 </a>
               </Button>
               <Button
