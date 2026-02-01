@@ -494,7 +494,10 @@ export function MapInner({
         // Apply dynamic styles
         applyMarkerStyles(el, style)
 
-        el.onclick = () => onPropertySelect(property)
+        el.onclick = (e) => {
+          e.stopPropagation()
+          onPropertySelect(property)
+        }
 
         try {
           const marker = new maplibregl.Marker({
