@@ -1,14 +1,29 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { createClient } from "@/lib/supabase/server"
+import { isAdmin } from "@/lib/credits"
 
 /**
  * GET /api/data-coverage
  *
  * Returns statistics on data coverage for owner and licence holder fields
- * Helps determine if premium features have enough data to be valuable
+ * ADMIN ONLY - exposes sensitive internal statistics
  */
 export async function GET() {
   try {
+    // Check authentication
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check admin role
+    const userIsAdmin = await isAdmin(user.id)
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
     // Get total property count
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from("properties")

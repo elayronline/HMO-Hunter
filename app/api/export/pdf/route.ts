@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { deductCredits } from "@/lib/credits"
+import { validateBody } from "@/lib/validation/api-validation"
+import { exportRequestSchema } from "@/lib/validation/schemas"
 import { jsPDF } from "jspdf"
 
 // POST - Export properties to PDF
@@ -13,9 +15,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Validate request body
+  const validation = await validateBody(request, exportRequestSchema)
+  if (!validation.success) {
+    return validation.error
+  }
+
   try {
-    const body = await request.json()
-    const { propertyIds, filters } = body
+    const { propertyIds, filters } = validation.data
 
     // Deduct 10 credits for PDF export
     const creditResult = await deductCredits(user.id, "csv_export") // Same cost as CSV

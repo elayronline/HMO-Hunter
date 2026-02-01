@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { createClient } from "@/lib/supabase/server"
+import { isAdmin } from "@/lib/credits"
 
 /**
  * GET /api/licences
  * Fetch licences for a property or list all licence types
+ * Public endpoint - returns non-sensitive licence information
  *
  * Query params:
  * - property_id: UUID of property to fetch licences for
@@ -30,10 +33,25 @@ export async function GET(request: Request) {
 
     // Return licences for a specific property
     if (propertyId) {
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(propertyId)) {
+        return NextResponse.json({ error: "Invalid property ID" }, { status: 400 })
+      }
+
       const { data: licences, error } = await supabaseAdmin
         .from("property_licences")
         .select(`
-          *,
+          id,
+          property_id,
+          licence_type_code,
+          licence_number,
+          start_date,
+          end_date,
+          status,
+          max_occupants,
+          max_households,
+          created_at,
           licence_types (
             name,
             description,
@@ -57,7 +75,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ licences: formattedLicences || [] })
     }
 
-    // Return summary of all licences
+    // Return summary of all licences (no sensitive data)
     const { data: summary, error } = await supabaseAdmin
       .from("property_licences")
       .select("licence_type_code, status")
@@ -99,23 +117,24 @@ export async function GET(request: Request) {
 /**
  * POST /api/licences
  * Add or update a licence for a property
- *
- * Body: {
- *   property_id: string
- *   licence_type_code: string
- *   licence_number?: string
- *   start_date?: string
- *   end_date?: string
- *   source?: string
- *   source_url?: string
- *   max_occupants?: number
- *   max_households?: number
- *   conditions?: string[]
- *   raw_data?: object
- * }
+ * ADMIN ONLY - requires authentication and admin role
  */
 export async function POST(request: Request) {
   try {
+    // Check authentication
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check admin role
+    const userIsAdmin = await isAdmin(user.id)
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       property_id,
@@ -137,6 +156,12 @@ export async function POST(request: Request) {
         { error: "property_id and licence_type_code are required" },
         { status: 400 }
       )
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(property_id)) {
+      return NextResponse.json({ error: "Invalid property ID" }, { status: 400 })
     }
 
     // Get the licence type ID
@@ -197,6 +222,9 @@ export async function POST(request: Request) {
         .eq("id", property_id)
     }
 
+    // Log admin action
+    console.log(`[Licences] Admin ${user.email} created/updated licence for property ${property_id}`)
+
     return NextResponse.json({
       success: true,
       licence,
@@ -215,28 +243,49 @@ export async function POST(request: Request) {
 /**
  * DELETE /api/licences
  * Remove a licence
- *
- * Query params:
- * - id: UUID of the licence to delete
+ * ADMIN ONLY - requires authentication and admin role
  */
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const licenceId = searchParams.get("id")
-
-  if (!licenceId) {
-    return NextResponse.json(
-      { error: "Licence ID is required" },
-      { status: 400 }
-    )
-  }
-
   try {
+    // Check authentication
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check admin role
+    const userIsAdmin = await isAdmin(user.id)
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const licenceId = searchParams.get("id")
+
+    if (!licenceId) {
+      return NextResponse.json(
+        { error: "Licence ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(licenceId)) {
+      return NextResponse.json({ error: "Invalid licence ID" }, { status: 400 })
+    }
+
     const { error } = await supabaseAdmin
       .from("property_licences")
       .delete()
       .eq("id", licenceId)
 
     if (error) throw error
+
+    // Log admin action
+    console.log(`[Licences] Admin ${user.email} deleted licence ${licenceId}`)
 
     return NextResponse.json({
       success: true,
