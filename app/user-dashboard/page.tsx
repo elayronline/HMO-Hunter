@@ -125,7 +125,7 @@ export default function UserDashboard() {
         {/* Header */}
         <div>
           <p className="text-slate-600">
-            Live data from HM Land Registry, PropertyData, StreetData, and PaTMa APIs
+            Live property data, valuations, and market insights
           </p>
         </div>
 
@@ -340,7 +340,7 @@ export default function UserDashboard() {
                         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                           <h4 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
                             <FileText className="w-4 h-4" />
-                            HMO License Details (PropertyData)
+                            HMO License Details
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
@@ -403,7 +403,7 @@ export default function UserDashboard() {
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                           <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
                             <TrendingUp className="w-4 h-4" />
-                            Market Analytics (PaTMa)
+                            Market Analytics
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
@@ -431,7 +431,7 @@ export default function UserDashboard() {
                         <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
                           <h4 className="text-sm font-semibold text-orange-800 mb-3 flex items-center gap-2">
                             <Home className="w-4 h-4" />
-                            HMO Viability Analysis (PaTMa)
+                            HMO Viability Analysis
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
@@ -459,7 +459,7 @@ export default function UserDashboard() {
                         <div className="p-4 bg-teal-50 rounded-lg border border-teal-200">
                           <h4 className="text-sm font-semibold text-teal-800 mb-3 flex items-center gap-2">
                             <PoundSterling className="w-4 h-4" />
-                            Property Valuation (StreetData)
+                            Property Valuation
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>

@@ -19,7 +19,7 @@ export default async function LiveDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Live Property Insights Dashboard</h1>
             <p className="text-muted-foreground mt-1">
-              Real-time data from PropertyData, StreetData, and PaTMa APIs
+              Real-time property data, valuations, and market insights
             </p>
           </div>
           <div className="flex gap-3 items-center">
