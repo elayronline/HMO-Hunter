@@ -1,7 +1,17 @@
 import { Resend } from "resend"
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialize Resend client (avoid build-time errors when API key not set)
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
 
 // Email sender configuration
 const FROM_EMAIL = process.env.EMAIL_FROM || "HMO Hunter <notifications@hmohunter.co.uk>"
@@ -25,7 +35,8 @@ export interface SendEmailResult {
  */
 export async function sendEmail(options: EmailOptions): Promise<SendEmailResult> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResendClient()
+    if (!resend) {
       console.warn("[Email] RESEND_API_KEY not configured - email not sent")
       return { success: false, error: "Email service not configured" }
     }

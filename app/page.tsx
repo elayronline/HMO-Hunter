@@ -77,6 +77,8 @@ import { HelpCircle, Shield, Menu } from "lucide-react"
 import { CreditBalance } from "@/components/credit-balance"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
+import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
+import { Scale } from "lucide-react"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
@@ -131,6 +133,16 @@ export default function HMOHunterPage() {
 
   // Onboarding walkthrough state
   const [showWalkthrough, setShowWalkthrough] = useState(false)
+
+  // Property comparison hook
+  const {
+    compareList,
+    addToCompare,
+    removeFromCompare,
+    clearCompare,
+    isInCompare,
+    canAddMore,
+  } = usePropertyComparison(3)
 
   // Premium user status - check user metadata for subscription tier
   // TODO: Implement actual subscription system with Stripe or similar
@@ -1529,6 +1541,28 @@ export default function HMOHunterPage() {
                       propertyId={selectedProperty.id}
                       initialSaved={savedPropertyIds.has(selectedProperty.id)}
                     />
+                    {/* Compare button */}
+                    <button
+                      onClick={() => {
+                        if (isInCompare(selectedProperty.id)) {
+                          removeFromCompare(selectedProperty.id)
+                          toast({ title: "Removed from comparison" })
+                        } else if (canAddMore) {
+                          addToCompare(selectedProperty)
+                          toast({ title: "Added to comparison", description: `${compareList.length + 1} of 3 properties` })
+                        } else {
+                          toast({ title: "Comparison full", description: "Remove a property first", variant: "destructive" })
+                        }
+                      }}
+                      className={`absolute top-2 right-12 p-2 rounded-full shadow-md transition-colors ${
+                        isInCompare(selectedProperty.id)
+                          ? "bg-teal-500 text-white"
+                          : "bg-white/90 text-slate-600 hover:bg-teal-50 hover:text-teal-600"
+                      }`}
+                      title={isInCompare(selectedProperty.id) ? "Remove from comparison" : "Add to comparison"}
+                    >
+                      <Scale className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {/* Property Detail Card */}
@@ -1930,6 +1964,15 @@ export default function HMOHunterPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Property Comparison Tool */}
+      {compareList.length > 0 && (
+        <PropertyComparison
+          properties={compareList}
+          onRemove={removeFromCompare}
+          onClear={clearCompare}
+        />
       )}
 
       {/* Onboarding Walkthrough - shown on first login */}
