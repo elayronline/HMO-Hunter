@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import maplibregl from "maplibre-gl"
+import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
+
+// Stadia Maps - Alidade Smooth (modern, clean style)
+const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
 
 export function MapInner({
   selectedCity,
@@ -40,7 +44,7 @@ export function MapInner({
 
       const map = new maplibregl.Map({
         container: mapContainerRef.current,
-        style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+        style: MAP_STYLE,
         center: [selectedCity.longitude, selectedCity.latitude],
         zoom: selectedCity.zoom,
         pixelRatio: window.devicePixelRatio || 1,
@@ -62,9 +66,15 @@ export function MapInner({
 
       map.on("error", (e) => {
         console.error("Map error:", e)
+        console.error("Error details:", e.error?.message || JSON.stringify(e))
+      })
+
+      map.on("sourcedata", (e) => {
+        console.log("Source data:", e.sourceId, e.isSourceLoaded ? "loaded" : "loading")
       })
 
       mapRef.current = map
+      console.log("Map instance created successfully")
     } catch (err) {
       console.error("Failed to initialize map:", err)
       setError(err instanceof Error ? err.message : "Failed to initialize map")
@@ -525,10 +535,11 @@ export function MapInner({
   }
 
   return (
-    <div style={{ position: 'absolute', inset: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
       <div
         ref={mapContainerRef}
-        style={{ position: 'absolute', inset: 0 }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        className="maplibregl-map"
       />
 
       {loading && (

@@ -42,5 +42,9 @@ const MapComponent = dynamic(() => import("./map-inner").then((mod) => mod.MapIn
 })
 
 export function MainMapView(props: MainMapViewProps) {
-  return <MapComponent {...props} />
+  return (
+    <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+      <MapComponent {...props} />
+    </div>
+  )
 }
