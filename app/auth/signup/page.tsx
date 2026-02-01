@@ -107,7 +107,7 @@ export default function SignUpPage() {
       <Card className="w-full max-w-md p-8">
         <div className="flex items-center justify-center mb-8">
           <img
-            src="/hmo-hunter-logo.png"
+            src="/apple-icon.png"
             alt="HMO Hunter"
             className="h-20 w-auto"
           />
