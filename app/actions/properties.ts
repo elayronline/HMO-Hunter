@@ -63,24 +63,29 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // Only apply listing type filter if licence expiry filter is NOT active
     // When filtering by expiry dates, we want all matching properties regardless of listing type
     if (validatedFilters.listingType && !licenceExpiryFilterActive) {
-      // Show properties matching listing type OR expired licences (expired should always show)
-      query = query.or(`listing_type.eq.${validatedFilters.listingType},licence_status.eq.expired`)
+      // Show properties matching listing type
+      // For expired licences, only include if they have the appropriate price field
+      if (validatedFilters.listingType === "purchase") {
+        // Include purchase listings OR expired licences that have a purchase price
+        query = query.or("listing_type.eq.purchase,and(licence_status.eq.expired,purchase_price.not.is.null)")
+      } else {
+        // Include rent listings OR expired licences that have rent price
+        query = query.or("listing_type.eq.rent,and(licence_status.eq.expired,price_pcm.not.is.null)")
+      }
     }
 
     // Only apply price filters if licence expiry filter is NOT active
     // When filtering by expiry dates, price is not the primary criteria
     if (validatedFilters.minPrice && !licenceExpiryFilterActive) {
       if (validatedFilters.listingType === "purchase") {
-        // Include expired licences regardless of price (they may be rent listings)
-        query = query.or(`purchase_price.gte.${validatedFilters.minPrice},licence_status.eq.expired`)
+        query = query.gte("purchase_price", validatedFilters.minPrice)
       } else {
         query = query.gte("price_pcm", validatedFilters.minPrice)
       }
     }
     if (validatedFilters.maxPrice && !licenceExpiryFilterActive) {
       if (validatedFilters.listingType === "purchase") {
-        // Include expired licences regardless of price (they may be rent listings)
-        query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},licence_status.eq.expired`)
+        query = query.lte("purchase_price", validatedFilters.maxPrice)
       } else {
         query = query.lte("price_pcm", validatedFilters.maxPrice)
       }
