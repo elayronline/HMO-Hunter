@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 
 // Stadia Maps - Alidade Smooth (modern, clean style)
-const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+const MAP_STYLE = `https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key=${process.env.NEXT_PUBLIC_STADIA_API_KEY}`
 
 export function MapInner({
   selectedCity,
