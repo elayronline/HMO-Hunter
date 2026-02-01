@@ -84,33 +84,23 @@ export function MapInner({
   // Load Article 4 areas from official UK Government API
   const loadArticle4Areas = async (map: maplibregl.Map) => {
     try {
-      // First try official planning.data.gov.uk API
-      let geojson: GeoJSON.FeatureCollection | null = null
+      // Fetch from our API which uses planning.data.gov.uk (accurate polygon boundaries)
+      console.log("[Map] Fetching Article 4 data from official API...")
+      const apiResponse = await fetch("/api/article4-data")
 
-      try {
-        console.log("[Map] Fetching Article 4 data from official API...")
-        const apiResponse = await fetch("/api/article4-data")
-        if (apiResponse.ok) {
-          geojson = await apiResponse.json()
-          console.log(`[Map] Loaded ${geojson?.features?.length || 0} Article 4 areas from planning.data.gov.uk`)
-        }
-      } catch (apiErr) {
-        console.warn("[Map] API fetch failed, falling back to static file:", apiErr)
-      }
-
-      // Fallback to static file if API fails
-      if (!geojson || !geojson.features || geojson.features.length === 0) {
-        console.log("[Map] Falling back to static Article 4 data...")
-        const response = await fetch("/data/article4-areas.geojson")
-        geojson = await response.json()
-        console.log(`[Map] Loaded ${geojson?.features?.length || 0} Article 4 areas from static file`)
-      }
-
-      // Add the source (only if geojson is valid)
-      if (!geojson) {
-        console.warn("[Map] No geojson data to load for Article 4 areas")
+      if (!apiResponse.ok) {
+        console.warn("[Map] API fetch failed:", apiResponse.status)
         return
       }
+
+      const geojson: GeoJSON.FeatureCollection = await apiResponse.json()
+
+      if (!geojson?.features || geojson.features.length === 0) {
+        console.warn("[Map] No Article 4 areas available")
+        return
+      }
+
+      console.log(`[Map] Loaded ${geojson.features.length} Article 4 areas with accurate boundaries`)
 
       map.addSource("article4-areas", {
         type: "geojson",

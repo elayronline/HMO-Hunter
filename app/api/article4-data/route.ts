@@ -192,67 +192,20 @@ async function fetchAllArticle4Data(): Promise<Article4Entity[]> {
   return allEntities
 }
 
-async function loadStaticGeoJSON(): Promise<GeoJSON.Feature[]> {
-  try {
-    // Load the static file that has comprehensive city-wide coverage
-    const fs = await import("fs/promises")
-    const path = await import("path")
-    const filePath = path.join(process.cwd(), "public/data/article4-areas.geojson")
-    const fileContent = await fs.readFile(filePath, "utf-8")
-    const data = JSON.parse(fileContent) as GeoJSON.FeatureCollection
-    console.log(`[Article4] Loaded ${data.features.length} features from static file`)
-    return data.features.map(f => ({
-      ...f,
-      properties: {
-        ...f.properties,
-        source: "static-comprehensive",
-        verified: true,
-      }
-    }))
-  } catch (error) {
-    console.error("[Article4] Error loading static file:", error)
-    return []
-  }
-}
-
-// City name patterns for geographic deduplication
-// When API data exists for a city, skip the broad static box
-const CITY_PATTERNS: Record<string, string[]> = {
-  "birmingham": ["birmingham", "selly oak", "edgbaston"],
-  "manchester": ["manchester", "salford"],
-  "newcastle": ["newcastle", "jesmond", "heaton", "gabriel"],
-  "bristol": ["bristol", "ashley", "cabot", "clifton", "cotham", "lawrence hill", "redland", "avonmouth"],
-  "liverpool": ["liverpool", "aintree", "bootle", "waterloo", "southport", "rochmount", "boot estate", "richmond park", "beach road"],
-  "leeds": ["leeds", "headingley", "hyde park"],
-  "leicester": ["leicester"],
-  "nottingham": ["nottingham"],
-  "sheffield": ["sheffield"],
-  "london": ["london", "westminster", "camden", "islington", "hackney", "tower hamlets", "southwark", "lambeth", "wandsworth", "henshaw", "bywater"],
-}
-
-// Detect which city a feature belongs to based on name
-function detectCity(name: string): string | null {
-  const lowerName = name.toLowerCase()
-  for (const [city, patterns] of Object.entries(CITY_PATTERNS)) {
-    if (patterns.some(p => lowerName.includes(p))) {
-      return city
-    }
-  }
-  return null
-}
+// Static file removed - it only contained rectangular bounding boxes, not actual boundaries
+// We now rely solely on the UK Government planning.data.gov.uk API which has accurate polygon shapes
 
 async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
-  // Load both data sources in parallel
-  const [entities, staticFeatures] = await Promise.all([
-    fetchAllArticle4Data(),
-    loadStaticGeoJSON()
-  ])
+  // Fetch data from UK Government planning.data.gov.uk API only
+  // This provides accurate polygon boundaries (not rectangular boxes)
+  const entities = await fetchAllArticle4Data()
 
-  // Filter for HMO-related Article 4 directions from API
+  // Filter for HMO-related Article 4 directions
   const hmoEntities = entities.filter(isHmoRelated)
   console.log(`[Article4] HMO-related entities from API: ${hmoEntities.length}`)
 
-  const apiFeatures: GeoJSON.Feature[] = []
+  const features: GeoJSON.Feature[] = []
+  const seenNames = new Set<string>()
 
   for (const entity of hmoEntities) {
     if (!entity.geometry) continue
@@ -260,7 +213,12 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
     const geometry = parseWKTGeometry(entity.geometry)
     if (!geometry) continue
 
-    apiFeatures.push({
+    // Deduplicate by name
+    const name = (entity.name || "").toLowerCase()
+    if (seenNames.has(name)) continue
+    seenNames.add(name)
+
+    features.push({
       type: "Feature",
       properties: {
         name: entity.name || "Article 4 Direction",
@@ -276,55 +234,11 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
     })
   }
 
-  console.log(`[Article4] API features with valid geometry: ${apiFeatures.length}`)
-  console.log(`[Article4] Static features: ${staticFeatures.length}`)
-
-  // Detect which cities have API coverage
-  const citiesWithApiData = new Set<string>()
-  for (const feature of apiFeatures) {
-    const name = feature.properties?.name || ""
-    const city = detectCity(name)
-    if (city) {
-      citiesWithApiData.add(city)
-    }
-  }
-  console.log(`[Article4] Cities with API data: ${Array.from(citiesWithApiData).join(", ")}`)
-
-  // Deduplicate: prefer API data, skip static boxes for cities with API coverage
-  const seenNames = new Set<string>()
-  const deduplicatedFeatures: GeoJSON.Feature[] = []
-
-  // Process API features first (higher priority, more detailed)
-  for (const feature of apiFeatures) {
-    const name = (feature.properties?.name || "").toLowerCase()
-    if (!seenNames.has(name)) {
-      seenNames.add(name)
-      deduplicatedFeatures.push(feature)
-    }
-  }
-
-  // Add static features only for cities WITHOUT API coverage
-  for (const feature of staticFeatures) {
-    const name = (feature.properties?.name || "").toLowerCase()
-    const city = detectCity(name)
-
-    // Skip if this city has API data (API data is more detailed)
-    if (city && citiesWithApiData.has(city)) {
-      console.log(`[Article4] Skipping static feature "${feature.properties?.name}" - city has API data`)
-      continue
-    }
-
-    if (!seenNames.has(name)) {
-      seenNames.add(name)
-      deduplicatedFeatures.push(feature)
-    }
-  }
-
-  console.log(`[Article4] Total merged features: ${deduplicatedFeatures.length}`)
+  console.log(`[Article4] Features with valid geometry: ${features.length}`)
 
   return {
     type: "FeatureCollection",
-    features: deduplicatedFeatures,
+    features,
   }
 }
 
