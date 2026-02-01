@@ -45,19 +45,22 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
     if (validatedFilters.listingType) {
-      query = query.eq("listing_type", validatedFilters.listingType)
+      // Show properties matching listing type OR expired licences (expired should always show)
+      query = query.or(`listing_type.eq.${validatedFilters.listingType},licence_status.eq.expired`)
     }
 
     if (validatedFilters.minPrice) {
       if (validatedFilters.listingType === "purchase") {
-        query = query.gte("purchase_price", validatedFilters.minPrice)
+        // Include expired licences regardless of price (they may be rent listings)
+        query = query.or(`purchase_price.gte.${validatedFilters.minPrice},licence_status.eq.expired`)
       } else {
         query = query.gte("price_pcm", validatedFilters.minPrice)
       }
     }
     if (validatedFilters.maxPrice) {
       if (validatedFilters.listingType === "purchase") {
-        query = query.lte("purchase_price", validatedFilters.maxPrice)
+        // Include expired licences regardless of price (they may be rent listings)
+        query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},licence_status.eq.expired`)
       } else {
         query = query.lte("price_pcm", validatedFilters.maxPrice)
       }
@@ -192,8 +195,8 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
         query = query.eq("is_ex_local_authority", true)
       }
     } else {
-      // When toggle is OFF: show only Licensed HMOs (exclude potential HMOs)
-      query = query.eq("licensed_hmo", true)
+      // When toggle is OFF: show only Licensed HMOs AND Expired Licence HMOs (exclude potential HMOs)
+      query = query.or("licensed_hmo.eq.true,licence_status.eq.expired")
     }
 
     // Owner Data Filter - show only properties with title owner information
