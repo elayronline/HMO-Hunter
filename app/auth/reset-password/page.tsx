@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md p-8">
         <div className="flex items-center justify-center mb-8">
           <img
-            src="/apple-icon.png"
+            src="/hmo-hunter-logo.png"
             alt="HMO Hunter"
             className="h-20 w-auto"
           />
