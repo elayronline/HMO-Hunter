@@ -23,6 +23,8 @@ import {
 interface OnboardingWalkthroughProps {
   isOpen: boolean
   onComplete: () => void
+  onShowPropertyDetails?: () => void
+  onHidePropertyDetails?: () => void
 }
 
 type HighlightPosition = "center" | "top-left" | "top-center" | "top-right" | "left" | "right" | "bottom-left" | "bottom-center" | "center-left" | "center-right"
@@ -86,9 +88,9 @@ const steps: Step[] = [
     description: "Click any property pin to open the details sidebar on the right. View pricing, yields, compliance info, and save properties.",
     color: "text-pink-600",
     bgColor: "bg-pink-100",
-    highlight: "center",
-    arrow: "none",
-    targetHint: "Details panel opens on the right side",
+    highlight: "center-left",
+    arrow: "right",
+    targetHint: "Details panel is now open on the right",
   },
   {
     icon: Crown,
@@ -162,12 +164,34 @@ const getArrowPositionClasses = (position: HighlightPosition, direction: ArrowDi
   }
 }
 
-export function OnboardingWalkthrough({ isOpen, onComplete }: OnboardingWalkthroughProps) {
+// Step index for property details demo
+const PROPERTY_DETAILS_STEP = 4 // Step 5 (0-indexed)
+
+export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetails, onHidePropertyDetails }: OnboardingWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
 
+  // Show/hide property details based on current step
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (currentStep === PROPERTY_DETAILS_STEP) {
+      onShowPropertyDetails?.()
+    } else {
+      onHidePropertyDetails?.()
+    }
+  }, [currentStep, isOpen, onShowPropertyDetails, onHidePropertyDetails])
+
+  // Clean up when walkthrough closes
+  useEffect(() => {
+    if (!isOpen || isClosing) {
+      onHidePropertyDetails?.()
+    }
+  }, [isOpen, isClosing, onHidePropertyDetails])
+
   const handleComplete = async () => {
     setIsClosing(true)
+    onHidePropertyDetails?.()
 
     // Mark onboarding as completed in user metadata
     const supabase = createClient()

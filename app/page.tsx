@@ -1940,6 +1940,18 @@ export default function HMOHunterPage() {
       <OnboardingWalkthrough
         isOpen={showWalkthrough}
         onComplete={() => setShowWalkthrough(false)}
+        onShowPropertyDetails={() => {
+          // Select first property to demo the details panel
+          if (properties.length > 0 && !selectedProperty) {
+            setSelectedProperty(properties[0])
+            setRightPanelOpen(true)
+          } else if (selectedProperty) {
+            setRightPanelOpen(true)
+          }
+        }}
+        onHidePropertyDetails={() => {
+          setRightPanelOpen(false)
+        }}
       />
     </div>
   )
