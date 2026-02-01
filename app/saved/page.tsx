@@ -92,36 +92,37 @@ export default function SavedPropertiesPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-3 md:py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <button
               onClick={() => router.push("/")}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Heart className="w-5 h-5 text-teal-600 fill-teal-600" />
-                Saved Properties
+            <div className="min-w-0">
+              <h1 className="text-base md:text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Heart className="w-4 h-4 md:w-5 md:h-5 text-teal-600 fill-teal-600 flex-shrink-0" />
+                <span className="truncate">Saved</span>
               </h1>
-              <p className="text-sm text-slate-500">{savedProperties.length} properties saved</p>
+              <p className="text-xs md:text-sm text-slate-500">{savedProperties.length} saved</p>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={() => router.push("/")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-sm px-2 md:px-4"
+            size="sm"
           >
             <Home className="w-4 h-4" />
-            Back to Map
+            <span className="hidden sm:inline">Back to Map</span>
           </Button>
         </div>
       </header>
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-3 md:px-6 py-4 md:py-8">
         {savedProperties.length === 0 ? (
           <Card className="p-12 text-center">
             <Heart className="w-16 h-16 text-slate-200 mx-auto mb-4" />
@@ -134,7 +135,7 @@ export default function SavedPropertiesPage() {
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {savedProperties.map((saved) => {
               const property = saved.property
               if (!property) return null

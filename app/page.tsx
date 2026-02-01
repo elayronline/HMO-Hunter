@@ -72,7 +72,7 @@ import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
-import { HelpCircle, Shield } from "lucide-react"
+import { HelpCircle, Shield, Menu } from "lucide-react"
 import { CreditBalance } from "@/components/credit-balance"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
@@ -601,16 +601,26 @@ export default function HMOHunterPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-800">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-1.5 flex items-center justify-between">
-        <div className="flex items-center">
+      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-1.5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {/* Mobile menu button */}
+          <button
+            onClick={handleOpenLeftPanel}
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            title="Open filters"
+            aria-label="Open filters menu"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
           <img
             src="/hmo-hunter-logo.png"
             alt="HMO Hunter"
-            className="h-14 w-auto"
+            className="h-10 md:h-14 w-auto"
           />
         </div>
 
-        <nav className="flex items-center gap-8">
+        {/* Desktop navigation */}
+        <nav className="hidden md:flex items-center gap-8">
           <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">Home</button>
           <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Properties</button>
           <button
@@ -689,27 +699,37 @@ export default function HMOHunterPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0 }}>
-        {/* Left Sidebar Toggle Button */}
+        {/* Left Sidebar Toggle Button - Desktop only */}
         {!leftPanelOpen && (
           <button
             onClick={handleOpenLeftPanel}
-            className="absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
+            className="hidden md:block absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
             title="Open filters"
           >
             <Search className="w-5 h-5 text-teal-600" />
           </button>
         )}
 
-        {/* Left Sidebar */}
+        {/* Mobile overlay backdrop */}
         {leftPanelOpen && (
-        <aside className="w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 relative">
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={handleCloseLeftPanel}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Left Sidebar - Fixed overlay on mobile, normal sidebar on desktop */}
+        {leftPanelOpen && (
+        <aside className="fixed md:relative inset-y-0 left-0 w-[85vw] max-w-[320px] md:w-[280px] md:max-w-none bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
             onClick={handleCloseLeftPanel}
-            className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+            className="absolute top-3 right-3 z-10 p-2 md:p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
             title="Close filters"
+            aria-label="Close filters"
           >
-            <X className="w-4 h-4 text-slate-600" />
+            <X className="w-5 h-5 md:w-4 md:h-4 text-slate-600" />
           </button>
 
           {/* Search Parameters */}
@@ -1239,7 +1259,7 @@ export default function HMOHunterPage() {
         {/* Map Area */}
         <main className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
           {/* Segment Tabs - Category Filter */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200 max-w-[95vw] overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveSegment("all")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -1336,7 +1356,7 @@ export default function HMOHunterPage() {
           />
 
           {/* Map legend - Reorganized by user intent */}
-          <Card className="absolute bottom-8 left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[280px]">
+          <Card className="absolute bottom-4 md:bottom-8 left-2 md:left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[200px] md:max-w-[280px]">
             <button
               onClick={handleToggleLegend}
               className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
@@ -1443,10 +1463,11 @@ export default function HMOHunterPage() {
           </Card>
 
           {/* Add Property button */}
-          <div className="absolute bottom-8 right-8 z-20">
-            <Button className="rounded-full h-14 px-6 bg-slate-400 hover:bg-slate-400 shadow-xl text-white font-medium cursor-not-allowed opacity-80" disabled>
-              <Plus className="w-5 h-5 mr-2" />
-              Add Property
+          <div className="absolute bottom-4 md:bottom-8 right-2 md:right-8 z-20">
+            <Button className="rounded-full h-12 md:h-14 px-4 md:px-6 bg-slate-400 hover:bg-slate-400 shadow-xl text-white font-medium cursor-not-allowed opacity-80 text-sm md:text-base" disabled>
+              <Plus className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Add Property</span>
+              <span className="sm:hidden">Add</span>
             </Button>
             <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
               Coming Soon

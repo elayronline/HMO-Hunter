@@ -103,7 +103,7 @@ export default function PropertyMap({ properties }: PropertyMapProps) {
   }, [showArticle4, map]);
 
   return (
-    <div className="relative w-full h-[600px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-[350px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden">
       <div 
         ref={setMapContainerRef}
         className="w-full h-full" 

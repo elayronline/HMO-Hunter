@@ -90,29 +90,29 @@ export default function UserDashboard() {
     <div className="min-h-screen bg-slate-50">
       {/* Navigation Bar */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-3 md:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <Link href="/">
-                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Home
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 px-2 md:px-3">
+                  <ArrowLeft className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Back to Home</span>
                 </Button>
               </Link>
-              <div className="h-6 w-px bg-slate-200" />
-              <h1 className="text-lg font-semibold text-slate-900">Property Insights Dashboard</h1>
+              <div className="hidden md:block h-6 w-px bg-slate-200" />
+              <h1 className="text-sm md:text-lg font-semibold text-slate-900 truncate">Dashboard</h1>
             </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={refreshData} disabled={loading} size="sm" className="bg-teal-600 hover:bg-teal-700">
+            <div className="flex items-center gap-2 md:gap-3">
+              <Button onClick={refreshData} disabled={loading} size="sm" className="bg-teal-600 hover:bg-teal-700 px-2 md:px-3">
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Fetching...
+                    <Loader2 className="w-4 h-4 md:mr-2 animate-spin" />
+                    <span className="hidden md:inline">Fetching...</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh Data
+                    <RefreshCw className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Refresh Data</span>
                   </>
                 )}
               </Button>
@@ -121,7 +121,7 @@ export default function UserDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         {/* Header */}
         <div>
           <p className="text-slate-600">
