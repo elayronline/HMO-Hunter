@@ -25,7 +25,7 @@ interface OnboardingWalkthroughProps {
   onComplete: () => void
 }
 
-type HighlightPosition = "center" | "top-left" | "top-center" | "top-right" | "left" | "right" | "bottom-left" | "bottom-center"
+type HighlightPosition = "center" | "top-left" | "top-center" | "top-right" | "left" | "right" | "bottom-left" | "bottom-center" | "center-left" | "center-right"
 type ArrowDirection = "up" | "down" | "left" | "right" | "none"
 
 interface Step {
@@ -51,49 +51,49 @@ const steps: Step[] = [
     targetHint: "",
   },
   {
-    icon: MapPin,
-    title: "Interactive Property Map",
-    description: "This is your main map view. Each pin represents a property - click any pin to see details. Green = Licensed HMO, Blue = Opportunity.",
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
-    highlight: "right",
-    arrow: "right",
-    targetHint: "The map is in the center of your screen",
-  },
-  {
     icon: Filter,
-    title: "Filter Tabs",
-    description: "Use these tabs above the map to filter: All, Licensed HMOs, Expired, Opportunities, and Restricted areas.",
+    title: "Search & Filters",
+    description: "Use the left sidebar to search locations, set price ranges, and filter by property type. Your filters are saved automatically.",
     color: "text-purple-600",
     bgColor: "bg-purple-100",
-    highlight: "top-center",
-    arrow: "up",
-    targetHint: "Look for the tabs at the top of the map",
+    highlight: "center-left",
+    arrow: "left",
+    targetHint: "The filter panel is on the left side",
+  },
+  {
+    icon: MapPin,
+    title: "Property Map",
+    description: "The map shows all properties. Teal pins = Licensed HMOs, Green pins = Opportunities, Red pins = Article 4 restricted areas.",
+    color: "text-blue-600",
+    bgColor: "bg-blue-100",
+    highlight: "center",
+    arrow: "none",
+    targetHint: "Click any pin to view property details",
   },
   {
     icon: FileText,
-    title: "Property Details Sidebar",
-    description: "When you click a property, details appear in the right sidebar: pricing, bedrooms, yield estimates, and compliance info.",
+    title: "Quick Filter Tabs",
+    description: "Use these tabs above the map to quickly filter: All, Licensed, Expired, Opportunities, or Restricted properties.",
     color: "text-orange-600",
     bgColor: "bg-orange-100",
-    highlight: "left",
-    arrow: "right",
-    targetHint: "The sidebar opens on the right when you click a property",
+    highlight: "bottom-center",
+    arrow: "up",
+    targetHint: "Tabs are at the top-center of the map",
   },
   {
     icon: Bookmark,
-    title: "Save Properties",
-    description: "Click the bookmark icon on any property to save it. Find your saved properties in the 'Saved' page from the menu.",
+    title: "Property Details",
+    description: "Click any property pin to open the details sidebar on the right. View pricing, yields, compliance info, and save properties.",
     color: "text-pink-600",
     bgColor: "bg-pink-100",
-    highlight: "top-right",
-    arrow: "up",
-    targetHint: "Look for the bookmark icon on property cards",
+    highlight: "center",
+    arrow: "none",
+    targetHint: "Details panel opens on the right side",
   },
   {
     icon: Crown,
     title: "You're Ready!",
-    description: "Start exploring! Click any pin on the map to begin. Need help? Click your profile icon and select 'Help'.",
+    description: "Start exploring! Click any pin on the map to begin. Your credit balance is shown in the top bar.",
     color: "text-amber-600",
     bgColor: "bg-amber-100",
     highlight: "center",
@@ -126,6 +126,10 @@ const getPositionClasses = (position: HighlightPosition): string => {
       return "top-1/2 left-8 -translate-y-1/2"
     case "right":
       return "top-1/2 right-8 -translate-y-1/2"
+    case "center-left":
+      return "top-1/2 left-[320px] -translate-y-1/2" // Next to left sidebar (280px + gap)
+    case "center-right":
+      return "top-1/2 right-[420px] -translate-y-1/2" // Next to right sidebar (400px + gap)
     case "bottom-left":
       return "bottom-24 left-8"
     case "bottom-center":
@@ -142,11 +146,17 @@ const getArrowPositionClasses = (position: HighlightPosition, direction: ArrowDi
     case "right":
       return "absolute top-1/2 -right-12 -translate-y-1/2 text-white"
     case "left":
-      return "absolute top-1/2 -left-12 -translate-y-1/2 text-white rotate-180"
+      return "absolute top-1/2 -left-12 -translate-y-1/2 text-white"
+    case "center-left":
+      return "absolute top-1/2 -left-12 -translate-y-1/2 text-white"
+    case "center-right":
+      return "absolute top-1/2 -right-12 -translate-y-1/2 text-white"
     case "top-center":
       return "absolute -top-12 left-1/2 -translate-x-1/2 text-white"
     case "top-right":
       return "absolute -top-12 right-8 text-white"
+    case "bottom-center":
+      return "absolute -bottom-12 left-1/2 -translate-x-1/2 text-white"
     default:
       return "hidden"
   }
@@ -341,6 +351,12 @@ function getHighlightRingPosition(position: HighlightPosition): string {
       return "top-1/2 right-16 -translate-y-1/2"
     case "left":
       return "top-1/2 left-72 -translate-y-1/2"
+    case "center-left":
+      return "top-1/2 left-36 -translate-y-1/2" // Points to left sidebar
+    case "center-right":
+      return "top-1/2 right-48 -translate-y-1/2" // Points to right sidebar area
+    case "bottom-center":
+      return "top-24 left-1/2 -translate-x-1/2" // Points to tabs at top of map
     default:
       return "hidden"
   }
