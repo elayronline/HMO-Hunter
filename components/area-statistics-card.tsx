@@ -235,7 +235,7 @@ export function AreaStatisticsCard({
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xs text-purple-600 font-medium mb-1">
-                          Zoopla Estimate Index
+                          Area Price Index
                         </div>
                         <div className="text-2xl font-bold text-purple-700">
                           {formatPrice(stats.zedIndex)}
@@ -313,7 +313,7 @@ export function AreaStatisticsCard({
 
                 {/* Last Updated */}
                 <div className="text-xs text-slate-400 text-center pt-2 border-t border-slate-100">
-                  Data from Zoopla • Updated {new Date(stats.fetchedAt).toLocaleDateString()}
+                  Updated {new Date(stats.fetchedAt).toLocaleDateString()}
                 </div>
               </>
             )}

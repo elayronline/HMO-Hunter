@@ -270,10 +270,6 @@ export function HmoStatsCard({ className, defaultExpanded = true }: HmoStatsCard
               </div>
             )}
 
-            {/* Data Sources */}
-            <div className="text-xs text-slate-400 text-center pt-2 border-t border-slate-100">
-              Sources: Zoopla ({stats.summary.zooplaSourced}) · HMO Register ({stats.summary.hmoRegister})
-            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>

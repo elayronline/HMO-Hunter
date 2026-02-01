@@ -114,7 +114,7 @@ const faqData: FAQCategory[] = [
       },
       {
         question: "Why can't I see owner data on some properties?",
-        answer: "Owner data is a Pro feature. Additionally, some properties may not have owner information if: the title isn't registered with Land Registry, the owner has requested privacy, or we haven't yet enriched that specific property. We're continuously expanding our data coverage."
+        answer: "Owner data is a Pro feature. Additionally, some properties may not have owner information if: the title isn't registered with Land Registry, the owner has requested privacy, or the data is not yet available for that property. We're continuously expanding our data coverage."
       },
       {
         question: "How do I contact a property owner?",

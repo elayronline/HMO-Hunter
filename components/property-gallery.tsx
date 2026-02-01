@@ -212,8 +212,8 @@ export function PropertyGallery({
             }`}>
               <Home className="w-3 h-3" />
               {zooplaMatchQuality === "exact"
-                ? "Zoopla ✓"
-                : "Zoopla"}
+                ? "Listing ✓"
+                : "Listing"}
             </div>
           )}
           {isStreetView && viewMode === "photos" && (
