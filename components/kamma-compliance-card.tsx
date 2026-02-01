@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Shield,
   AlertTriangle,
@@ -43,6 +43,7 @@ interface KammaComplianceCardProps {
   uprn?: string
   bedrooms?: number
   className?: string
+  autoCheck?: boolean
 }
 
 export function KammaComplianceCard({
@@ -51,6 +52,7 @@ export function KammaComplianceCard({
   uprn,
   bedrooms,
   className,
+  autoCheck = false,
 }: KammaComplianceCardProps) {
   const [data, setData] = useState<KammaData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -74,6 +76,13 @@ export function KammaComplianceCard({
       setLoading(false)
     }
   }
+
+  // Auto-check on mount if autoCheck is enabled
+  useEffect(() => {
+    if (autoCheck && !checked && !loading) {
+      checkCompliance()
+    }
+  }, [autoCheck])
 
   const getComplexityConfig = (complexity: string) => {
     switch (complexity) {

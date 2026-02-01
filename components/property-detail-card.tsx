@@ -23,7 +23,6 @@ import {
   LayoutGrid,
   Copy,
   Check,
-  Info,
   Share2,
   ChevronRight,
   Zap,
@@ -288,7 +287,7 @@ export function PropertyDetailCard({
         {[
           { id: "analysis" as TabType, label: "Analysis" },
           { id: "details" as TabType, label: "Details" },
-          { id: "compliance" as TabType, label: "Compliance" },
+          { id: "compliance" as TabType, label: "Licensing" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -432,10 +431,35 @@ export function PropertyDetailCard({
             </>
           )}
 
-          {/* COMPLIANCE TAB */}
+          {/* LICENSING TAB */}
           {activeTab === "compliance" && (
             <>
-              {/* Licence Status */}
+              {/* Kamma Compliance Check - Real-time API (Primary: answers "Do I need a licence?") */}
+              <KammaComplianceCard
+                postcode={property.postcode}
+                address={property.address}
+                uprn={property.uprn || undefined}
+                bedrooms={property.bedrooms}
+                autoCheck
+              />
+
+              {/* Licence Details from Council Register */}
+              <LicenceDetailsCard propertyId={property.id} />
+
+              {/* Article 4 Warning */}
+              {property.article_4_area && (
+                <div className="rounded-lg p-4 bg-purple-50">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-purple-600 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-purple-800">Article 4 Direction</p>
+                      <p className="text-xs text-purple-600 mt-1">Planning permission required for HMO use.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Current Licence Status (if property has one) */}
               {property.licensed_hmo && (
                 <div className={cn("rounded-lg p-4", licenceConfig.bg)}>
                   <div className="flex items-center gap-3">
@@ -470,80 +494,6 @@ export function PropertyDetailCard({
                   )}
                 </div>
               )}
-
-              {/* Thresholds */}
-              <Section title="HMO Licensing Thresholds">
-                <div className="space-y-2">
-                  {[
-                    { color: "bg-red-500", label: "Mandatory", desc: "5+ people, 2+ households" },
-                    { color: "bg-amber-500", label: "Additional", desc: "3+ people, 2+ households" },
-                    { color: "bg-blue-500", label: "Selective", desc: "All rentals in area" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between h-10 px-3 bg-white rounded-lg border border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("w-2 h-2 rounded-full", item.color)} />
-                        <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                      </div>
-                      <span className="text-xs text-slate-500">{item.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-
-              {/* Article 4 */}
-              {property.article_4_area && (
-                <div className="rounded-lg p-4 bg-purple-50">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-purple-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-purple-800">Article 4 Direction</p>
-                      <p className="text-xs text-purple-600 mt-1">Planning permission required for HMO use.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Complexity */}
-              <div className={cn(
-                "rounded-lg p-4",
-                property.compliance_complexity === "high" ? "bg-red-50" :
-                property.compliance_complexity === "medium" ? "bg-amber-50" : "bg-emerald-50"
-              )}>
-                <div className="flex items-center gap-3">
-                  {property.compliance_complexity === "high" ? (
-                    <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-                  ) : property.compliance_complexity === "medium" ? (
-                    <Info className="w-5 h-5 text-amber-600 shrink-0" />
-                  ) : (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  )}
-                  <div>
-                    <p className={cn(
-                      "text-sm font-semibold",
-                      property.compliance_complexity === "high" ? "text-red-800" :
-                      property.compliance_complexity === "medium" ? "text-amber-800" : "text-emerald-800"
-                    )}>
-                      {property.compliance_complexity === "high" ? "High Complexity" :
-                       property.compliance_complexity === "medium" ? "Medium Complexity" : "Low Complexity"}
-                    </p>
-                    <p className={cn(
-                      "text-xs mt-1",
-                      property.compliance_complexity === "high" ? "text-red-600" :
-                      property.compliance_complexity === "medium" ? "text-amber-600" : "text-emerald-600"
-                    )}>
-                      {property.compliance_complexity === "high" ? "Multiple licensing schemes may apply" :
-                       property.compliance_complexity === "medium" ? "Licensing may be required" :
-                       "Standard regulations apply"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Kamma Compliance Check - Real-time API */}
-              <KammaComplianceCard postcode={property.postcode} address={property.address} uprn={property.uprn || undefined} bedrooms={property.bedrooms} />
-
-              {/* Licence Details from Council Register */}
-              <LicenceDetailsCard propertyId={property.id} />
             </>
           )}
         </div>
