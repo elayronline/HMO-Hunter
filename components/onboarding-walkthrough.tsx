@@ -207,9 +207,13 @@ export function OnboardingWalkthrough({ isOpen, onComplete }: OnboardingWalkthro
 
   return (
     <div className="fixed inset-0 z-[100]">
-      {/* Dark overlay */}
+      {/* Dark overlay - only blur on first step, lighter overlay after so dashboard is visible */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className={`absolute inset-0 transition-all duration-300 ${
+          isFirstStep
+            ? "bg-black/70 backdrop-blur-sm"
+            : "bg-black/20"
+        }`}
         onClick={handleSkip}
       />
 
