@@ -215,6 +215,32 @@ async function loadStaticGeoJSON(): Promise<GeoJSON.Feature[]> {
   }
 }
 
+// City name patterns for geographic deduplication
+// When API data exists for a city, skip the broad static box
+const CITY_PATTERNS: Record<string, string[]> = {
+  "birmingham": ["birmingham", "selly oak", "edgbaston"],
+  "manchester": ["manchester", "salford"],
+  "newcastle": ["newcastle", "jesmond", "heaton", "gabriel"],
+  "bristol": ["bristol", "ashley", "cabot", "clifton", "cotham", "lawrence hill", "redland", "avonmouth"],
+  "liverpool": ["liverpool", "aintree", "bootle", "waterloo", "southport", "rochmount", "boot estate", "richmond park", "beach road"],
+  "leeds": ["leeds", "headingley", "hyde park"],
+  "leicester": ["leicester"],
+  "nottingham": ["nottingham"],
+  "sheffield": ["sheffield"],
+  "london": ["london", "westminster", "camden", "islington", "hackney", "tower hamlets", "southwark", "lambeth", "wandsworth", "henshaw", "bywater"],
+}
+
+// Detect which city a feature belongs to based on name
+function detectCity(name: string): string | null {
+  const lowerName = name.toLowerCase()
+  for (const [city, patterns] of Object.entries(CITY_PATTERNS)) {
+    if (patterns.some(p => lowerName.includes(p))) {
+      return city
+    }
+  }
+  return null
+}
+
 async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
   // Load both data sources in parallel
   const [entities, staticFeatures] = await Promise.all([
@@ -253,15 +279,22 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
   console.log(`[Article4] API features with valid geometry: ${apiFeatures.length}`)
   console.log(`[Article4] Static features: ${staticFeatures.length}`)
 
-  // Merge both sources - static file provides comprehensive city-wide coverage
-  // that the government API doesn't have yet (many councils haven't uploaded data)
-  const allFeatures = [...staticFeatures, ...apiFeatures]
+  // Detect which cities have API coverage
+  const citiesWithApiData = new Set<string>()
+  for (const feature of apiFeatures) {
+    const name = feature.properties?.name || ""
+    const city = detectCity(name)
+    if (city) {
+      citiesWithApiData.add(city)
+    }
+  }
+  console.log(`[Article4] Cities with API data: ${Array.from(citiesWithApiData).join(", ")}`)
 
-  // Deduplicate by name (prefer API data as more authoritative when both exist)
+  // Deduplicate: prefer API data, skip static boxes for cities with API coverage
   const seenNames = new Set<string>()
   const deduplicatedFeatures: GeoJSON.Feature[] = []
 
-  // Process API features first (higher priority)
+  // Process API features first (higher priority, more detailed)
   for (const feature of apiFeatures) {
     const name = (feature.properties?.name || "").toLowerCase()
     if (!seenNames.has(name)) {
@@ -270,9 +303,17 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
     }
   }
 
-  // Then add static features that don't overlap
+  // Add static features only for cities WITHOUT API coverage
   for (const feature of staticFeatures) {
     const name = (feature.properties?.name || "").toLowerCase()
+    const city = detectCity(name)
+
+    // Skip if this city has API data (API data is more detailed)
+    if (city && citiesWithApiData.has(city)) {
+      console.log(`[Article4] Skipping static feature "${feature.properties?.name}" - city has API data`)
+      continue
+    }
+
     if (!seenNames.has(name)) {
       seenNames.add(name)
       deduplicatedFeatures.push(feature)
