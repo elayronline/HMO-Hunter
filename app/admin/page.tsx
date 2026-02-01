@@ -12,7 +12,12 @@ import {
   Crown,
   User as UserIcon,
   MoreVertical,
-  Coins
+  Coins,
+  Ban,
+  CheckCircle,
+  Plus,
+  RotateCcw,
+  UserX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,8 +33,27 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
 
@@ -37,6 +61,9 @@ interface UserData {
   id: string
   email: string
   role: 'admin' | 'standard_pro'
+  is_active: boolean
+  deactivated_at: string | null
+  deactivation_reason: string | null
   created_at: string
   last_sign_in: string | null
   credits: {
@@ -53,6 +80,7 @@ interface Stats {
   admin_count: number
   standard_pro_count: number
   active_today: number
+  deactivated_count: number
 }
 
 export default function AdminPortal() {
@@ -62,6 +90,15 @@ export default function AdminPortal() {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  // Modal states
+  const [deactivateModal, setDeactivateModal] = useState<{ open: boolean; user: UserData | null }>({ open: false, user: null })
+  const [creditsModal, setCreditsModal] = useState<{ open: boolean; user: UserData | null }>({ open: false, user: null })
+  const [deactivateReason, setDeactivateReason] = useState("")
+  const [creditAmount, setCreditAmount] = useState("")
+  const [creditType, setCreditType] = useState<string>("reset")
+  const [creditReason, setCreditReason] = useState("")
+  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     checkAdminAccess()
@@ -146,6 +183,87 @@ export default function AdminPortal() {
     }
   }
 
+  async function toggleAccountStatus(userId: string, activate: boolean, reason?: string) {
+    setActionLoading(true)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: activate, reason })
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: activate ? "Account reactivated" : "Account deactivated",
+        })
+        setDeactivateModal({ open: false, user: null })
+        setDeactivateReason("")
+        fetchUsers()
+      } else {
+        const data = await response.json()
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update account status",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update account status",
+        variant: "destructive"
+      })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function adjustCredits(userId: string) {
+    setActionLoading(true)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/credits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adjustment_type: creditType,
+          amount: creditType === 'reset' ? 0 : parseInt(creditAmount),
+          reason: creditReason
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "Success",
+          description: `Credits adjusted successfully`,
+        })
+        setCreditsModal({ open: false, user: null })
+        setCreditAmount("")
+        setCreditType("reset")
+        setCreditReason("")
+        fetchUsers()
+      } else {
+        const data = await response.json()
+        toast({
+          title: "Error",
+          description: data.error || "Failed to adjust credits",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error adjusting credits:', error)
+      toast({
+        title: "Error",
+        description: "Failed to adjust credits",
+        variant: "destructive"
+      })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -194,7 +312,7 @@ export default function AdminPortal() {
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600">Total Users</CardTitle>
@@ -231,6 +349,15 @@ export default function AdminPortal() {
                 <div className="text-2xl font-bold text-green-600">{stats.active_today}</div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-slate-600">Deactivated</CardTitle>
+                <UserX className="w-4 h-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.deactivated_count}</div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -250,6 +377,7 @@ export default function AdminPortal() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Credits Used</TableHead>
                     <TableHead>Saved</TableHead>
@@ -261,8 +389,21 @@ export default function AdminPortal() {
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={!user.is_active ? 'opacity-60 bg-red-50' : ''}>
                       <TableCell className="font-medium">{user.email}</TableCell>
+                      <TableCell>
+                        {user.is_active ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                            <Ban className="w-3 h-3 mr-1" />
+                            Deactivated
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {user.role === 'admin' ? (
                           <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
@@ -324,6 +465,35 @@ export default function AdminPortal() {
                                   Remove Admin
                                 </DropdownMenuItem>
                               )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => setCreditsModal({ open: true, user })}
+                              >
+                                <Coins className="w-4 h-4 mr-2" />
+                                Adjust Credits
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              {user.is_active ? (
+                                <DropdownMenuItem
+                                  onClick={() => setDeactivateModal({ open: true, user })}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Ban className="w-4 h-4 mr-2" />
+                                  Deactivate Account
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => toggleAccountStatus(user.id, true)}
+                                  className="text-green-600 focus:text-green-600"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Reactivate Account
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
@@ -336,6 +506,142 @@ export default function AdminPortal() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Deactivate Account Modal */}
+      <Dialog open={deactivateModal.open} onOpenChange={(open) => setDeactivateModal({ open, user: open ? deactivateModal.user : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Ban className="w-5 h-5" />
+              Deactivate Account
+            </DialogTitle>
+            <DialogDescription>
+              This will deactivate the account for <strong>{deactivateModal.user?.email}</strong>.
+              The user will be signed out and unable to log in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for deactivation (optional)</Label>
+              <Textarea
+                id="reason"
+                placeholder="Enter reason for deactivation..."
+                value={deactivateReason}
+                onChange={(e) => setDeactivateReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeactivateModal({ open: false, user: null })}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deactivateModal.user && toggleAccountStatus(deactivateModal.user.id, false, deactivateReason)}
+              disabled={actionLoading}
+            >
+              {actionLoading ? "Deactivating..." : "Deactivate Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Credits Modal */}
+      <Dialog open={creditsModal.open} onOpenChange={(open) => setCreditsModal({ open, user: open ? creditsModal.user : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-500" />
+              Adjust Credits
+            </DialogTitle>
+            <DialogDescription>
+              Adjust credits for <strong>{creditsModal.user?.email}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {creditsModal.user?.credits && (
+              <div className="bg-slate-100 p-3 rounded-lg text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">Current Usage:</span>
+                  <span className="font-medium">{creditsModal.user.credits.credits_used} / {creditsModal.user.credits.daily_credits}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Adjustment Type</Label>
+              <Select value={creditType} onValueChange={setCreditType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reset">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="w-4 h-4" />
+                      Reset Usage to 0
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="bonus">
+                    <div className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Give Bonus Credits
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="top_up">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-4 h-4" />
+                      Increase Daily Limit
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {creditType !== 'reset' && (
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="1"
+                  placeholder="Enter amount"
+                  value={creditAmount}
+                  onChange={(e) => setCreditAmount(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="credit-reason">Reason (optional)</Label>
+              <Textarea
+                id="credit-reason"
+                placeholder="Enter reason for adjustment..."
+                value={creditReason}
+                onChange={(e) => setCreditReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCreditsModal({ open: false, user: null })}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => creditsModal.user && adjustCredits(creditsModal.user.id)}
+              disabled={actionLoading || (creditType !== 'reset' && !creditAmount)}
+            >
+              {actionLoading ? "Applying..." : "Apply Adjustment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

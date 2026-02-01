@@ -49,6 +49,9 @@ export async function GET(request: NextRequest) {
       id: u.id,
       email: u.email,
       role: credits?.role || 'standard_pro',
+      is_active: credits?.is_active ?? true,
+      deactivated_at: credits?.deactivated_at || null,
+      deactivation_reason: credits?.deactivation_reason || null,
       created_at: u.created_at,
       last_sign_in: u.last_sign_in_at,
       credits: credits ? {
@@ -69,7 +72,8 @@ export async function GET(request: NextRequest) {
     active_today: users.filter(u => {
       const credits = creditsMap.get(u.id)
       return credits?.credits_used > 0
-    }).length
+    }).length,
+    deactivated_count: users.filter(u => !u.is_active).length
   }
 
   return NextResponse.json({ users, stats })
