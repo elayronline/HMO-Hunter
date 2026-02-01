@@ -171,7 +171,7 @@ export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetail
   const [currentStep, setCurrentStep] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
 
-  // Show/hide property details based on current step
+  // Show/hide property details based on current step (only when walkthrough is active)
   useEffect(() => {
     if (!isOpen) return
 
@@ -181,13 +181,6 @@ export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetail
       onHidePropertyDetails?.()
     }
   }, [currentStep, isOpen, onShowPropertyDetails, onHidePropertyDetails])
-
-  // Clean up when walkthrough closes
-  useEffect(() => {
-    if (!isOpen || isClosing) {
-      onHidePropertyDetails?.()
-    }
-  }, [isOpen, isClosing, onHidePropertyDetails])
 
   const handleComplete = async () => {
     setIsClosing(true)
