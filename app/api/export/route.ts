@@ -93,9 +93,6 @@ export async function POST(request: NextRequest) {
           query = query.lte('purchase_price', filters.maxPrice)
         }
       }
-      if (filters.licensedHmoOnly) {
-        query = query.eq('hmo_status', 'licensed')
-      }
     }
 
     // Limit to 500 rows max

@@ -29,6 +29,22 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
   const filterKey = JSON.stringify(validatedFilters)
   const now = Date.now()
 
+  // Check if licence expiry filter is active (all 3 fields must be set)
+  const licenceExpiryFilterActive = !!(
+    validatedFilters.licenceExpiryStartMonth &&
+    validatedFilters.licenceExpiryEndMonth &&
+    validatedFilters.licenceExpiryYear
+  )
+
+  // Debug: log licence expiry filter
+  if (licenceExpiryFilterActive) {
+    console.log("[PropertiesAction] Licence Expiry Filter ACTIVE:", {
+      startMonth: validatedFilters.licenceExpiryStartMonth,
+      endMonth: validatedFilters.licenceExpiryEndMonth,
+      year: validatedFilters.licenceExpiryYear,
+    })
+  }
+
   // Always return cached data if available and not too old
   if (propertiesCache && propertiesCache.filters === filterKey && now - propertiesCache.timestamp < CACHE_DURATION) {
     return propertiesCache.data
@@ -44,12 +60,16 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // HMO Hunter: Only show Licensed HMOs, Potential HMOs, or Expired Licence HMOs - filter out standard listings
     query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
-    if (validatedFilters.listingType) {
+    // Only apply listing type filter if licence expiry filter is NOT active
+    // When filtering by expiry dates, we want all matching properties regardless of listing type
+    if (validatedFilters.listingType && !licenceExpiryFilterActive) {
       // Show properties matching listing type OR expired licences (expired should always show)
       query = query.or(`listing_type.eq.${validatedFilters.listingType},licence_status.eq.expired`)
     }
 
-    if (validatedFilters.minPrice) {
+    // Only apply price filters if licence expiry filter is NOT active
+    // When filtering by expiry dates, price is not the primary criteria
+    if (validatedFilters.minPrice && !licenceExpiryFilterActive) {
       if (validatedFilters.listingType === "purchase") {
         // Include expired licences regardless of price (they may be rent listings)
         query = query.or(`purchase_price.gte.${validatedFilters.minPrice},licence_status.eq.expired`)
@@ -57,7 +77,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
         query = query.gte("price_pcm", validatedFilters.minPrice)
       }
     }
-    if (validatedFilters.maxPrice) {
+    if (validatedFilters.maxPrice && !licenceExpiryFilterActive) {
       if (validatedFilters.listingType === "purchase") {
         // Include expired licences regardless of price (they may be rent listings)
         query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},licence_status.eq.expired`)
@@ -78,27 +98,6 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     if (validatedFilters.postcodePrefix) {
       // Use ilike for case-insensitive prefix matching
       query = query.ilike("postcode", `${validatedFilters.postcodePrefix}%`)
-    }
-    if (validatedFilters.studentFriendly) {
-      query = query.eq("is_student_friendly", true)
-    }
-    if (validatedFilters.petFriendly) {
-      query = query.eq("is_pet_friendly", true)
-    }
-    if (validatedFilters.furnished) {
-      query = query.eq("is_furnished", true)
-    }
-
-    if (validatedFilters.licensedHmoOnly) {
-      query = query.eq("licensed_hmo", true)
-    }
-
-    if (validatedFilters.availableNow) {
-      const today = new Date().toISOString().split("T")[0]
-      // Validate date format before using in query
-      if (isValidISODate(today)) {
-        query = query.or(`available_from.is.null,available_from.lte.${today}`)
-      }
     }
 
     // Phase 3 - EPC Rating Filter
@@ -203,6 +202,27 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     if (validatedFilters.hasOwnerData) {
       // Show properties that have either owner_name OR company_name populated
       query = query.or("owner_name.not.is.null,company_name.not.is.null")
+    }
+
+    // Licence Expiry Date Filter (Premium Feature) - Month Range
+    // Filter properties by licence end date within a month range for a specific year
+    if (validatedFilters.licenceExpiryStartMonth && validatedFilters.licenceExpiryEndMonth && validatedFilters.licenceExpiryYear) {
+      const year = validatedFilters.licenceExpiryYear
+      const startMonth = validatedFilters.licenceExpiryStartMonth
+      const endMonth = validatedFilters.licenceExpiryEndMonth
+
+      // Start of range: first day of start month
+      const startDate = `${year}-${startMonth.toString().padStart(2, '0')}-01`
+
+      // End of range: last day of end month
+      const lastDay = new Date(year, endMonth, 0).getDate()
+      const endDate = `${year}-${endMonth.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`
+
+      // Filter: licence_end_date BETWEEN start and end dates
+      query = query.gte("licence_end_date", startDate)
+      query = query.lte("licence_end_date", endDate)
+      // Also ensure licence_end_date is not null
+      query = query.not("licence_end_date", "is", null)
     }
 
     const { data, error } = await safeSupabaseQuery(async () => await query)

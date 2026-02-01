@@ -71,7 +71,6 @@ export const exportRequestSchema = z.object({
       city: z.string().optional(),
       minPrice: z.number().int().nonnegative().optional(),
       maxPrice: z.number().int().positive().optional(),
-      licensedHmoOnly: z.boolean().optional(),
     })
     .optional(),
 })
@@ -123,11 +122,6 @@ export const propertyFiltersSchema = z.object({
   propertyTypes: z.array(z.string()).optional(),
   city: z.string().optional(),
   postcodePrefix: z.string().max(10).optional(),
-  availableNow: z.coerce.boolean().optional(),
-  studentFriendly: z.coerce.boolean().optional(),
-  petFriendly: z.coerce.boolean().optional(),
-  furnished: z.coerce.boolean().optional(),
-  licensedHmoOnly: z.coerce.boolean().optional(),
   minEpcRating: z.enum(["A", "B", "C", "D", "E"]).optional(),
   article4Filter: z.enum(["include", "exclude", "only"]).optional(),
   licenceTypeFilter: z.string().optional(),

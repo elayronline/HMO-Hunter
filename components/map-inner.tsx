@@ -446,12 +446,17 @@ export function MapInner({
   useEffect(() => {
     if (!mapRef.current || !mapReady) return
 
+    // Debug: log properties received
+    console.log("[MapInner] Properties received:", properties.length)
+
     // Filter properties with valid coordinates
     const validProperties = properties.filter(p => {
       const lat = Number(p.latitude)
       const lng = Number(p.longitude)
       return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
     })
+
+    console.log("[MapInner] Valid properties with coords:", validProperties.length)
 
     const currentPropertyIds = new Set(validProperties.map(p => p.id))
     const existingMarkerIds = new Set(markersRef.current.keys())

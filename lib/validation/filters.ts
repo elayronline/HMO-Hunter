@@ -67,21 +67,6 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
   }
 
   // Boolean filters - ensure they're actually booleans
-  if (typeof filters.availableNow === "boolean") {
-    sanitized.availableNow = filters.availableNow
-  }
-  if (typeof filters.studentFriendly === "boolean") {
-    sanitized.studentFriendly = filters.studentFriendly
-  }
-  if (typeof filters.petFriendly === "boolean") {
-    sanitized.petFriendly = filters.petFriendly
-  }
-  if (typeof filters.furnished === "boolean") {
-    sanitized.furnished = filters.furnished
-  }
-  if (typeof filters.licensedHmoOnly === "boolean") {
-    sanitized.licensedHmoOnly = filters.licensedHmoOnly
-  }
   if (typeof filters.showPotentialHMOs === "boolean") {
     sanitized.showPotentialHMOs = filters.showPotentialHMOs
   }
@@ -146,6 +131,27 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
   // EPC band
   if (filters.epcBand === "good" || filters.epcBand === "needs_upgrade") {
     sanitized.epcBand = filters.epcBand
+  }
+
+  // Licence expiry start month - must be 1-12
+  if (typeof filters.licenceExpiryStartMonth === "number" &&
+      filters.licenceExpiryStartMonth >= 1 &&
+      filters.licenceExpiryStartMonth <= 12) {
+    sanitized.licenceExpiryStartMonth = Math.floor(filters.licenceExpiryStartMonth)
+  }
+
+  // Licence expiry end month - must be 1-12
+  if (typeof filters.licenceExpiryEndMonth === "number" &&
+      filters.licenceExpiryEndMonth >= 1 &&
+      filters.licenceExpiryEndMonth <= 12) {
+    sanitized.licenceExpiryEndMonth = Math.floor(filters.licenceExpiryEndMonth)
+  }
+
+  // Licence expiry year - reasonable range
+  if (typeof filters.licenceExpiryYear === "number" &&
+      filters.licenceExpiryYear >= 2020 &&
+      filters.licenceExpiryYear <= 2040) {
+    sanitized.licenceExpiryYear = Math.floor(filters.licenceExpiryYear)
   }
 
   return sanitized

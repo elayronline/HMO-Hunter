@@ -228,11 +228,6 @@ export type PropertyFilters = {
   propertyTypes: string[]
   city: string
   postcodePrefix?: string // e.g., "M14", "E1" - filters by postcode area
-  availableNow: boolean
-  studentFriendly: boolean
-  petFriendly: boolean
-  furnished: boolean
-  licensedHmoOnly: boolean
   licenceStatus?: "active" | "expired" | "all"
   // Phase 3 - New filters
   minEpcRating?: "A" | "B" | "C" | "D" | "E" | null
@@ -252,6 +247,10 @@ export type PropertyFilters = {
   minBroadbandSpeed?: number
   // Owner data filter
   hasOwnerData?: boolean
+  // Licence expiry date filter (premium feature) - month range within a year
+  licenceExpiryStartMonth?: number // 1-12
+  licenceExpiryEndMonth?: number // 1-12
+  licenceExpiryYear?: number // e.g., 2025
 }
 
 export type SavedProperty = {

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
-  Bell,
   ChevronDown,
   ChevronUp,
   Search,
@@ -46,7 +45,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getProperties } from "./actions/properties"
+import { getProperties, getPropertyById } from "./actions/properties"
 import { getSavedProperties } from "./actions/saved-properties"
 import { SavePropertyButton } from "@/components/save-property-button"
 import { createClient } from "@/lib/supabase/client"
@@ -95,16 +94,16 @@ export default function HMOHunterPage() {
   const priceRangeKey = priceRange.join(",")
   const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
   const propertyTypesKey = propertyTypes.join(",")
-  const [availableNow, setAvailableNow] = useState(false)
-  const [studentFriendly, setStudentFriendly] = useState(false)
-  const [petFriendly, setPetFriendly] = useState(false)
-  const [furnished, setFurnished] = useState(false)
-  const [licensedHmoOnly, setLicensedHmoOnly] = useState(false)
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
   const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
   const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
   const [ownerDataFilter, setOwnerDataFilter] = useState(false)
+
+  // Licence expiry filter - premium feature (month range within a year)
+  const [licenceExpiryEnabled, setLicenceExpiryEnabled] = useState(false)
+  const [licenceExpiryMonthRange, setLicenceExpiryMonthRange] = useState<[number, number]>([1, 12]) // [startMonth, endMonth] 1-12
+  const [licenceExpiryYear, setLicenceExpiryYear] = useState<number>(new Date().getFullYear())
 
   // Segment filter - main category tabs for clearer UX
   const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">("all")
@@ -208,6 +207,31 @@ export default function HMOHunterPage() {
     }
   }, [isDemoMode])
 
+  // Handle property query parameter - open property details panel when navigating from saved properties
+  useEffect(() => {
+    const propertyId = searchParams.get('property')
+    if (!propertyId) return
+
+    async function openPropertyFromUrl() {
+      // First try to find in current properties list
+      let property = properties.find(p => p.id === propertyId)
+
+      // If not found in current list, fetch directly by ID
+      if (!property) {
+        property = await getPropertyById(propertyId!) ?? undefined
+      }
+
+      if (property) {
+        setSelectedProperty(property)
+        setRightPanelOpen(true)
+        // Clear the URL parameter without triggering a navigation
+        window.history.replaceState({}, '', '/')
+      }
+    }
+
+    openPropertyFromUrl()
+  }, [searchParams, properties])
+
   useEffect(() => {
     let mounted = true
 
@@ -278,11 +302,6 @@ export default function HMOHunterPage() {
           propertyTypes,
           city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
           postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
-          availableNow,
-          studentFriendly,
-          petFriendly,
-          furnished,
-          licensedHmoOnly,
           minEpcRating,
           article4Filter,
           licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
@@ -295,7 +314,11 @@ export default function HMOHunterPage() {
           hasFiber: broadbandFilter === "fiber" ? true : undefined,
           minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
           hasOwnerData: ownerDataFilter || undefined,
+          licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
+          licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
+          licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
         })
+        console.log("[Page] Properties fetched:", data.length)
         setProperties(data)
       } catch (error) {
         console.error("[v0] Failed to fetch properties:", error)
@@ -340,11 +363,6 @@ export default function HMOHunterPage() {
     priceRangeKey,
     propertyTypesKey,
     selectedLocation,
-    availableNow,
-    studentFriendly,
-    petFriendly,
-    furnished,
-    licensedHmoOnly,
     minEpcRating,
     article4Filter,
     licenceTypeFilter,
@@ -356,6 +374,10 @@ export default function HMOHunterPage() {
     epcBandFilter,
     broadbandFilter,
     ownerDataFilter,
+    licenceExpiryEnabled,
+    licenceExpiryMonthRange[0],
+    licenceExpiryMonthRange[1],
+    licenceExpiryYear,
   ])
 
   const handleSearch = async () => {
@@ -368,11 +390,6 @@ export default function HMOHunterPage() {
         propertyTypes,
         city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
         postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
-        availableNow,
-        studentFriendly,
-        petFriendly,
-        furnished,
-        licensedHmoOnly,
         minEpcRating,
         article4Filter,
         licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
@@ -385,6 +402,9 @@ export default function HMOHunterPage() {
         hasFiber: broadbandFilter === "fiber" ? true : undefined,
         minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
         hasOwnerData: ownerDataFilter || undefined,
+        licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
+        licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
+        licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
       })
       setProperties(data)
     } catch (error) {
@@ -404,11 +424,6 @@ export default function HMOHunterPage() {
     setPriceRange([50000, 2000000])
     setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
     setSelectedLocation(DEFAULT_LOCATION)
-    setAvailableNow(false)
-    setStudentFriendly(false)
-    setPetFriendly(false)
-    setFurnished(false)
-    setLicensedHmoOnly(false)
     setMinEpcRating(null)
     setArticle4Filter("include")
     setLicenceTypeFilter("all")
@@ -420,6 +435,9 @@ export default function HMOHunterPage() {
     setEpcBandFilter(null)
     setMinDealScore(0)
     setActiveSegment("all")
+    setLicenceExpiryEnabled(false)
+    setLicenceExpiryMonthRange([1, 12])
+    setLicenceExpiryYear(new Date().getFullYear())
   }
 
   const getMonthlyRent = (p: Property): number => {
@@ -559,9 +577,10 @@ export default function HMOHunterPage() {
 
   // Filter properties based on active segment
   const segmentFilteredProperties = useMemo(() => {
+    console.log("[Page] Segment filter - activeSegment:", activeSegment, "properties count:", properties.length)
     if (activeSegment === "all") return properties
 
-    return properties.filter(p => {
+    const filtered = properties.filter(p => {
       switch (activeSegment) {
         case "licensed":
           return p.licensed_hmo && p.licence_status !== "expired"
@@ -575,6 +594,8 @@ export default function HMOHunterPage() {
           return true
       }
     })
+    console.log("[Page] Segment filtered count:", filtered.length)
+    return filtered
   }, [properties, activeSegment])
 
   return (
@@ -623,11 +644,6 @@ export default function HMOHunterPage() {
             </div>
           )}
 
-          <button className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5 text-slate-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full"></span>
-          </button>
-
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -653,6 +669,10 @@ export default function HMOHunterPage() {
                 <DropdownMenuItem onClick={() => router.push("/help")}>
                   <HelpCircle className="w-4 h-4 mr-2" />
                   Help
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/faq")}>
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  FAQ
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
@@ -785,11 +805,6 @@ export default function HMOHunterPage() {
               priceRange,
               propertyTypes,
               selectedLocation,
-              availableNow,
-              studentFriendly,
-              petFriendly,
-              furnished,
-              licensedHmoOnly,
               minEpcRating,
               article4Filter,
               licenceTypeFilter,
@@ -808,11 +823,6 @@ export default function HMOHunterPage() {
               setPriceRange(filters.priceRange)
               setPropertyTypes(filters.propertyTypes)
               setSelectedLocation(filters.selectedLocation)
-              setAvailableNow(filters.availableNow)
-              setStudentFriendly(filters.studentFriendly)
-              setPetFriendly(filters.petFriendly)
-              setFurnished(filters.furnished)
-              setLicensedHmoOnly(filters.licensedHmoOnly)
               setMinEpcRating(filters.minEpcRating as any)
               setArticle4Filter(filters.article4Filter as any)
               setLicenceTypeFilter(filters.licenceTypeFilter)
@@ -855,47 +865,6 @@ export default function HMOHunterPage() {
 
             {filtersExpanded && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">Available Now</span>
-                  <Switch
-                    checked={availableNow}
-                    onCheckedChange={setAvailableNow}
-                    className="data-[state=checked]:bg-teal-600"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">Student Friendly</span>
-                  <Switch
-                    checked={studentFriendly}
-                    onCheckedChange={setStudentFriendly}
-                    className="data-[state=checked]:bg-teal-600"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">Pet Friendly</span>
-                  <Switch
-                    checked={petFriendly}
-                    onCheckedChange={setPetFriendly}
-                    className="data-[state=checked]:bg-teal-600"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">Furnished</span>
-                  <Switch
-                    checked={furnished}
-                    onCheckedChange={setFurnished}
-                    className="data-[state=checked]:bg-teal-600"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-700">Licensed HMO Only</span>
-                  <Switch
-                    checked={licensedHmoOnly}
-                    onCheckedChange={setLicensedHmoOnly}
-                    className="data-[state=checked]:bg-teal-600"
-                  />
-                </div>
-
                 {/* EPC Rating Filter */}
                 <div className="pt-2 border-t border-slate-100">
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Min EPC Rating</label>
@@ -977,6 +946,75 @@ export default function HMOHunterPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Licence Expiry Date Filter - Premium Feature */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-700">Licence Expiry Filter</span>
+                      <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
+                    </div>
+                    {isPremiumUser ? (
+                      <Switch
+                        checked={licenceExpiryEnabled}
+                        onCheckedChange={setLicenceExpiryEnabled}
+                        className="data-[state=checked]:bg-amber-500"
+                      />
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-amber-600 hover:text-amber-700 h-7"
+                        onClick={() => {/* Show upgrade modal */}}
+                      >
+                        Upgrade
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mb-2">Filter by licence expiry month range</p>
+
+                  {licenceExpiryEnabled && isPremiumUser && (
+                    <div className="space-y-3 mt-2">
+                      {/* Year selector */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-600">Year:</span>
+                        <input
+                          type="number"
+                          min="2020"
+                          max="2035"
+                          value={licenceExpiryYear}
+                          onChange={(e) => setLicenceExpiryYear(parseInt(e.target.value) || new Date().getFullYear())}
+                          className="w-20 h-7 text-xs px-2 border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Month range slider */}
+                      <div>
+                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                          <span>{["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][licenceExpiryMonthRange[0] - 1]}</span>
+                          <span>{["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][licenceExpiryMonthRange[1] - 1]}</span>
+                        </div>
+                        <Slider
+                          value={licenceExpiryMonthRange}
+                          onValueChange={(value) => setLicenceExpiryMonthRange(value as [number, number])}
+                          min={1}
+                          max={12}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                          <span>Jan</span>
+                          <span>Dec</span>
+                        </div>
+                      </div>
+
+                      {/* Info message */}
+                      <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                        Showing licences expiring {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][licenceExpiryMonthRange[0] - 1]} - {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][licenceExpiryMonthRange[1] - 1]} {licenceExpiryYear}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Owner Data Filter Toggle */}
@@ -1276,9 +1314,9 @@ export default function HMOHunterPage() {
                   city: selectedLocation.name,
                   minPrice: priceRange[0],
                   maxPrice: priceRange[1],
-                  licensedHmoOnly,
                 }}
                 disabled={loading}
+                isAdmin={user.user_metadata?.is_admin === true}
               />
             )}
           </div>

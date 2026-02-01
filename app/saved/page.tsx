@@ -197,12 +197,11 @@ export default function SavedPropertiesPage() {
 
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
                         onClick={() => router.push(`/?property=${property.id}`)}
                       >
-                        View on Map
+                        View Details
                       </Button>
                       {property.source_url && (
                         <Button

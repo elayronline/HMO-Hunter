@@ -26,11 +26,6 @@ export interface SearchFilters {
   priceRange: number[]
   propertyTypes: string[]
   selectedLocation: any
-  availableNow: boolean
-  studentFriendly: boolean
-  petFriendly: boolean
-  furnished: boolean
-  licensedHmoOnly: boolean
   minEpcRating: string | null
   article4Filter: string
   licenceTypeFilter: string

@@ -1,8 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Download } from "lucide-react"
+import { Download, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
 
 interface ExportButtonProps {
@@ -11,6 +17,7 @@ interface ExportButtonProps {
   disabled?: boolean
   variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg" | "icon"
+  isAdmin?: boolean
 }
 
 export function ExportButton({
@@ -18,9 +25,34 @@ export function ExportButton({
   filters,
   disabled = false,
   variant = "outline",
-  size = "sm"
+  size = "sm",
+  isAdmin = false
 }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false)
+
+  // If not admin, show locked button
+  if (!isAdmin) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size={size}
+              disabled
+              className="gap-2 opacity-50 cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+              Export CSV
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Admin-only feature</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
 
   async function handleExport() {
     setExporting(true)
