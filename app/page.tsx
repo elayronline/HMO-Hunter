@@ -1484,10 +1484,15 @@ export default function HMOHunterPage() {
           </Card>
 
           {/* Add Property button */}
-          <Button className="absolute bottom-8 right-8 rounded-full h-14 px-6 bg-teal-600 hover:bg-teal-700 shadow-xl text-white font-medium z-20">
-            <Plus className="w-5 h-5 mr-2" />
-            Add Property
-          </Button>
+          <div className="absolute bottom-8 right-8 z-20">
+            <Button className="rounded-full h-14 px-6 bg-slate-400 hover:bg-slate-400 shadow-xl text-white font-medium cursor-not-allowed opacity-80" disabled>
+              <Plus className="w-5 h-5 mr-2" />
+              Add Property
+            </Button>
+            <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+              Coming Soon
+            </span>
+          </div>
         </main>
 
         {/* Right Sidebar */}
