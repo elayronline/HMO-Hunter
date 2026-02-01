@@ -77,6 +77,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
     const limit = Math.min(body.limit || 100, 500)
+    const forceRecheck = body.forceRecheck === true
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -92,13 +93,18 @@ export async function POST(request: Request) {
     console.log(`[EnrichArticle4] Loaded ${article4Data.features.length} Article 4 areas`)
 
     // Get properties that need Article 4 check
-    const { data: properties } = await supabase
+    let query = supabase
       .from("properties")
       .select("id, latitude, longitude, address, city")
       .not("latitude", "is", null)
       .not("longitude", "is", null)
-      .is("article_4_area", null)
-      .limit(limit)
+
+    // Only filter by null article_4_area if not forcing recheck
+    if (!forceRecheck) {
+      query = query.is("article_4_area", null)
+    }
+
+    const { data: properties } = await query.limit(limit)
 
     if (!properties || properties.length === 0) {
       return NextResponse.json({

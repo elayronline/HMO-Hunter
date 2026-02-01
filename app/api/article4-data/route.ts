@@ -192,14 +192,41 @@ async function fetchAllArticle4Data(): Promise<Article4Entity[]> {
   return allEntities
 }
 
+async function loadStaticGeoJSON(): Promise<GeoJSON.Feature[]> {
+  try {
+    // Load the static file that has comprehensive city-wide coverage
+    const fs = await import("fs/promises")
+    const path = await import("path")
+    const filePath = path.join(process.cwd(), "public/data/article4-areas.geojson")
+    const fileContent = await fs.readFile(filePath, "utf-8")
+    const data = JSON.parse(fileContent) as GeoJSON.FeatureCollection
+    console.log(`[Article4] Loaded ${data.features.length} features from static file`)
+    return data.features.map(f => ({
+      ...f,
+      properties: {
+        ...f.properties,
+        source: "static-comprehensive",
+        verified: true,
+      }
+    }))
+  } catch (error) {
+    console.error("[Article4] Error loading static file:", error)
+    return []
+  }
+}
+
 async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
-  const entities = await fetchAllArticle4Data()
+  // Load both data sources in parallel
+  const [entities, staticFeatures] = await Promise.all([
+    fetchAllArticle4Data(),
+    loadStaticGeoJSON()
+  ])
 
-  // Filter for HMO-related Article 4 directions
+  // Filter for HMO-related Article 4 directions from API
   const hmoEntities = entities.filter(isHmoRelated)
-  console.log(`[Article4] HMO-related entities: ${hmoEntities.length}`)
+  console.log(`[Article4] HMO-related entities from API: ${hmoEntities.length}`)
 
-  const features: GeoJSON.Feature[] = []
+  const apiFeatures: GeoJSON.Feature[] = []
 
   for (const entity of hmoEntities) {
     if (!entity.geometry) continue
@@ -207,7 +234,7 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
     const geometry = parseWKTGeometry(entity.geometry)
     if (!geometry) continue
 
-    features.push({
+    apiFeatures.push({
       type: "Feature",
       properties: {
         name: entity.name || "Article 4 Direction",
@@ -223,11 +250,40 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
     })
   }
 
-  console.log(`[Article4] Features with valid geometry: ${features.length}`)
+  console.log(`[Article4] API features with valid geometry: ${apiFeatures.length}`)
+  console.log(`[Article4] Static features: ${staticFeatures.length}`)
+
+  // Merge both sources - static file provides comprehensive city-wide coverage
+  // that the government API doesn't have yet (many councils haven't uploaded data)
+  const allFeatures = [...staticFeatures, ...apiFeatures]
+
+  // Deduplicate by name (prefer API data as more authoritative when both exist)
+  const seenNames = new Set<string>()
+  const deduplicatedFeatures: GeoJSON.Feature[] = []
+
+  // Process API features first (higher priority)
+  for (const feature of apiFeatures) {
+    const name = (feature.properties?.name || "").toLowerCase()
+    if (!seenNames.has(name)) {
+      seenNames.add(name)
+      deduplicatedFeatures.push(feature)
+    }
+  }
+
+  // Then add static features that don't overlap
+  for (const feature of staticFeatures) {
+    const name = (feature.properties?.name || "").toLowerCase()
+    if (!seenNames.has(name)) {
+      seenNames.add(name)
+      deduplicatedFeatures.push(feature)
+    }
+  }
+
+  console.log(`[Article4] Total merged features: ${deduplicatedFeatures.length}`)
 
   return {
     type: "FeatureCollection",
-    features,
+    features: deduplicatedFeatures,
   }
 }
 
