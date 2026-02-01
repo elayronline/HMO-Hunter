@@ -38,7 +38,7 @@ import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
 import { KammaComplianceCard } from "@/components/kamma-compliance-card"
 import { LicenceDetailsCard } from "@/components/licence-details-card"
-import { DataEnrichmentCard } from "@/components/data-enrichment-card"
+// DataEnrichmentCard removed - enrichment is automated, not user-triggered
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 import { SavePropertyButton } from "@/components/save-property-button"
 import { toast } from "sonner"
@@ -544,9 +544,6 @@ export function PropertyDetailCard({
 
               {/* Licence Details from Council Register */}
               <LicenceDetailsCard propertyId={property.id} />
-
-              {/* On-demand Data Enrichment */}
-              <DataEnrichmentCard property={property} isPremium={isPremium} />
             </>
           )}
         </div>
