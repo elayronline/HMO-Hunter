@@ -68,6 +68,11 @@ export interface KammaLicensingData {
   requiresMandatory: boolean
   requiresAdditional: boolean
   requiresSelective: boolean
+  // Derived fields for UI
+  licensingRequired: boolean
+  planningRequired: boolean
+  riskLevel: string
+  recommendations: string[]
 }
 
 /**
@@ -259,8 +264,10 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
 
   /**
    * Parse full Kamma data for UI display
+   * @param data - The Kamma V3 API response
+   * @param bedrooms - Optional bedroom count to determine mandatory licensing requirement
    */
-  static parseForUI(data: KammaV3DeterminationResponse): KammaLicensingData {
+  static parseForUI(data: KammaV3DeterminationResponse, bedrooms?: number): KammaLicensingData {
     const schemes = data.current_schemes || []
 
     // Check for Article 4
@@ -271,14 +278,20 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
       hasArticle4 = !data.advice_text.planning.article4.toLowerCase().includes("no active article 4")
     }
 
-    // Determine scheme requirements
-    const hasMandatory = schemes.some(s => s.type === "mandatory")
+    // Determine scheme requirements from API
+    const hasMandatoryScheme = schemes.some(s => s.type === "mandatory")
     const hasAdditional = schemes.some(s => s.type === "additional")
     const hasSelective = schemes.some(s => s.type === "selective")
 
+    // IMPORTANT: Mandatory HMO licensing is NATIONAL LAW for 5+ occupants from 2+ households
+    // If property has 5+ bedrooms, mandatory licensing is almost always required
+    // regardless of whether the council has registered a scheme in Kamma's database
+    const requiresMandatoryByBedrooms = bedrooms !== undefined && bedrooms >= 5
+    const hasMandatory = hasMandatoryScheme || requiresMandatoryByBedrooms
+
     // Calculate complexity
     let complexity: "low" | "medium" | "high" = "low"
-    if (hasArticle4 && schemes.length >= 2) {
+    if (hasArticle4 && (hasMandatory || hasAdditional || hasSelective)) {
       complexity = "high"
     } else if (hasMandatory && (hasAdditional || hasSelective)) {
       complexity = "high"
@@ -286,6 +299,35 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
       complexity = "medium"
     } else if (hasAdditional || hasSelective) {
       complexity = "medium"
+    }
+
+    // Determine if any licensing is required
+    const licensingRequired = hasMandatory || hasAdditional || hasSelective
+
+    // Calculate risk level
+    let riskLevel = "low"
+    if (complexity === "high" || (hasArticle4 && licensingRequired)) {
+      riskLevel = "high"
+    } else if (complexity === "medium") {
+      riskLevel = "medium"
+    }
+
+    // Build recommendations
+    const recommendations: string[] = []
+    if (hasMandatory) {
+      recommendations.push("Apply for mandatory HMO licence from your local council")
+    }
+    if (hasAdditional) {
+      recommendations.push("Check if additional licensing applies to your property size")
+    }
+    if (hasSelective) {
+      recommendations.push("Apply for selective licence - required for all rentals in this area")
+    }
+    if (hasArticle4) {
+      recommendations.push("Apply for planning permission before converting to HMO use")
+    }
+    if (!licensingRequired && !hasArticle4) {
+      recommendations.push("No special requirements - standard landlord obligations apply")
     }
 
     return {
@@ -301,6 +343,11 @@ export class KammaEnrichmentAdapter extends EnrichmentAdapter {
       requiresMandatory: hasMandatory,
       requiresAdditional: hasAdditional,
       requiresSelective: hasSelective,
+      // Derived fields for UI
+      licensingRequired,
+      planningRequired: hasArticle4,
+      riskLevel,
+      recommendations,
     }
   }
 }

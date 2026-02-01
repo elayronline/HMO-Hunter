@@ -41,6 +41,7 @@ interface KammaComplianceCardProps {
   postcode: string
   address?: string
   uprn?: string
+  bedrooms?: number
   className?: string
 }
 
@@ -48,6 +49,7 @@ export function KammaComplianceCard({
   postcode,
   address,
   uprn,
+  bedrooms,
   className,
 }: KammaComplianceCardProps) {
   const [data, setData] = useState<KammaData | null>(null)
@@ -60,7 +62,7 @@ export function KammaComplianceCard({
       const response = await fetch("/api/kamma-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postcode, address, uprn }),
+        body: JSON.stringify({ postcode, address, uprn, bedrooms }),
       })
       const result = await response.json()
       setData(result)

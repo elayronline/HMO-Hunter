@@ -11,7 +11,7 @@ import { apiConfig } from "@/lib/config/api-config"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { postcode, uprn, address } = body
+    const { postcode, uprn, address, bedrooms } = body
 
     if (!postcode) {
       return NextResponse.json({
@@ -81,8 +81,8 @@ export async function POST(request: Request) {
       })
     }
 
-    // Parse for UI display
-    const licensingData = KammaEnrichmentAdapter.parseForUI(data)
+    // Parse for UI display - pass bedrooms to determine mandatory licensing
+    const licensingData = KammaEnrichmentAdapter.parseForUI(data, bedrooms ? parseInt(bedrooms, 10) : undefined)
 
     return NextResponse.json({
       success: true,
