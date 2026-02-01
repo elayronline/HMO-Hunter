@@ -18,13 +18,29 @@ function pointInPolygon(point: [number, number], polygon: number[][]): boolean {
   return inside
 }
 
+// Check if point is in a single polygon (outer ring minus holes)
+function pointInPolygonWithHoles(point: [number, number], polygon: number[][][]): boolean {
+  // First ring is the outer boundary
+  const outerRing = polygon[0]
+  if (!pointInPolygon(point, outerRing)) {
+    return false // Not in outer ring
+  }
+
+  // Check if point is in any hole (subsequent rings)
+  for (let i = 1; i < polygon.length; i++) {
+    if (pointInPolygon(point, polygon[i])) {
+      return false // Point is in a hole, so not inside the polygon
+    }
+  }
+
+  return true // In outer ring and not in any hole
+}
+
 // Check if point is in any polygon of a MultiPolygon
 function pointInMultiPolygon(point: [number, number], multiPolygon: number[][][][]): boolean {
   for (const polygon of multiPolygon) {
-    for (const ring of polygon) {
-      if (pointInPolygon(point, ring)) {
-        return true
-      }
+    if (pointInPolygonWithHoles(point, polygon)) {
+      return true
     }
   }
   return false
