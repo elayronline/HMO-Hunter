@@ -28,6 +28,7 @@ import {
   LogOut,
   User as UserIcon,
   Home,
+  Key,
   X,
   ExternalLink,
   RotateCcw,
@@ -1202,34 +1203,47 @@ export default function HMOHunterPage() {
                   )}
                 </div>
 
-                {/* Acquisition Strategy - Advanced */}
+                {/* Acquisition Strategy - Toggle between Purchase and Rent-to-Rent */}
                 <div className="pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-slate-700">Rent-to-Rent Mode</span>
-                      <span className="text-xs text-slate-500">Show rental listings for R2R strategy</span>
-                    </div>
-                    <Switch
-                      checked={listingType === "rent"}
-                      onCheckedChange={(checked) => {
-                        setListingType(checked ? "rent" : "purchase")
-                        // Reset price range when switching
-                        if (checked) {
-                          setPriceRange([500, 15000])
-                        } else {
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Search Mode</span>
+                    <div className="flex rounded-lg overflow-hidden border border-slate-200">
+                      <button
+                        onClick={() => {
+                          setListingType("purchase")
                           setPriceRange([50000, 2000000])
-                        }
-                      }}
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
-                  {listingType === "rent" && (
-                    <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg p-2">
-                      <p className="text-xs text-purple-700">
-                        Showing rental listings. Lease properties and sublet as HMO rooms.
-                      </p>
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
+                          listingType === "purchase"
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Key className="w-4 h-4" />
+                        Purchase
+                      </button>
+                      <button
+                        onClick={() => {
+                          setListingType("rent")
+                          setPriceRange([500, 15000])
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
+                          listingType === "rent"
+                            ? "bg-purple-600 text-white"
+                            : "bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Home className="w-4 h-4" />
+                        Rent-to-Rent
+                      </button>
                     </div>
-                  )}
+                    <p className="text-xs text-slate-500">
+                      {listingType === "purchase"
+                        ? "Find properties to buy and operate as HMOs"
+                        : "Find properties to lease and sublet as HMO rooms"
+                      }
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -1610,10 +1624,23 @@ export default function HMOHunterPage() {
 
               {/* Price and Title */}
               <div className="mb-6">
-                <div className="text-3xl font-bold text-teal-600 mb-2">
-                  {selectedProperty.listing_type === "purchase"
-                    ? (selectedProperty.purchase_price ? `£${selectedProperty.purchase_price.toLocaleString()}` : "Price on application")
-                    : (selectedProperty.price_pcm ? `£${selectedProperty.price_pcm.toLocaleString()} pcm` : "Price on application")}
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl font-bold text-teal-600">
+                    {selectedProperty.listing_type === "purchase"
+                      ? (selectedProperty.purchase_price ? `£${selectedProperty.purchase_price.toLocaleString()}` : "Price on application")
+                      : (selectedProperty.price_pcm ? `£${selectedProperty.price_pcm.toLocaleString()} pcm` : "Price on application")}
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${
+                    selectedProperty.listing_type === "rent"
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {selectedProperty.listing_type === "rent" ? (
+                      <><Home className="w-4 h-4" /> Rent-to-Rent</>
+                    ) : (
+                      <><Key className="w-4 h-4" /> Purchase</>
+                    )}
+                  </span>
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-2">{selectedProperty.title}</h3>
                 <p className="text-slate-600">

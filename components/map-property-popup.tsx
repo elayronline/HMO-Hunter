@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { BedDouble, Bath, Maximize2, ChevronRight, Shield, AlertTriangle } from "lucide-react"
+import { BedDouble, Bath, Maximize2, ChevronRight, Shield, AlertTriangle, Home, Key } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 
 interface MapPropertyPopupProps {
@@ -82,8 +82,22 @@ export function MapPropertyPopup({ property, onClick, onClose, className }: MapP
         <div className="p-4 pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="text-xl font-bold text-slate-900">
-                £{price?.toLocaleString()}{priceLabel}
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-slate-900">
+                  £{price?.toLocaleString()}{priceLabel}
+                </span>
+                <span className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                  property.listing_type === "rent"
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-blue-100 text-blue-700"
+                )}>
+                  {property.listing_type === "rent" ? (
+                    <><Home className="w-3 h-3" /> R2R</>
+                  ) : (
+                    <><Key className="w-3 h-3" /> BUY</>
+                  )}
+                </span>
               </div>
               <p className="text-sm text-slate-600 mt-1 truncate">
                 {property.address}, {property.postcode}

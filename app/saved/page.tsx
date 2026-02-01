@@ -156,7 +156,12 @@ export default function SavedPropertiesPage() {
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
-                    <div className="absolute bottom-3 left-3">
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                      <span className={`text-white text-xs font-bold px-2 py-1 rounded-full ${
+                        property.listing_type === "rent" ? "bg-purple-600" : "bg-blue-600"
+                      }`}>
+                        {property.listing_type === "rent" ? "R2R" : "BUY"}
+                      </span>
                       <span className="bg-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
                         {property.listing_type === "purchase"
                           ? (property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "POA")

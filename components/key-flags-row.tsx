@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Shield, AlertTriangle, Zap, CheckCircle2 } from "lucide-react"
+import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 
 interface KeyFlagsRowProps {
@@ -21,7 +21,17 @@ type FlagType = {
 export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
   const flags: FlagType[] = []
 
-  // Licence status (highest priority)
+  // Listing type - HIGHEST priority (most fundamental info)
+  flags.push({
+    id: "listing_type",
+    label: property.listing_type === "rent" ? "Rent-to-Rent" : "Purchase",
+    icon: property.listing_type === "rent" ? Home : Key,
+    bgColor: property.listing_type === "rent" ? "bg-purple-100" : "bg-blue-100",
+    textColor: property.listing_type === "rent" ? "text-purple-700" : "text-blue-700",
+    priority: 0,
+  })
+
+  // Licence status (high priority)
   if (property.licensed_hmo && property.licence_status === "active") {
     flags.push({
       id: "licensed",
