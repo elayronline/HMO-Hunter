@@ -297,9 +297,6 @@ export default function HMOHunterPage() {
           hasOwnerData: ownerDataFilter || undefined,
         })
         setProperties(data)
-        if (data.length > 0 && !selectedProperty) {
-          setSelectedProperty(data[0])
-        }
       } catch (error) {
         console.error("[v0] Failed to fetch properties:", error)
         if (error instanceof Error) {
@@ -390,9 +387,6 @@ export default function HMOHunterPage() {
         hasOwnerData: ownerDataFilter || undefined,
       })
       setProperties(data)
-      if (data.length > 0) {
-        setSelectedProperty(data[0])
-      }
     } catch (error) {
       console.error("[v0] Failed to fetch properties:", error)
     } finally {
