@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Bell,
   ChevronDown,
@@ -138,8 +138,12 @@ export default function HMOHunterPage() {
   const isPremiumUser = user?.user_metadata?.is_premium === true
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const { toast } = useToast()
+
+  // Check for demo mode via URL parameter
+  const isDemoMode = searchParams.get('demo') === 'true'
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
   const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
@@ -197,6 +201,13 @@ export default function HMOHunterPage() {
     trackPropertyView(property.id)
   }, [trackPropertyView])
 
+  // Show walkthrough immediately in demo mode
+  useEffect(() => {
+    if (isDemoMode) {
+      setShowWalkthrough(true)
+    }
+  }, [isDemoMode])
+
   useEffect(() => {
     let mounted = true
 
@@ -206,8 +217,8 @@ export default function HMOHunterPage() {
         setUser(authUser)
         if (authUser) {
           fetchSavedProperties()
-          // Show walkthrough for first-time users
-          if (!authUser.user_metadata?.onboarding_completed) {
+          // Show walkthrough for first-time users or demo mode
+          if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
             setShowWalkthrough(true)
           }
         }
