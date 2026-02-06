@@ -159,7 +159,6 @@ export default function HMOHunterPage() {
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
   const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
-  const handleNavigateToDashboard = useCallback(() => router.push("/user-dashboard"), [router])
   const handleNavigateToSaved = useCallback(() => router.push("/saved"), [router])
   const handleOpenLeftPanel = useCallback(() => setLeftPanelOpen(true), [])
   const handleCloseLeftPanel = useCallback(() => setLeftPanelOpen(false), [])
@@ -636,12 +635,6 @@ export default function HMOHunterPage() {
         <nav className="hidden md:flex items-center gap-8">
           <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">Home</button>
           <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Properties</button>
-          <button
-            onClick={handleNavigateToDashboard}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Dashboard
-          </button>
           <button
             onClick={handleNavigateToSaved}
             className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
