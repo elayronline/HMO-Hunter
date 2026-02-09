@@ -251,6 +251,12 @@ export type PropertyFilters = {
   licenceExpiryStartMonth?: number // 1-12
   licenceExpiryEndMonth?: number // 1-12
   licenceExpiryYear?: number // e.g., 2025
+  // Phase 6 - TA Sourcing filters
+  minBedrooms?: number
+  minBathrooms?: number
+  isFurnished?: boolean
+  hasParking?: boolean
+  taSuitability?: "suitable" | "partial" | null
 }
 
 export type SavedProperty = {

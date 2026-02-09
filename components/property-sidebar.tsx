@@ -31,6 +31,7 @@ import { HeroMetricsBar } from "@/components/hero-metrics-bar"
 import { KeyFlagsRow } from "@/components/key-flags-row"
 import { PropertyGallery } from "@/components/property-gallery"
 import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
+import { getLhaWeeklyRate, getLhaMonthlyRate } from "@/lib/data/lha-rates"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
 import { AgentContactCard } from "@/components/agent-contact-card"
@@ -190,6 +191,39 @@ export function PropertySidebar({
           {activeTab === "overview" && (
             <>
               <PremiumYieldCalculator property={property} isPremium={isPremium} />
+
+              {/* LHA Rate Comparison (rental properties) */}
+              {property.listing_type === "rent" && property.price_pcm && (() => {
+                const lhaWeekly = getLhaWeeklyRate(property.city, property.bedrooms, property.postcode)
+                const lhaMonthly = lhaWeekly ? Math.round((lhaWeekly * 52) / 12) : null
+                if (!lhaMonthly) return null
+                const diff = property.price_pcm - lhaMonthly
+                const isAffordable = diff <= 0
+                return (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">LHA Rate Comparison</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">LHA Rate (weekly)</span>
+                        <span className="text-sm font-medium">£{lhaWeekly?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">LHA Rate (monthly)</span>
+                        <span className="text-sm font-medium">£{lhaMonthly}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <span className="text-sm text-slate-600">Rent vs LHA</span>
+                        <span className={cn(
+                          "text-sm font-bold",
+                          isAffordable ? "text-emerald-600" : "text-red-600"
+                        )}>
+                          {isAffordable ? "-" : "+"}£{Math.abs(diff)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
             </>
           )}
 

@@ -78,6 +78,8 @@ import { CreditBalance } from "@/components/credit-balance"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
+import { RoleSelectionModal, type UserType } from "@/components/role-selection-modal"
+import { assessTASuitability } from "@/lib/services/ta-suitability"
 import { Scale } from "lucide-react"
 
 export default function HMOHunterPage() {
@@ -118,6 +120,16 @@ export default function HMOHunterPage() {
   const [yieldBandFilter, setYieldBandFilter] = useState<"low" | "medium" | "high" | null>(null)
   const [epcBandFilter, setEpcBandFilter] = useState<"good" | "needs_upgrade" | null>(null)
   const [minDealScore, setMinDealScore] = useState<number>(0)
+
+  // Phase 6 - TA Sourcing filters
+  const [minBedrooms, setMinBedrooms] = useState<number>(0)
+  const [minBathrooms, setMinBathrooms] = useState<number>(0)
+  const [isFurnished, setIsFurnished] = useState(false)
+  const [hasParking, setHasParking] = useState(false)
+  const [taSuitabilityFilter, setTaSuitabilityFilter] = useState<"suitable" | "partial" | null>(null)
+
+  // Role selection modal state
+  const [showRoleSelection, setShowRoleSelection] = useState(false)
 
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
@@ -257,6 +269,15 @@ export default function HMOHunterPage() {
           if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
             setShowWalkthrough(true)
           }
+          // Show role selection for users who haven't chosen a role yet
+          if (!authUser.user_metadata?.user_type) {
+            setShowRoleSelection(true)
+          }
+          // Apply role-based defaults
+          if (authUser.user_metadata?.user_type === "council_ta") {
+            setListingType("rent")
+            setPriceRange([500, 15000])
+          }
         }
       }
     }).catch((error: Error) => {
@@ -329,6 +350,11 @@ export default function HMOHunterPage() {
           licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
           licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
           licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
+          // Phase 6 - TA Sourcing filters
+          minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
+          minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
+          isFurnished: isFurnished || undefined,
+          hasParking: hasParking || undefined,
         })
         console.log("[Page] Properties fetched:", data.length)
         setProperties(data)
@@ -390,6 +416,10 @@ export default function HMOHunterPage() {
     licenceExpiryMonthRange[0],
     licenceExpiryMonthRange[1],
     licenceExpiryYear,
+    minBedrooms,
+    minBathrooms,
+    isFurnished,
+    hasParking,
   ])
 
   const handleSearch = async () => {
@@ -432,8 +462,9 @@ export default function HMOHunterPage() {
   }
 
   const handleResetFilters = () => {
-    setListingType("purchase")
-    setPriceRange([50000, 2000000])
+    const isCouncilTA = user?.user_metadata?.user_type === "council_ta"
+    setListingType(isCouncilTA ? "rent" : "purchase")
+    setPriceRange(isCouncilTA ? [500, 15000] : [50000, 2000000])
     setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
     setSelectedLocation(DEFAULT_LOCATION)
     setMinEpcRating(null)
@@ -450,6 +481,12 @@ export default function HMOHunterPage() {
     setLicenceExpiryEnabled(false)
     setLicenceExpiryMonthRange([1, 12])
     setLicenceExpiryYear(new Date().getFullYear())
+    // Phase 6 - TA Sourcing filter resets
+    setMinBedrooms(0)
+    setMinBathrooms(0)
+    setIsFurnished(false)
+    setHasParking(false)
+    setTaSuitabilityFilter(null)
   }
 
   const getMonthlyRent = (p: Property): number => {
@@ -609,6 +646,15 @@ export default function HMOHunterPage() {
     console.log("[Page] Segment filtered count:", filtered.length)
     return filtered
   }, [properties, activeSegment])
+
+  // Phase 6 - Client-side TA suitability filter
+  const displayProperties = useMemo(() => {
+    if (!taSuitabilityFilter) return segmentFilteredProperties
+    return segmentFilteredProperties.filter((p: Property) => {
+      const result = assessTASuitability(p)
+      return result.suitability === taSuitabilityFilter
+    })
+  }, [segmentFilteredProperties, taSuitabilityFilter])
 
   return (
     <div className="flex flex-col h-screen bg-slate-800">
@@ -843,6 +889,12 @@ export default function HMOHunterPage() {
               yieldBandFilter,
               epcBandFilter,
               minDealScore,
+              // Phase 6 - TA Sourcing
+              minBedrooms,
+              minBathrooms,
+              isFurnished,
+              hasParking,
+              taSuitabilityFilter,
             }}
             onLoadFilters={(filters: SearchFilters) => {
               setListingType(filters.listingType)
@@ -861,6 +913,12 @@ export default function HMOHunterPage() {
               setYieldBandFilter(filters.yieldBandFilter as any)
               setEpcBandFilter(filters.epcBandFilter as any)
               setMinDealScore(filters.minDealScore)
+              // Phase 6 - TA Sourcing
+              if (filters.minBedrooms !== undefined) setMinBedrooms(filters.minBedrooms)
+              if (filters.minBathrooms !== undefined) setMinBathrooms(filters.minBathrooms)
+              if (filters.isFurnished !== undefined) setIsFurnished(filters.isFurnished)
+              if (filters.hasParking !== undefined) setHasParking(filters.hasParking)
+              if (filters.taSuitabilityFilter !== undefined) setTaSuitabilityFilter(filters.taSuitabilityFilter as any)
             }}
             isLoggedIn={!!user}
           />
@@ -1041,6 +1099,82 @@ export default function HMOHunterPage() {
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* Phase 6 - TA Sourcing Filters */}
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Property Requirements</p>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">Min Bedrooms</label>
+                      <Select
+                        value={minBedrooms > 0 ? String(minBedrooms) : "any"}
+                        onValueChange={(value) => setMinBedrooms(value === "any" ? 0 : parseInt(value))}
+                      >
+                        <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="2">2+</SelectItem>
+                          <SelectItem value="3">3+</SelectItem>
+                          <SelectItem value="4">4+</SelectItem>
+                          <SelectItem value="5">5+</SelectItem>
+                          <SelectItem value="6">6+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">Min Bathrooms</label>
+                      <Select
+                        value={minBathrooms > 0 ? String(minBathrooms) : "any"}
+                        onValueChange={(value) => setMinBathrooms(value === "any" ? 0 : parseInt(value))}
+                      >
+                        <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200">
+                          <SelectValue placeholder="Any" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="1">1+</SelectItem>
+                          <SelectItem value="2">2+</SelectItem>
+                          <SelectItem value="3">3+</SelectItem>
+                          <SelectItem value="4">4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Furnished Only</span>
+                      <Switch
+                        checked={isFurnished}
+                        onCheckedChange={setIsFurnished}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Has Parking</span>
+                      <Switch
+                        checked={hasParking}
+                        onCheckedChange={setHasParking}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="text-xs font-medium text-slate-600 mb-1 block">TA Suitability</label>
+                    <Select
+                      value={taSuitabilityFilter || "any"}
+                      onValueChange={(value) => setTaSuitabilityFilter(value === "any" ? null : value as "suitable" | "partial")}
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">Any</SelectItem>
+                        <SelectItem value="suitable">TA Suitable</SelectItem>
+                        <SelectItem value="partial">Partial Match</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Owner Data Filter Toggle */}
@@ -1341,12 +1475,12 @@ export default function HMOHunterPage() {
                 </span>
               ) : (
                 <span>
-                  Showing <span className="font-bold">{segmentFilteredProperties.length}</span> properties
+                  Showing <span className="font-bold">{displayProperties.length}</span> properties
                   {selectedLocation.name !== "All Cities" && <span className="opacity-70"> in {selectedLocation.name}</span>}
                 </span>
               )}
             </div>
-            {user && segmentFilteredProperties.length > 0 && (
+            {user && displayProperties.length > 0 && (
               <ExportButton
                 filters={{
                   listingType,
@@ -1363,7 +1497,7 @@ export default function HMOHunterPage() {
           {/* MapLibre GL Map */}
           <MainMapView
             selectedCity={selectedLocation}
-            properties={segmentFilteredProperties}
+            properties={displayProperties}
             selectedProperty={selectedProperty}
             onPropertySelect={(property) => {
               setSelectedProperty(property)
@@ -1967,6 +2101,18 @@ export default function HMOHunterPage() {
           onClear={clearCompare}
         />
       )}
+
+      {/* Role Selection Modal - shown when user_type not set */}
+      <RoleSelectionModal
+        isOpen={showRoleSelection}
+        onComplete={(userType: UserType) => {
+          setShowRoleSelection(false)
+          if (userType === "council_ta") {
+            setListingType("rent")
+            setPriceRange([500, 15000])
+          }
+        }}
+      />
 
       {/* Onboarding Walkthrough - shown on first login */}
       <OnboardingWalkthrough

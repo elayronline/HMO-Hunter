@@ -71,6 +71,10 @@ export const exportRequestSchema = z.object({
       city: z.string().optional(),
       minPrice: z.number().int().nonnegative().optional(),
       maxPrice: z.number().int().positive().optional(),
+      minBedrooms: z.number().int().min(1).max(20).optional(),
+      minBathrooms: z.number().int().min(1).max(10).optional(),
+      isFurnished: z.boolean().optional(),
+      hasParking: z.boolean().optional(),
     })
     .optional(),
 })
@@ -134,6 +138,12 @@ export const propertyFiltersSchema = z.object({
   hasFiber: z.coerce.boolean().optional(),
   minBroadbandSpeed: z.coerce.number().int().positive().optional(),
   hasOwnerData: z.coerce.boolean().optional(),
+  // Phase 6 - TA Sourcing filters
+  minBedrooms: z.coerce.number().int().min(1).max(20).optional(),
+  minBathrooms: z.coerce.number().int().min(1).max(10).optional(),
+  isFurnished: z.coerce.boolean().optional(),
+  hasParking: z.coerce.boolean().optional(),
+  taSuitability: z.enum(["suitable", "partial"]).optional(),
 })
 
 // Type exports

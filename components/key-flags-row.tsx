@@ -1,8 +1,9 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key } from "lucide-react"
+import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key, Building2 } from "lucide-react"
 import type { Property } from "@/lib/types/database"
+import { assessTASuitability } from "@/lib/services/ta-suitability"
 
 interface KeyFlagsRowProps {
   property: Property
@@ -98,10 +99,32 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
     }
   }
 
-  // Sort by priority and limit to 4
+  // TA Suitability
+  const taResult = assessTASuitability(property)
+  if (taResult.suitability === "suitable") {
+    flags.push({
+      id: "ta_suitable",
+      label: "TA Suitable",
+      icon: Building2,
+      bgColor: "bg-teal-100",
+      textColor: "text-teal-700",
+      priority: 5,
+    })
+  } else if (taResult.suitability === "partial") {
+    flags.push({
+      id: "ta_partial",
+      label: "TA Partial",
+      icon: AlertTriangle,
+      bgColor: "bg-amber-100",
+      textColor: "text-amber-700",
+      priority: 5,
+    })
+  }
+
+  // Sort by priority and limit to 5
   const displayFlags = flags
     .sort((a, b) => a.priority - b.priority)
-    .slice(0, 4)
+    .slice(0, 5)
 
   if (displayFlags.length === 0) return null
 

@@ -131,6 +131,21 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       query = query.gte("broadband_max_down", validatedFilters.minBroadbandSpeed)
     }
 
+    // Phase 6 - Bedroom/Bathroom filters
+    if (validatedFilters.minBedrooms && validatedFilters.minBedrooms > 0) {
+      query = query.gte("bedrooms", validatedFilters.minBedrooms)
+    }
+    if (validatedFilters.minBathrooms && validatedFilters.minBathrooms > 0) {
+      query = query.gte("bathrooms", validatedFilters.minBathrooms)
+    }
+    // Phase 6 - Furnished/Parking filters
+    if (validatedFilters.isFurnished === true) {
+      query = query.eq("is_furnished", true)
+    }
+    if (validatedFilters.hasParking === true) {
+      query = query.eq("has_parking", true)
+    }
+
     // Licence Type Filter
     if (validatedFilters.licenceTypeFilter && validatedFilters.licenceTypeFilter !== "all") {
       if (validatedFilters.licenceTypeFilter === "any_licensed") {

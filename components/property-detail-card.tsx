@@ -40,7 +40,9 @@ import { LicenceDetailsCard } from "@/components/licence-details-card"
 // DataEnrichmentCard removed - enrichment is automated, not user-triggered
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 import { SavePropertyButton } from "@/components/save-property-button"
+import { TASuitabilityBadge } from "@/components/ta-suitability-badge"
 import { toast } from "sonner"
+import { getLhaWeeklyRate, getLhaMonthlyRate } from "@/lib/data/lha-rates"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -213,6 +215,31 @@ export function PropertyDetailCard({
           )}
         </div>
 
+        {/* LHA Rate Comparison (rental properties only) */}
+        {property.listing_type === "rent" && property.price_pcm && (() => {
+          const lhaWeekly = getLhaWeeklyRate(property.city, property.bedrooms, property.postcode)
+          const lhaMonthly = lhaWeekly ? Math.round((lhaWeekly * 52) / 12) : null
+          if (!lhaMonthly) return null
+          return (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs text-slate-500">LHA:</span>
+              <span className="text-xs font-medium text-slate-700">
+                £{lhaWeekly?.toFixed(0)}/wk (£{lhaMonthly}/mo)
+              </span>
+              <span className={cn(
+                "inline-flex items-center h-5 px-1.5 rounded text-[10px] font-bold",
+                property.price_pcm <= lhaMonthly ? "bg-emerald-100 text-emerald-700" :
+                property.price_pcm <= lhaMonthly * 1.1 ? "bg-amber-100 text-amber-700" :
+                "bg-red-100 text-red-700"
+              )}>
+                {property.price_pcm <= lhaMonthly ? "Within LHA" :
+                 property.price_pcm <= lhaMonthly * 1.1 ? "Near LHA" :
+                 "Over LHA"}
+              </span>
+            </div>
+          )
+        })()}
+
         {/* Row 2: Address */}
         <div className="flex items-center gap-2 mt-3">
           <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
@@ -254,6 +281,7 @@ export function PropertyDetailCard({
               <AlertCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Area
             </span>
           )}
+          <TASuitabilityBadge property={property} isPremium={isPremium} />
         </div>
       </div>
 

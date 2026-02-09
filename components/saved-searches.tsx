@@ -38,6 +38,12 @@ export interface SearchFilters {
   yieldBandFilter: string | null
   epcBandFilter: string | null
   minDealScore: number
+  // Phase 6 - TA Sourcing filters
+  minBedrooms: number
+  minBathrooms: number
+  isFurnished: boolean
+  hasParking: boolean
+  taSuitabilityFilter: string | null
 }
 
 interface SavedSearch {

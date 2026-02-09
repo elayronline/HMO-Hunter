@@ -278,4 +278,74 @@ describe("propertyFiltersSchema", () => {
     })
     expect(result.success).toBe(false)
   })
+
+  // Phase 6 - TA Sourcing filter validation
+  it("should validate minBedrooms filter", () => {
+    const result = propertyFiltersSchema.safeParse({ minBedrooms: 3 })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.minBedrooms).toBe(3)
+    }
+  })
+
+  it("should coerce string minBedrooms", () => {
+    const result = propertyFiltersSchema.safeParse({ minBedrooms: "4" })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.minBedrooms).toBe(4)
+    }
+  })
+
+  it("should reject minBedrooms below 1", () => {
+    expect(propertyFiltersSchema.safeParse({ minBedrooms: 0 }).success).toBe(false)
+    expect(propertyFiltersSchema.safeParse({ minBedrooms: -1 }).success).toBe(false)
+  })
+
+  it("should reject minBedrooms above 20", () => {
+    expect(propertyFiltersSchema.safeParse({ minBedrooms: 21 }).success).toBe(false)
+  })
+
+  it("should validate minBathrooms filter", () => {
+    const result = propertyFiltersSchema.safeParse({ minBathrooms: 2 })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.minBathrooms).toBe(2)
+    }
+  })
+
+  it("should reject minBathrooms above 10", () => {
+    expect(propertyFiltersSchema.safeParse({ minBathrooms: 11 }).success).toBe(false)
+  })
+
+  it("should validate boolean isFurnished filter", () => {
+    const result = propertyFiltersSchema.safeParse({ isFurnished: true })
+    expect(result.success).toBe(true)
+  })
+
+  it("should validate boolean hasParking filter", () => {
+    const result = propertyFiltersSchema.safeParse({ hasParking: true })
+    expect(result.success).toBe(true)
+  })
+
+  it("should validate taSuitability filter", () => {
+    expect(propertyFiltersSchema.safeParse({ taSuitability: "suitable" }).success).toBe(true)
+    expect(propertyFiltersSchema.safeParse({ taSuitability: "partial" }).success).toBe(true)
+  })
+
+  it("should reject invalid taSuitability value", () => {
+    expect(propertyFiltersSchema.safeParse({ taSuitability: "invalid" }).success).toBe(false)
+    expect(propertyFiltersSchema.safeParse({ taSuitability: "not_suitable" }).success).toBe(false)
+  })
+
+  it("should accept all Phase 6 filters combined", () => {
+    const result = propertyFiltersSchema.safeParse({
+      listingType: "rent",
+      minBedrooms: 3,
+      minBathrooms: 2,
+      isFurnished: true,
+      hasParking: false,
+      taSuitability: "suitable",
+    })
+    expect(result.success).toBe(true)
+  })
 })

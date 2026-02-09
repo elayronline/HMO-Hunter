@@ -154,6 +154,28 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
     sanitized.licenceExpiryYear = Math.floor(filters.licenceExpiryYear)
   }
 
+  // Phase 6 - TA Sourcing filters
+  // Min bedrooms - must be 1-20
+  if (typeof filters.minBedrooms === "number" && filters.minBedrooms >= 1 && filters.minBedrooms <= 20) {
+    sanitized.minBedrooms = Math.floor(filters.minBedrooms)
+  }
+  // Min bathrooms - must be 1-10
+  if (typeof filters.minBathrooms === "number" && filters.minBathrooms >= 1 && filters.minBathrooms <= 10) {
+    sanitized.minBathrooms = Math.floor(filters.minBathrooms)
+  }
+  // Furnished filter
+  if (typeof filters.isFurnished === "boolean") {
+    sanitized.isFurnished = filters.isFurnished
+  }
+  // Parking filter
+  if (typeof filters.hasParking === "boolean") {
+    sanitized.hasParking = filters.hasParking
+  }
+  // TA suitability filter
+  if (filters.taSuitability === "suitable" || filters.taSuitability === "partial") {
+    sanitized.taSuitability = filters.taSuitability
+  }
+
   return sanitized
 }
 
