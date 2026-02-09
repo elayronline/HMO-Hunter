@@ -110,8 +110,10 @@ export class ZooplaAdapter extends SourceAdapter {
           const propertyPostcode = this.normalizePostcode(listing.outcode + " " + (listing.incode || ""))
           const city = listing.county || listing.post_town || this.getCityFromPostcode(propertyPostcode)
 
-          // Determine listing type
-          const isRental = listing.listing_status === "rent"
+          // Determine listing type - check API field first, fallback to URL pattern
+          const isRental = listing.listing_status === "rent" ||
+            listing.listing_status === "to_rent" ||
+            (listing.details_url && listing.details_url.toLowerCase().includes("/to-rent/"))
 
           // Build full address including property number for better matching
           const propertyNumber = listing.property_number || ""

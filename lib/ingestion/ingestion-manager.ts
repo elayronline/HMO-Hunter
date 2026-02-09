@@ -94,6 +94,25 @@ export class IngestionManager {
             continue
           }
 
+          // Validate listing_type matches source URL and price fields
+          let validatedListingType = listing.listing_type
+          let validatedPricePcm = listing.price_pcm
+          let validatedPurchasePrice = listing.purchase_price
+
+          if (listing.source_url?.toLowerCase().includes("/to-rent/") && validatedListingType !== "rent") {
+            console.warn(`[IngestionManager] Reclassifying ${listing.external_id} from "${validatedListingType}" to "rent" — price_pcm=${validatedPricePcm}, purchase_price=${validatedPurchasePrice}`)
+            validatedListingType = "rent"
+            // Prefer existing price_pcm (likely correct monthly rent) over purchase_price
+            validatedPricePcm = validatedPricePcm ?? validatedPurchasePrice
+            validatedPurchasePrice = undefined
+          } else if (listing.source_url?.toLowerCase().includes("/for-sale/") && validatedListingType !== "purchase") {
+            console.warn(`[IngestionManager] Reclassifying ${listing.external_id} from "${validatedListingType}" to "purchase" — price_pcm=${validatedPricePcm}, purchase_price=${validatedPurchasePrice}`)
+            validatedListingType = "purchase"
+            // Prefer existing purchase_price (likely correct sale price) over price_pcm
+            validatedPurchasePrice = validatedPurchasePrice ?? validatedPricePcm
+            validatedPricePcm = undefined
+          }
+
           const propertyData = {
             title: listing.title,
             address: listing.address,
@@ -101,9 +120,9 @@ export class IngestionManager {
             city: listing.city,
             latitude: listing.latitude,
             longitude: listing.longitude,
-            price_pcm: listing.price_pcm,
-            purchase_price: listing.purchase_price,
-            listing_type: listing.listing_type,
+            price_pcm: validatedPricePcm,
+            purchase_price: validatedPurchasePrice,
+            listing_type: validatedListingType,
             property_type: listing.property_type,
             bedrooms: listing.bedrooms,
             bathrooms: listing.bathrooms,
