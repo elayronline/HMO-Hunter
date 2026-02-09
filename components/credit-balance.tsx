@@ -63,11 +63,29 @@ export function CreditBalance() {
 
     // Refresh every 5 minutes
     const interval = setInterval(fetchCredits, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+
+    // Listen for credit-changing actions (save, view, etc.) with debounce
+    let debounceTimer: ReturnType<typeof setTimeout>
+    const handleCreditsChanged = () => {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(fetchCredits, 500)
+    }
+    window.addEventListener("credits-changed", handleCreditsChanged)
+
+    return () => {
+      clearInterval(interval)
+      clearTimeout(debounceTimer)
+      window.removeEventListener("credits-changed", handleCreditsChanged)
+    }
   }, [])
 
   if (isLoading || !credits) {
-    return null
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 animate-pulse">
+        <div className="w-4 h-4 rounded-full bg-slate-200" />
+        <div className="w-6 h-4 rounded bg-slate-200" />
+      </div>
+    )
   }
 
   // Admin users don't see credit balance
@@ -122,7 +140,7 @@ export function CreditBalance() {
           </span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
+      <PopoverContent className="w-72 max-w-[calc(100vw-2rem)]" align="end">
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">

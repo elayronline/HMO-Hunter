@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
+import { getLhaMonthlyRate } from "@/lib/data/lha-rates"
 
 interface HeroMetricsBarProps {
   property: Property
@@ -28,6 +29,27 @@ function getPricePerRoomStatus(pricePerRoom: number | null): MetricStatus {
   if (!pricePerRoom) return "neutral"
   if (pricePerRoom < 60000) return "positive"
   if (pricePerRoom <= 80000) return "neutral"
+  return "negative"
+}
+
+function getR2RMarginStatus(margin: number | null): MetricStatus {
+  if (margin === null) return "neutral"
+  if (margin >= 30) return "positive"
+  if (margin >= 10) return "neutral"
+  return "negative"
+}
+
+function getSpreadStatus(spread: number | null): MetricStatus {
+  if (spread === null) return "neutral"
+  if (spread >= 300) return "positive"
+  if (spread >= 0) return "neutral"
+  return "negative"
+}
+
+function getRentPerRoomStatus(rentPerRoom: number | null): MetricStatus {
+  if (!rentPerRoom) return "neutral"
+  if (rentPerRoom < 400) return "positive"
+  if (rentPerRoom <= 600) return "neutral"
   return "negative"
 }
 
@@ -68,7 +90,42 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     ? Math.round(property.purchase_price / property.bedrooms)
     : null
 
-  const metrics = [
+  // R2R metrics for rent properties
+  const isRent = property.listing_type === "rent"
+  let r2rMargin: number | null = null
+  let monthlySpread: number | null = null
+  let rentPerRoom: number | null = null
+
+  if (isRent && property.price_pcm && property.price_pcm > 0 && property.bedrooms && property.bedrooms > 0) {
+    const lhaRate = property.city
+      ? getLhaMonthlyRate(property.city, property.bedrooms, property.postcode)
+      : null
+    if (lhaRate) {
+      monthlySpread = Math.round(lhaRate - property.price_pcm)
+      r2rMargin = Math.round(((lhaRate - property.price_pcm) / property.price_pcm) * 100)
+    }
+    rentPerRoom = Math.round(property.price_pcm / property.bedrooms)
+  }
+
+  const metrics = isRent ? [
+    {
+      label: "R2R Margin",
+      value: r2rMargin !== null ? `${r2rMargin >= 0 ? "+" : ""}${r2rMargin}%` : "—",
+      status: getR2RMarginStatus(r2rMargin),
+    },
+    {
+      label: "Mo. Spread",
+      value: monthlySpread !== null
+        ? `${monthlySpread >= 0 ? "+" : ""}£${Math.abs(monthlySpread).toLocaleString()}`
+        : "—",
+      status: getSpreadStatus(monthlySpread),
+    },
+    {
+      label: "Rent/Room",
+      value: rentPerRoom ? `£${rentPerRoom.toLocaleString()}` : "—",
+      status: getRentPerRoomStatus(rentPerRoom),
+    },
+  ] : [
     {
       label: "Net Yield",
       value: netYield ? `${netYield.toFixed(1)}%` : "—",
@@ -92,7 +149,7 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     <div className={cn("grid grid-cols-3 divide-x divide-slate-200 bg-slate-50", className)}>
       {metrics.map((metric, i) => (
         <div key={i} className="py-3 px-3 text-center">
-          <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
             {metric.label}
           </p>
           <p className={cn("text-xl font-bold mt-1", statusColors[metric.status])}>

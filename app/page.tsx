@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   ChevronDown,
@@ -78,7 +78,7 @@ import { CreditBalance } from "@/components/credit-balance"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
-import { RoleSelectionModal, type UserType } from "@/components/role-selection-modal"
+import { RoleSelectionModal, roles as roleOptions, type UserType } from "@/components/role-selection-modal"
 import { assessTASuitability } from "@/lib/services/ta-suitability"
 import { Scale } from "lucide-react"
 
@@ -88,6 +88,7 @@ export default function HMOHunterPage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
+  const skipNextAuthUpdate = useRef(false)
   const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([])
   const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set())
 
@@ -133,6 +134,7 @@ export default function HMOHunterPage() {
 
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
+  const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(false)
   const [recentExpanded, setRecentExpanded] = useState(false)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
@@ -183,6 +185,21 @@ export default function HMOHunterPage() {
   const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
 
+  // Escape key handler and body scroll lock for full details modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showFullDetails) handleCloseFullDetails()
+    }
+    if (showFullDetails) {
+      document.body.style.overflow = 'hidden'
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => {
+      window.removeEventListener('keydown', handleEsc)
+      document.body.style.overflow = ''
+    }
+  }, [showFullDetails, handleCloseFullDetails])
+
   // Track property view and deduct credits if needed
   const trackPropertyView = useCallback(async (propertyId: string) => {
     if (!user) return // Don't track for non-logged-in users
@@ -213,6 +230,8 @@ export default function HMOHunterPage() {
           description: `${data.freeViewsRemaining} free property views remaining today`,
         })
       }
+      // Notify credit balance to refresh
+      window.dispatchEvent(new Event("credits-changed"))
     } catch (error) {
       // Silently fail - don't block property viewing
       console.error('Failed to track property view:', error)
@@ -242,15 +261,19 @@ export default function HMOHunterPage() {
 
       // If not found in current list, fetch directly by ID
       if (!property) {
-        property = await getPropertyById(propertyId!) ?? undefined
+        try {
+          property = await getPropertyById(propertyId!) ?? undefined
+        } catch (error) {
+          console.error("[Page] Failed to fetch property from URL:", error)
+        }
       }
 
       if (property) {
         setSelectedProperty(property)
         setRightPanelOpen(true)
-        // Clear the URL parameter without triggering a navigation
-        window.history.replaceState({}, '', '/')
       }
+      // Always clear the URL parameter to prevent repeated failed lookups
+      window.history.replaceState({}, '', '/')
     }
 
     openPropertyFromUrl()
@@ -265,18 +288,22 @@ export default function HMOHunterPage() {
         setUser(authUser)
         if (authUser) {
           fetchSavedProperties()
-          // Show walkthrough for first-time users or demo mode
-          if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
-            setShowWalkthrough(true)
-          }
           // Show role selection for users who haven't chosen a role yet
           if (!authUser.user_metadata?.user_type) {
             setShowRoleSelection(true)
+          } else if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
+            // Only show walkthrough if role is already set (otherwise it triggers after role selection)
+            setShowWalkthrough(true)
           }
           // Apply role-based defaults
-          if (authUser.user_metadata?.user_type === "council_ta") {
+          const roleType = authUser.user_metadata?.user_type
+          if (roleType === "council_ta") {
             setListingType("rent")
             setPriceRange([500, 15000])
+          } else if (roleType === "operator") {
+            setMinBedrooms(3)
+          } else if (roleType === "agent") {
+            setMinDealScore(45)
           }
         }
       }
@@ -292,6 +319,11 @@ export default function HMOHunterPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: string, session: { user: User | null } | null) => {
       if (mounted) {
+        // Skip if a local user update just happened (e.g. role change)
+        if (skipNextAuthUpdate.current) {
+          skipNextAuthUpdate.current = false
+          return
+        }
         setUser(session?.user ?? null)
         if (session?.user) {
           fetchSavedProperties()
@@ -462,9 +494,9 @@ export default function HMOHunterPage() {
   }
 
   const handleResetFilters = () => {
-    const isCouncilTA = user?.user_metadata?.user_type === "council_ta"
-    setListingType(isCouncilTA ? "rent" : "purchase")
-    setPriceRange(isCouncilTA ? [500, 15000] : [50000, 2000000])
+    const userType = user?.user_metadata?.user_type
+    setListingType(userType === "council_ta" ? "rent" : "purchase")
+    setPriceRange(userType === "council_ta" ? [500, 15000] : [50000, 2000000])
     setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
     setSelectedLocation(DEFAULT_LOCATION)
     setMinEpcRating(null)
@@ -476,17 +508,19 @@ export default function HMOHunterPage() {
     setFloorAreaBandFilter(null)
     setYieldBandFilter(null)
     setEpcBandFilter(null)
-    setMinDealScore(0)
+    setMinDealScore(userType === "agent" ? 45 : 0)
     setActiveSegment("all")
     setLicenceExpiryEnabled(false)
     setLicenceExpiryMonthRange([1, 12])
     setLicenceExpiryYear(new Date().getFullYear())
     // Phase 6 - TA Sourcing filter resets
-    setMinBedrooms(0)
+    setMinBedrooms(userType === "operator" ? 3 : 0)
     setMinBathrooms(0)
     setIsFurnished(false)
     setHasParking(false)
     setTaSuitabilityFilter(null)
+    setOwnerDataFilter(false)
+    setAdvancedFiltersExpanded(false)
   }
 
   const getMonthlyRent = (p: Property): number => {
@@ -664,7 +698,7 @@ export default function HMOHunterPage() {
           {/* Mobile menu button */}
           <button
             onClick={handleOpenLeftPanel}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2.5 rounded-lg hover:bg-slate-100 transition-colors"
             title="Open filters"
             aria-label="Open filters menu"
           >
@@ -722,6 +756,10 @@ export default function HMOHunterPage() {
                   <p className="text-xs text-slate-500">Signed in</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowRoleSelection(true)}>
+                  <Users className="w-4 h-4 mr-2" />
+                  {roleOptions.find(r => r.id === user.user_metadata?.user_type)?.label ?? "Set Role"}
+                </DropdownMenuItem>
                 {user.user_metadata?.is_admin && (
                   <DropdownMenuItem onClick={() => router.push("/admin")}>
                     <Shield className="w-4 h-4 mr-2" />
@@ -773,11 +811,11 @@ export default function HMOHunterPage() {
 
         {/* Left Sidebar - Fixed overlay on mobile, normal sidebar on desktop */}
         {leftPanelOpen && (
-        <aside className="fixed md:relative inset-y-0 left-0 w-[85vw] max-w-[320px] md:w-[280px] md:max-w-none bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
+        <aside className="fixed md:relative top-[56px] md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
             onClick={handleCloseLeftPanel}
-            className="absolute top-3 right-3 z-10 p-2 md:p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+            className="absolute top-3 right-3 z-10 p-2.5 md:p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
             title="Close filters"
             aria-label="Close filters"
           >
@@ -988,6 +1026,38 @@ export default function HMOHunterPage() {
                   </Select>
                 </div>
 
+                {/* Advanced Filters Toggle */}
+                {(() => {
+                  const activeCount = [
+                    broadbandFilter !== "all",
+                    licenceTypeFilter !== "all",
+                    licenceExpiryEnabled,
+                    isFurnished,
+                    hasParking,
+                    taSuitabilityFilter !== null,
+                    ownerDataFilter,
+                  ].filter(Boolean).length
+                  return (
+                    <button
+                      onClick={() => setAdvancedFiltersExpanded(!advancedFiltersExpanded)}
+                      className="flex items-center justify-between w-full pt-3 border-t border-slate-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Advanced Filters</span>
+                        {activeCount > 0 && !advancedFiltersExpanded && (
+                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold">{activeCount}</span>
+                        )}
+                      </div>
+                      {advancedFiltersExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                    </button>
+                  )
+                })()}
+
+                {advancedFiltersExpanded && (<>
                 {/* Broadband Filter */}
                 <div>
                   <label className="text-xs font-medium text-slate-700 mb-2 block">Broadband</label>
@@ -1384,6 +1454,7 @@ export default function HMOHunterPage() {
                     </p>
                   </div>
                 </div>
+                </>)}
               </div>
             )}
           </div>
@@ -1415,7 +1486,7 @@ export default function HMOHunterPage() {
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200 max-w-[95vw] overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveSegment("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeSegment === "all"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-600 hover:bg-slate-100"
@@ -1425,7 +1496,7 @@ export default function HMOHunterPage() {
             </button>
             <button
               onClick={() => setActiveSegment("licensed")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeSegment === "licensed"
                   ? "bg-teal-600 text-white shadow-sm"
                   : "text-teal-700 hover:bg-teal-50"
@@ -1435,7 +1506,7 @@ export default function HMOHunterPage() {
             </button>
             <button
               onClick={() => setActiveSegment("expired")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeSegment === "expired"
                   ? "bg-amber-500 text-white shadow-sm"
                   : "text-amber-700 hover:bg-amber-50"
@@ -1445,7 +1516,7 @@ export default function HMOHunterPage() {
             </button>
             <button
               onClick={() => setActiveSegment("opportunities")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeSegment === "opportunities"
                   ? "bg-green-600 text-white shadow-sm"
                   : "text-green-700 hover:bg-green-50"
@@ -1455,7 +1526,7 @@ export default function HMOHunterPage() {
             </button>
             <button
               onClick={() => setActiveSegment("restricted")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeSegment === "restricted"
                   ? "bg-red-600 text-white shadow-sm"
                   : "text-red-600 hover:bg-red-50"
@@ -1466,7 +1537,7 @@ export default function HMOHunterPage() {
           </div>
 
           {/* Property Count Indicator & Export */}
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          <div className="absolute top-[4.5rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 max-w-[95vw]">
             <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -1487,12 +1558,26 @@ export default function HMOHunterPage() {
                   city: selectedLocation.name,
                   minPrice: priceRange[0],
                   maxPrice: priceRange[1],
+                  minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
+                  minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
+                  isFurnished: isFurnished || undefined,
+                  hasParking: hasParking || undefined,
                 }}
                 disabled={loading}
                 isAdmin={user.user_metadata?.is_admin === true}
               />
             )}
           </div>
+
+          {/* Empty state when no properties match filters */}
+          {!loading && displayProperties.length === 0 && (
+            <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20">
+              <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg text-center">
+                No properties match your filters.
+                <button onClick={handleResetFilters} className="ml-1 underline text-teal-300">Reset filters</button>
+              </div>
+            </div>
+          )}
 
           {/* MapLibre GL Map */}
           <MainMapView
@@ -1630,11 +1715,14 @@ export default function HMOHunterPage() {
 
         {/* Right Sidebar */}
         {rightPanelOpen && (
-          <aside className="w-full md:w-[400px] fixed md:relative inset-0 md:inset-auto z-40 md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
+          <>
+          {/* Mobile backdrop overlay */}
+          <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={handleCloseRightPanel} aria-hidden="true" />
+          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-[56px] md:top-auto bottom-0 left-0 right-0 md:inset-auto z-40 md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
             {/* Close button */}
             <button
               onClick={handleCloseRightPanel}
-              className="absolute top-3 right-3 z-10 p-2 md:p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+              className="absolute top-3 right-3 z-10 p-2.5 md:p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
               title="Close panel"
               aria-label="Close property details"
             >
@@ -1724,6 +1812,7 @@ export default function HMOHunterPage() {
               </div>
             )}
           </aside>
+          </>
         )}
 
         {/* Toggle button when panel is closed */}
@@ -1739,10 +1828,10 @@ export default function HMOHunterPage() {
       </div>
 
       {showFullDetails && selectedProperty && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="full-details-title">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Full Property Details</h2>
+              <h2 id="full-details-title" className="text-xl font-bold text-slate-900">Full Property Details</h2>
               <button onClick={handleCloseFullDetails} className="text-slate-400 hover:text-slate-600">
                 <X className="w-6 h-6" />
               </button>
@@ -2102,14 +2191,47 @@ export default function HMOHunterPage() {
         />
       )}
 
-      {/* Role Selection Modal - shown when user_type not set */}
+      {/* Role Selection Modal - shown when user_type not set, or when user chooses to change role */}
       <RoleSelectionModal
         isOpen={showRoleSelection}
+        currentRole={user?.user_metadata?.user_type ?? null}
+        onClose={() => setShowRoleSelection(false)}
         onComplete={(userType: UserType) => {
           setShowRoleSelection(false)
+          // Apply role-based filter defaults
           if (userType === "council_ta") {
             setListingType("rent")
             setPriceRange([500, 15000])
+            setMinBedrooms(0)
+            setMinDealScore(0)
+          } else if (userType === "operator") {
+            setListingType("purchase")
+            setPriceRange([50000, 2000000])
+            setMinBedrooms(3)
+            setMinDealScore(0)
+          } else if (userType === "agent") {
+            setListingType("purchase")
+            setPriceRange([50000, 2000000])
+            setMinBedrooms(0)
+            setMinDealScore(45)
+          } else {
+            setListingType("purchase")
+            setPriceRange([50000, 2000000])
+            setMinBedrooms(0)
+            setMinDealScore(0)
+          }
+          // Update local user state so UI reflects the change immediately
+          // Skip the next onAuthStateChange to prevent stale metadata overwriting this
+          if (user) {
+            skipNextAuthUpdate.current = true
+            setUser({
+              ...user,
+              user_metadata: { ...user.user_metadata, user_type: userType },
+            })
+          }
+          // Show walkthrough only on first login (no existing role)
+          if (!user?.user_metadata?.user_type && !user?.user_metadata?.onboarding_completed) {
+            setShowWalkthrough(true)
           }
         }}
       />

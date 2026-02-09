@@ -163,13 +163,15 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           TAB NAVIGATION (48px)
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="shrink-0 grid grid-cols-4 border-b border-slate-200">
+      <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 border-b border-slate-200" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "h-12 text-[13px] font-semibold text-center transition-colors relative",
+              "h-12 text-sm font-semibold text-center transition-colors relative",
               activeTab === tab.id ? "text-teal-600" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -548,7 +550,7 @@ export function PropertySidebar({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg bg-slate-50 p-4">
-      <h3 className="text-[13px] font-semibold text-slate-800 mb-3">{title}</h3>
+      <h3 className="text-sm font-semibold text-slate-800 mb-3">{title}</h3>
       {children}
     </div>
   )
@@ -567,7 +569,7 @@ function CollapsibleSection({ title, children, defaultOpen = false }: {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 transition-colors"
       >
-        <span className="text-[13px] font-semibold text-slate-800">{title}</span>
+        <span className="text-sm font-semibold text-slate-800">{title}</span>
         <ChevronRight className={cn(
           "w-4 h-4 text-slate-400 transition-transform",
           isOpen && "rotate-90"

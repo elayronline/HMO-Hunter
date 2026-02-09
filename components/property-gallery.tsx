@@ -66,6 +66,7 @@ export function PropertyGallery({
   const [zooplaMatchQuality, setZooplaMatchQuality] = useState<"exact" | "high" | "medium" | "none">("none")
   const [imageSource, setImageSource] = useState<"listing" | "zoopla" | "streetview" | "stock">("listing")
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const [isLoadingImages, setIsLoadingImages] = useState(false)
 
   const handleImageError = (imageUrl: string) => {
     setFailedImages(prev => new Set(prev).add(imageUrl))
@@ -73,6 +74,7 @@ export function PropertyGallery({
 
   // Fetch Zoopla images if no real images available
   useEffect(() => {
+    const controller = new AbortController()
     const fetchZooplaImages = async () => {
       if (!postcode) return
 
@@ -80,6 +82,7 @@ export function PropertyGallery({
       const realImages = (images || []).filter(img => !isStockImage(img))
       if (realImages.length > 0) return
 
+      setIsLoadingImages(true)
       try {
         const params = new URLSearchParams()
         // Option 1: Direct Zoopla lookup by external_id (highest accuracy)
@@ -94,7 +97,7 @@ export function PropertyGallery({
         if (latitude) params.append("latitude", latitude.toString())
         if (longitude) params.append("longitude", longitude.toString())
 
-        const response = await fetch(`/api/zoopla-images?${params.toString()}`)
+        const response = await fetch(`/api/zoopla-images?${params.toString()}`, { signal: controller.signal })
         if (response.ok) {
           const data = await response.json()
           if (data.images && data.images.length > 0) {
@@ -105,10 +108,13 @@ export function PropertyGallery({
         }
       } catch (err) {
         console.log("[PropertyGallery] Could not fetch Zoopla images")
+      } finally {
+        setIsLoadingImages(false)
       }
     }
 
     fetchZooplaImages()
+    return () => controller.abort()
   }, [postcode, address, bedrooms, listingType, latitude, longitude, images, externalId, price])
 
   // Smart image selection - prioritize real images over stock
@@ -185,7 +191,14 @@ export function PropertyGallery({
   return (
     <>
       <div className="relative w-full h-48 rounded-lg overflow-hidden group">
-        {failedImages.has(currentMedia[selectedIndex] || "") ? (
+        {isLoadingImages && imageSource !== "listing" ? (
+          <div className="w-full h-full bg-slate-200 animate-pulse flex items-center justify-center">
+            <div className="text-center text-slate-400">
+              <Home className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-xs text-slate-400">Loading images...</p>
+            </div>
+          </div>
+        ) : failedImages.has(currentMedia[selectedIndex] || "") ? (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center">
             <div className="text-center text-slate-400">
               <Home className="w-10 h-10 mx-auto mb-2" />

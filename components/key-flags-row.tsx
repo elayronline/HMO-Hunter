@@ -136,7 +136,7 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
           <span
             key={flag.id}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-semibold",
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] sm:text-xs font-semibold",
               flag.bgColor,
               flag.textColor
             )}

@@ -129,9 +129,9 @@ const getPositionClasses = (position: HighlightPosition): string => {
     case "right":
       return "top-1/2 right-8 -translate-y-1/2"
     case "center-left":
-      return "top-1/2 left-[320px] -translate-y-1/2" // Next to left sidebar (280px + gap)
+      return "top-1/2 left-4 md:left-[320px] -translate-y-1/2" // Next to left sidebar (280px + gap)
     case "center-right":
-      return "top-1/2 right-[420px] -translate-y-1/2" // Next to right sidebar (400px + gap)
+      return "top-1/2 right-4 md:right-[420px] -translate-y-1/2" // Next to right sidebar (400px + gap)
     case "bottom-left":
       return "bottom-24 left-8"
     case "bottom-center":
@@ -187,10 +187,14 @@ export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetail
     onHidePropertyDetails?.()
 
     // Mark onboarding as completed in user metadata
-    const supabase = createClient()
-    await supabase.auth.updateUser({
-      data: { onboarding_completed: true }
-    })
+    try {
+      const supabase = createClient()
+      await supabase.auth.updateUser({
+        data: { onboarding_completed: true }
+      })
+    } catch (error) {
+      console.error("[Walkthrough] Failed to mark onboarding complete:", error)
+    }
 
     onComplete()
   }
@@ -217,9 +221,18 @@ export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetail
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen || isClosing) return
-      if (e.key === "ArrowRight" || e.key === "Enter") nextStep()
-      if (e.key === "ArrowLeft") prevStep()
-      if (e.key === "Escape") handleSkip()
+      if (e.key === "ArrowRight" || e.key === "Enter") {
+        e.preventDefault()
+        nextStep()
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault()
+        prevStep()
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        handleSkip()
+      }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)

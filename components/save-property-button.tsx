@@ -23,6 +23,11 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
         const result = await unsaveProperty(propertyId)
         if (result.error) {
           console.error("[v0] Error unsaving property:", result.error)
+          toast({
+            title: "Error",
+            description: "Failed to unsave property. Please try again.",
+            variant: "destructive",
+          })
         } else {
           setIsSaved(false)
         }
@@ -53,6 +58,9 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
           }
         } else {
           setIsSaved(true)
+          toast({ title: "Property saved", description: "Added to your saved properties." })
+          // Notify credit balance to refresh
+          window.dispatchEvent(new Event("credits-changed"))
           // Show warning if credits are running low
           if ((result as any).warning) {
             toast({

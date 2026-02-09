@@ -192,7 +192,7 @@ export function PropertyDetailCard({
         {/* Row 1: Price + Deal Score */}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-xl md:text-2xl font-bold text-slate-900">
               {(() => {
                 const price = property.listing_type === "purchase" ? property.purchase_price : property.price_pcm
                 return price ? `£${price.toLocaleString()}` : "Price on application"
@@ -247,7 +247,7 @@ export function PropertyDetailCard({
         </div>
 
         {/* Row 3: Specs */}
-        <div className="flex items-center gap-4 mt-3">
+        <div className="flex items-center gap-2 md:gap-4 mt-3">
           <div className="flex items-center gap-1 text-sm text-slate-600">
             <BedDouble className="w-4 h-4 text-slate-400" />
             <span>{property.bedrooms}</span>
@@ -534,7 +534,7 @@ export function PropertyDetailCard({
         <div className="flex flex-wrap gap-2">
           {property.listing_type === "purchase" && (
             <Button
-              className="flex-1 min-w-[120px] h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium"
+              className="flex-1 h-10 bg-teal-600 hover:bg-teal-700 text-white font-medium"
               aria-label="Book a viewing for this property"
               onClick={() => {
                 // Priority: agent phone > source URL > alert
@@ -553,7 +553,7 @@ export function PropertyDetailCard({
               Book Viewing
             </Button>
           )}
-          <Button variant="outline" onClick={onViewFullDetails} className="flex-1 min-w-[120px] h-10 font-medium" aria-label="View full property details">
+          <Button variant="outline" onClick={onViewFullDetails} className="flex-1 h-10 font-medium" aria-label="View full property details">
             Full Details
             <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
           </Button>
