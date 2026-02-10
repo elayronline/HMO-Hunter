@@ -148,11 +148,11 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
   return (
     <div className={cn("grid grid-cols-3 divide-x divide-slate-200 bg-slate-50", className)}>
       {metrics.map((metric, i) => (
-        <div key={i} className="py-3 px-3 text-center">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+        <div key={i} className="py-2.5 px-2 sm:py-3 sm:px-3 text-center min-w-0">
+          <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide truncate">
             {metric.label}
           </p>
-          <p className={cn("text-xl font-bold mt-1", statusColors[metric.status])}>
+          <p className={cn("text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 truncate", statusColors[metric.status])}>
             {metric.value}
           </p>
           <div className="flex justify-center mt-1.5">

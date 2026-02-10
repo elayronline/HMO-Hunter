@@ -95,7 +95,7 @@ export function RoleSelectionModal({ isOpen, onComplete, currentRole, onClose }:
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && isEditing) onClose?.() }}>
-      <DialogContent className="sm:max-w-[480px]" onPointerDownOutside={(e) => { if (!isEditing) e.preventDefault() }}>
+      <DialogContent className="sm:max-w-[480px] max-h-[calc(100dvh-2rem)] overflow-y-auto" onPointerDownOutside={(e) => { if (!isEditing) e.preventDefault() }}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">
             {isEditing ? "Change Your Role" : "Welcome to HMO Hunter"}

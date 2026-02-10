@@ -76,6 +76,8 @@ export function PropertyDetailCard({
 
   // Auto-enrich property data when viewed
   useEffect(() => {
+    const controller = new AbortController()
+
     const shouldEnrich = () => {
       // Check if any enrichment is missing or stale (> 7 days)
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -94,11 +96,14 @@ export function PropertyDetailCard({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ propertyIds: [property.id] }),
+          signal: controller.signal,
         })
 
         if (response.ok) {
           // Fetch updated property data
-          const updatedResponse = await fetch(`/api/property/${property.id}`)
+          const updatedResponse = await fetch(`/api/property/${property.id}`, {
+            signal: controller.signal,
+          })
           if (updatedResponse.ok) {
             const data = await updatedResponse.json()
             if (data.property) {
@@ -107,13 +112,15 @@ export function PropertyDetailCard({
           }
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return
         console.error("Auto-enrichment failed:", error)
       } finally {
-        setIsEnriching(false)
+        if (!controller.signal.aborted) setIsEnriching(false)
       }
     }
 
     enrichProperty()
+    return () => controller.abort()
   }, [property.id])
 
   // Use enriched property data for display

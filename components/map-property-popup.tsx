@@ -58,7 +58,7 @@ export function MapPropertyPopup({ property, onClick, onClose, className }: MapP
 
   return (
     <div className={cn(
-      "w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden",
+      "w-[min(320px,calc(100vw-2rem))] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden",
       className
     )}>
       {/* Close button */}
@@ -67,7 +67,7 @@ export function MapPropertyPopup({ property, onClick, onClose, className }: MapP
           e.stopPropagation()
           onClose()
         }}
-        className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
+        className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

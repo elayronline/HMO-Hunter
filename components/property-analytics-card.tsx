@@ -108,11 +108,11 @@ function AnimatedProgressBar({
       {/* Animated progress bar */}
       <div
         className={cn(
-          "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r transition-all duration-1000 ease-out shadow-lg",
+          "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-lg origin-left transition-transform duration-1000 ease-out",
           colorClasses[color],
           glowClasses[color]
         )}
-        style={{ width: `${width}%` }}
+        style={{ width: "100%", transform: `scaleX(${width / 100})` }}
       >
         {/* Shine effect */}
         <div className="absolute inset-0 rounded-full overflow-hidden">
@@ -269,7 +269,7 @@ function YieldGauge({
 
         {/* Animated marker */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000 ease-out"
+          className="absolute top-1/2 -translate-y-1/2 will-change-[left] transition-[left] duration-1000 ease-out"
           style={{ left: `${animatedPosition}%` }}
         >
           <div className="relative">

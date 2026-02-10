@@ -147,7 +147,7 @@ export function LicenceSection({
           <div className="p-4 space-y-4 border-t border-slate-100">
             {/* Summary Stats */}
             {licences.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <StatCard
                   icon={CheckCircle2}
                   label="Active"

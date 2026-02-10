@@ -232,7 +232,7 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
               <FileCheck className="w-4 h-4" />
               Compliance Status
             </h4>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <ComplianceItem
                 label="Space Standards"
                 compliant={property.meets_space_standards ?? false}

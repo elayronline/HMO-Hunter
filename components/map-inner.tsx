@@ -292,16 +292,23 @@ export function MapInner({
     }
   }, [initMap])
 
-  // Handle resize
+  // Handle resize (debounced to avoid excessive reflow)
   useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout>
     const handleResize = () => {
-      if (mapRef.current) {
-        mapRef.current.resize()
-      }
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.resize()
+        }
+      }, 200)
     }
 
     window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    return () => {
+      clearTimeout(resizeTimer)
+      window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
   // Fly to new city
