@@ -227,10 +227,16 @@ export default function HelpPage() {
             <p className="text-sm text-slate-600 mb-4">
               Can't find what you're looking for? Our team is here to help.
             </p>
-            <Button className="bg-teal-600 hover:bg-teal-700">
-              <Mail className="h-4 w-4 mr-2" />
-              Contact Support
-            </Button>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLScxxXe-Ai55P0GPVO6VjD9Y0o3QjncniPacycfzmgXihegF-Q/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Support
+              </Button>
+            </a>
           </div>
         </Card>
 
