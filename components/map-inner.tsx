@@ -51,6 +51,13 @@ export function MapInner({
         pixelRatio: window.devicePixelRatio || 1,
         antialias: true,
         attributionControl: false, // Hide MapLibre attribution
+        transformRequest: (url: string) => {
+          if (STADIA_API_KEY && url.includes("stadiamaps.com") && !url.includes("api_key")) {
+            const separator = url.includes("?") ? "&" : "?"
+            return { url: `${url}${separator}api_key=${STADIA_API_KEY}` }
+          }
+          return { url }
+        },
       })
 
       map.addControl(new maplibregl.NavigationControl(), "top-right")
