@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,15 +10,33 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+import { Eye, EyeOff } from "lucide-react"
+
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+  let score = 0
+  if (password.length >= 8) score++
+  if (password.length >= 12) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+
+  if (score <= 1) return { score, label: "Weak", color: "bg-red-500" }
+  if (score <= 2) return { score, label: "Fair", color: "bg-orange-500" }
+  if (score <= 3) return { score, label: "Good", color: "bg-yellow-500" }
+  return { score, label: "Strong", color: "bg-emerald-500" }
+}
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [fullName, setFullName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const router = useRouter()
+
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,8 +50,6 @@ export default function SignUpPage() {
         ? `${window.location.origin}/auth/callback`
         : process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000/auth/callback"
 
-    console.log("[v0] Sign up with redirect URL:", redirectUrl)
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -45,15 +61,17 @@ export default function SignUpPage() {
       },
     })
 
-    console.log("[v0] Sign up response:", { data, error })
-
     if (error) {
-      setError(error.message)
+      if (error.status === 429 || error.message.includes("rate")) {
+        setError("Too many attempts. Please wait a moment and try again.")
+      } else if (error.message.includes("already registered")) {
+        setError("An account with this email already exists. Try signing in instead.")
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
     } else {
       if (data.user && data.session) {
-        console.log("[v0] User auto-confirmed, redirecting to home")
-
         // Wait for session to be set in cookies
         await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -61,7 +79,6 @@ export default function SignUpPage() {
         window.location.href = "/"
       } else {
         // User needs to confirm email
-        console.log("[v0] User needs email confirmation")
         setSuccess(true)
         setLoading(false)
       }
@@ -147,31 +164,48 @@ export default function SignUpPage() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Create a strong password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              minLength={6}
-              className="border-slate-300 focus:border-teal-500 focus:ring-teal-500"
-            />
-            <p className="text-xs text-slate-500">Password must be at least 6 characters</p>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                minLength={8}
+                className="border-slate-300 focus:border-teal-500 focus:ring-teal-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">Password must be at least 8 characters</p>
+            {password.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-1.5 flex-1 rounded-full ${
+                        level <= passwordStrength.score ? passwordStrength.color : "bg-slate-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs ${passwordStrength.score <= 1 ? "text-red-500" : passwordStrength.score <= 2 ? "text-orange-500" : passwordStrength.score <= 3 ? "text-yellow-600" : "text-emerald-600"}`}>
+                  {passwordStrength.label}
+                </p>
+              </div>
+            )}
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-              <p className="font-medium">Sign up error:</p>
-              <p>{error}</p>
-              {error.includes("email") && (
-                <p className="mt-2 text-xs">
-                  If you're in development and emails aren't working, you can disable email confirmation in your
-                  Supabase project settings.
-                </p>
-              )}
-            </div>
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>
           )}
 
           <Button type="submit" disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700">

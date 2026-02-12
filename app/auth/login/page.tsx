@@ -10,10 +10,12 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -33,8 +35,6 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    console.log("[v0] Login attempt for:", email)
-
     const supabase = createClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -43,13 +43,15 @@ export default function LoginPage() {
     })
 
     if (error) {
-      console.log("[v0] Login error:", error.message)
-      setError(error.message)
+      if (error.message.includes("Invalid login credentials")) {
+        setError("Incorrect email or password. Please try again.")
+      } else if (error.status === 429 || error.message.includes("rate")) {
+        setError("Too many login attempts. Please wait a moment and try again.")
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
     } else {
-      console.log("[v0] Login successful, user:", data.user?.email)
-      console.log("[v0] Session:", data.session ? "exists" : "missing")
-
       // Wait for session to be set in cookies before redirecting
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -97,16 +99,25 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              className="border-slate-300 focus:border-teal-500 focus:ring-teal-500"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="border-slate-300 focus:border-teal-500 focus:ring-teal-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           {message && <div className="text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg">{message}</div>}

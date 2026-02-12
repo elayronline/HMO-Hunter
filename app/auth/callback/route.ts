@@ -7,24 +7,17 @@ export async function GET(request: Request) {
   const origin = requestUrl.origin
   const next = requestUrl.searchParams.get("next") || "/"
 
-  console.log("[v0] Callback route hit with code:", code ? "present" : "missing")
-
   if (code) {
     const supabase = await createClient()
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.log("[v0] Error exchanging code for session:", error.message)
       return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
     }
 
-    console.log("[v0] Successfully exchanged code for session, user:", data.user?.email)
-
     // Check if this is a password recovery flow
-    // The session will have the recovery type set
     if (data.session?.user?.recovery_sent_at) {
-      console.log("[v0] Password recovery flow detected, redirecting to reset page")
       return NextResponse.redirect(`${origin}/auth/reset-password`)
     }
   }
