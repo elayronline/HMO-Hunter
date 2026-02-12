@@ -74,6 +74,11 @@ export function PropertyDetailCard({
   const [isEnriching, setIsEnriching] = useState(false)
   const [enrichedProperty, setEnrichedProperty] = useState<Property>(property)
 
+  // Reset enriched data when a different property is selected
+  useEffect(() => {
+    setEnrichedProperty(property)
+  }, [property.id])
+
   // Auto-enrich property data when viewed
   useEffect(() => {
     const controller = new AbortController()

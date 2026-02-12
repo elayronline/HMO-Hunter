@@ -44,10 +44,10 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.sentry.io https://*.googleapis.com https://*.gstatic.com",
+              "script-src 'self' 'unsafe-inline' https://*.sentry.io https://maps.googleapis.com https://maps.gstatic.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https: http:",
+              "img-src 'self' data: blob: https://*.zoopla.co.uk https://lc.zoocdn.com https://lid.zoocdn.com https://st.zoocdn.com https://*.onthemarket.com https://media.rightmove.co.uk https://maps.googleapis.com https://img.youtube.com https://tiles.stadiamaps.com",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://api.mapbox.com https://*.tiles.mapbox.com https://maps.googleapis.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://*.cartocdn.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://api.postcodes.io https://nominatim.openstreetmap.org https://tiles.stadiamaps.com https://*.stadiamaps.com",
               "frame-src 'self' https://www.youtube.com https://youtube.com",
               "frame-ancestors 'self'",

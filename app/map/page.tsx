@@ -143,7 +143,7 @@ export default function HMOHunterPage() {
   const [legendExpanded, setLegendExpanded] = useState(true)
   const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
 
-  const [filterDebounceTimer, setFilterDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const filterDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Onboarding walkthrough state
   const [showWalkthrough, setShowWalkthrough] = useState(false)
@@ -174,9 +174,15 @@ export default function HMOHunterPage() {
   // Memoized callbacks for performance - prevents unnecessary re-renders
   const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
   const handleNavigateToSaved = useCallback(() => router.push("/saved"), [router])
-  const handleOpenLeftPanel = useCallback(() => setLeftPanelOpen(true), [])
+  const handleOpenLeftPanel = useCallback(() => {
+    setRightPanelOpen(false) // close right panel on mobile to avoid z-index conflict
+    setLeftPanelOpen(true)
+  }, [])
   const handleCloseLeftPanel = useCallback(() => setLeftPanelOpen(false), [])
-  const handleOpenRightPanel = useCallback(() => setRightPanelOpen(true), [])
+  const handleOpenRightPanel = useCallback(() => {
+    setLeftPanelOpen(false) // close left panel on mobile to avoid z-index conflict
+    setRightPanelOpen(true)
+  }, [])
   const handleCloseRightPanel = useCallback(() => setRightPanelOpen(false), [])
   const handleToggleSearch = useCallback(() => setSearchExpanded(prev => !prev), [])
   const handleToggleFilters = useCallback(() => setFiltersExpanded(prev => !prev), [])
@@ -185,13 +191,27 @@ export default function HMOHunterPage() {
   const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
 
-  // Escape key handler and body scroll lock for full details modal
+  // Escape key handler, body scroll lock, and focus trap for full details modal
+  const previousFocusRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showFullDetails) handleCloseFullDetails()
     }
     if (showFullDetails) {
+      previousFocusRef.current = document.activeElement as HTMLElement
       document.body.style.overflow = 'hidden'
+      // Focus the modal dialog after render
+      requestAnimationFrame(() => {
+        const dialog = document.querySelector('[role="dialog"]') as HTMLElement
+        if (dialog) dialog.focus()
+      })
+    } else {
+      document.body.style.overflow = ''
+      // Restore focus to the element that opened the modal
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus()
+        previousFocusRef.current = null
+      }
     }
     window.addEventListener('keydown', handleEsc)
     return () => {
@@ -199,6 +219,31 @@ export default function HMOHunterPage() {
       document.body.style.overflow = ''
     }
   }, [showFullDetails, handleCloseFullDetails])
+
+  // Focus trap: keep Tab within modal when open
+  useEffect(() => {
+    if (!showFullDetails) return
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const dialog = document.querySelector('[role="dialog"]') as HTMLElement
+      if (!dialog) return
+      const focusable = dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', handleTab)
+    return () => window.removeEventListener('keydown', handleTab)
+  }, [showFullDetails])
 
   // Track property view and deduct credits if needed
   const trackPropertyView = useCallback(async (propertyId: string) => {
@@ -415,15 +460,15 @@ export default function HMOHunterPage() {
     }
 
     // Clear existing debounce timer
-    if (filterDebounceTimer) {
-      clearTimeout(filterDebounceTimer)
+    if (filterDebounceTimerRef.current) {
+      clearTimeout(filterDebounceTimerRef.current)
     }
 
     const timer = setTimeout(() => {
       fetchProperties()
     }, 500) // Wait 500ms after last filter change
 
-    setFilterDebounceTimer(timer)
+    filterDebounceTimerRef.current = timer
 
     return () => {
       if (timer) clearTimeout(timer)
@@ -1717,8 +1762,8 @@ export default function HMOHunterPage() {
         {rightPanelOpen && (
           <>
           {/* Mobile backdrop overlay */}
-          <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={handleCloseRightPanel} aria-hidden="true" />
-          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-[56px] md:top-auto bottom-0 left-0 right-0 md:inset-auto z-40 md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
+          <div className="md:hidden fixed inset-0 bg-black/50 z-50" onClick={handleCloseRightPanel} aria-hidden="true" />
+          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-[56px] md:top-auto bottom-0 left-0 right-0 md:inset-auto z-[51] md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
             {/* Close button */}
             <button
               onClick={handleCloseRightPanel}
@@ -1775,6 +1820,7 @@ export default function HMOHunterPage() {
                           : "bg-white/90 text-slate-600 hover:bg-teal-50 hover:text-teal-600"
                       }`}
                       title={isInCompare(selectedProperty.id) ? "Remove from comparison" : "Add to comparison"}
+                      aria-label={isInCompare(selectedProperty.id) ? "Remove from comparison" : "Add to comparison"}
                     >
                       <Scale className="w-4 h-4" />
                     </button>
@@ -1828,11 +1874,11 @@ export default function HMOHunterPage() {
       </div>
 
       {showFullDetails && selectedProperty && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="full-details-title">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="full-details-title" tabIndex={-1}>
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between">
               <h2 id="full-details-title" className="text-xl font-bold text-slate-900">Full Property Details</h2>
-              <button onClick={handleCloseFullDetails} className="text-slate-400 hover:text-slate-600">
+              <button onClick={handleCloseFullDetails} className="text-slate-400 hover:text-slate-600" aria-label="Close property details">
                 <X className="w-6 h-6" />
               </button>
             </div>

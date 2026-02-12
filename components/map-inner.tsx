@@ -27,6 +27,9 @@ export function MapInner({
   const [mapReady, setMapReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [article4Loaded, setArticle4Loaded] = useState(false)
+  const retryCountRef = useRef(0)
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const MAX_INIT_RETRIES = 20 // 20 * 150ms = 3 seconds max
 
   // Initialize map
   const initMap = useCallback(() => {
@@ -35,10 +38,15 @@ export function MapInner({
     // Check if container has dimensions
     const rect = mapContainerRef.current.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) {
-      // Retry after a short delay
-      setTimeout(initMap, 100)
+      retryCountRef.current++
+      if (retryCountRef.current >= MAX_INIT_RETRIES) {
+        setError("Map container failed to render. Please refresh the page.")
+        return
+      }
+      retryTimerRef.current = setTimeout(initMap, 150)
       return
     }
+    retryCountRef.current = 0
 
     try {
       console.log("Initializing map with city:", selectedCity.name, "Container size:", rect.width, "x", rect.height)
@@ -74,7 +82,11 @@ export function MapInner({
 
       map.on("error", (e) => {
         console.error("Map error:", e)
-        console.error("Error details:", e.error?.message || JSON.stringify(e))
+        const msg = e.error?.message || ""
+        // Surface tile auth errors to users (e.g. 401 from Stadia)
+        if (msg.includes("401") || msg.includes("403")) {
+          setError("Map tiles failed to load. Please refresh the page.")
+        }
       })
 
       map.on("sourcedata", (e) => {
@@ -180,6 +192,13 @@ export function MapInner({
         minzoom: 10,
       })
 
+      // Escape HTML to prevent XSS from GeoJSON data
+      const escapeHtml = (str: string): string => {
+        const div = document.createElement("div")
+        div.textContent = str
+        return div.innerHTML
+      }
+
       // Add click handler for Article 4 areas
       map.on("click", "article4-fill", (e) => {
         if (!e.features || !e.features[0]) return
@@ -192,12 +211,14 @@ export function MapInner({
           popupRef.current.remove()
         }
 
-        // Create popup with area info
-        const areaName = props?.name || "Article 4 Area"
-        const authority = props?.authority || props?.organisation || ""
-        const effectiveDate = props?.effective_date || props?.start_date || "Unknown"
-        const description = props?.description || ""
-        const source = props?.source || ""
+        // Create popup with area info — all dynamic values escaped
+        const areaName = escapeHtml(props?.name || "Article 4 Area")
+        const authority = escapeHtml(props?.authority || props?.organisation || "")
+        const effectiveDate = escapeHtml(props?.effective_date || props?.start_date || "Unknown")
+        const rawDescription = props?.description || ""
+        const description = escapeHtml(rawDescription.substring(0, 150))
+        const descriptionEllipsis = rawDescription.length > 150 ? "..." : ""
+        const source = escapeHtml(props?.source || "")
         const verified = props?.verified
 
         const popup = new maplibregl.Popup({
@@ -224,7 +245,7 @@ export function MapInner({
               <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
                 Effective: ${effectiveDate}
               </div>
-              ${description ? `<div style="font-size: 12px; color: #475569; margin-bottom: 8px; padding: 6px; background: #f8fafc; border-radius: 4px;">${description.substring(0, 150)}${description.length > 150 ? '...' : ''}</div>` : ''}
+              ${rawDescription ? `<div style="font-size: 12px; color: #475569; margin-bottom: 8px; padding: 6px; background: #f8fafc; border-radius: 4px;">${description}${descriptionEllipsis}</div>` : ''}
               <div style="font-size: 12px; color: #ef4444; background: #fef2f2; padding: 8px; border-radius: 4px;">
                 <strong>Planning permission required</strong> for HMO (C3 to C4) conversions in this area.
               </div>
@@ -283,6 +304,11 @@ export function MapInner({
     initMap()
 
     return () => {
+      // Clear any pending retry timer
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current)
+        retryTimerRef.current = null
+      }
       if (popupRef.current) {
         popupRef.current.remove()
       }
