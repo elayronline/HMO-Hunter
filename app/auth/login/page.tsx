@@ -56,7 +56,7 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Use window.location.href for a hard redirect to ensure session is loaded
-      window.location.href = "/"
+      window.location.href = "/map"
     }
   }
 

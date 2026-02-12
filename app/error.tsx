@@ -46,7 +46,7 @@ export default function Error({
           </Button>
 
           <Button
-            onClick={() => window.location.href = "/"}
+            onClick={() => window.location.href = "/map"}
             variant="outline"
             className="gap-2"
           >

@@ -68,7 +68,7 @@ export default function UserDashboard() {
         <div className="max-w-7xl mx-auto px-3 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <Link href="/">
+              <Link href="/map">
                 <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 px-2 md:px-3">
                   <ArrowLeft className="w-4 h-4 md:mr-2" />
                   <span className="hidden md:inline">Back to Home</span>
@@ -168,7 +168,7 @@ export default function UserDashboard() {
               <p className="text-slate-500 text-center mb-6 max-w-md">
                 Properties will appear here once data is available. Browse the main map to explore listings.
               </p>
-              <Link href="/">
+              <Link href="/map">
                 <Button className="bg-teal-600 hover:bg-teal-700">
                   <MapPin className="w-4 h-4 mr-2" />
                   Browse Properties

@@ -96,7 +96,7 @@ export default function SavedPropertiesPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/map")}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
@@ -111,7 +111,7 @@ export default function SavedPropertiesPage() {
           </div>
           <Button
             variant="outline"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/map")}
             className="flex items-center gap-2 text-sm px-2 md:px-4"
             size="sm"
           >
@@ -130,7 +130,7 @@ export default function SavedPropertiesPage() {
             <p className="text-slate-600 mb-6">
               Browse properties and click the heart icon to save them for later.
             </p>
-            <Button onClick={() => router.push("/")} className="bg-teal-600 hover:bg-teal-700">
+            <Button onClick={() => router.push("/map")} className="bg-teal-600 hover:bg-teal-700">
               Browse Properties
             </Button>
           </Card>
@@ -205,7 +205,7 @@ export default function SavedPropertiesPage() {
                       <Button
                         size="sm"
                         className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
-                        onClick={() => router.push(`/?property=${property.id}`)}
+                        onClick={() => router.push(`/map?property=${property.id}`)}
                       >
                         View Details
                       </Button>

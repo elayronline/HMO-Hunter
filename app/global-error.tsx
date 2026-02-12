@@ -99,7 +99,7 @@ export default function GlobalError({
               </button>
 
               <button
-                onClick={() => window.location.href = "/"}
+                onClick={() => window.location.href = "/map"}
                 style={{
                   backgroundColor: "white",
                   color: "#0f172a",

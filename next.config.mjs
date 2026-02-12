@@ -49,6 +49,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://api.mapbox.com https://*.tiles.mapbox.com https://maps.googleapis.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://*.cartocdn.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://api.postcodes.io https://nominatim.openstreetmap.org https://tiles.stadiamaps.com https://*.stadiamaps.com",
+              "frame-src 'self' https://www.youtube.com https://youtube.com",
               "frame-ancestors 'self'",
               "form-action 'self'",
               "base-uri 'self'",

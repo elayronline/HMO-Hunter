@@ -150,7 +150,7 @@ export default function HelpPage() {
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/">
+          <Link href="/map">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Map
@@ -250,7 +250,7 @@ export default function HelpPage() {
             Data Request
           </Link>
           <span className="text-slate-300">|</span>
-          <Link href="/" className="text-slate-500 hover:text-teal-600">
+          <Link href="/map" className="text-slate-500 hover:text-teal-600">
             Back to App
           </Link>
         </div>

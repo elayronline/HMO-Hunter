@@ -5,6 +5,30 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* HMO Hunter Brand Colors */
+  --teal-dark: #0A6B6E;
+  --teal: #14998E;
+  --teal-mid: #3CB8A0;
+  --teal-light: #6DCDB8;
+  --teal-pale: #E8F7F3;
+  --teal-ghost: #F4FBFA;
+  --gold: #F59E0B;
+  --gold-pale: #FEF3C7;
+  --brand-green: #22C55E;
+  --green-pale: #DCFCE7;
+  --brand-red: #EF4444;
+  --grey-50: #F8FAFC;
+  --grey-100: #F1F5F9;
+  --grey-200: #E2E8F0;
+  --grey-300: #CBD5E1;
+  --grey-400: #94A3B8;
+  --grey-500: #64748B;
+  --grey-600: #475569;
+  --grey-700: #334155;
+  --grey-800: #1E293B;
+  --grey-900: #0F172A;
+
+  /* shadcn/ui variables */
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);

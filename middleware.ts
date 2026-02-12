@@ -62,20 +62,22 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/auth/login", "/auth/signup", "/auth/callback", "/auth/forgot-password", "/auth/reset-password"]
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  const publicAuthRoutes = ["/auth/login", "/auth/signup", "/auth/callback", "/auth/forgot-password", "/auth/reset-password"]
+  const publicPages = ["/", "/privacy", "/data-request", "/faq", "/help"]
+  const isPublicAuthRoute = publicAuthRoutes.some(route => pathname.startsWith(route))
+  const isPublicPage = publicPages.includes(pathname)
 
-  // Redirect unauthenticated users to login (except for public routes)
-  if (!user && !isPublicRoute && pathname !== "/api" && !pathname.startsWith("/api/")) {
+  // Redirect unauthenticated users to login (except for public routes and pages)
+  if (!user && !isPublicAuthRoute && !isPublicPage && pathname !== "/api" && !pathname.startsWith("/api/")) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages to home
-  if (user && isPublicRoute) {
+  // Redirect authenticated users away from auth pages to the app
+  if (user && isPublicAuthRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/"
+    url.pathname = "/map"
     return NextResponse.redirect(url)
   }
 

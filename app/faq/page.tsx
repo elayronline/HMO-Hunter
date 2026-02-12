@@ -278,7 +278,7 @@ export default function FAQPage() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/map")}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
@@ -293,7 +293,7 @@ export default function FAQPage() {
           </div>
           <Button
             variant="outline"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/map")}
             className="flex items-center gap-2"
           >
             <Home className="w-4 h-4" />
