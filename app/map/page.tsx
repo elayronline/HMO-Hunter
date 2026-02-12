@@ -490,7 +490,7 @@ export default function HMOHunterPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push("/")
+    window.location.href = "/"
   }
 
   const handleResetFilters = () => {
