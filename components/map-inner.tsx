@@ -5,7 +5,7 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 
-// Stadia Maps - Alidade Smooth (modern, clean style)
+// Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard)
 const STADIA_API_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY
 const MAP_STYLE = `https://tiles.stadiamaps.com/styles/alidade_smooth.json${STADIA_API_KEY ? `?api_key=${STADIA_API_KEY}` : ""}`
 
@@ -50,7 +50,7 @@ export function MapInner({
         zoom: selectedCity.zoom,
         pixelRatio: window.devicePixelRatio || 1,
         antialias: true,
-        attributionControl: false, // Hide MapLibre attribution
+        attributionControl: false,
         transformRequest: (url: string) => {
           if (STADIA_API_KEY && url.includes("stadiamaps.com") && !url.includes("api_key")) {
             const separator = url.includes("?") ? "&" : "?"
