@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { track } from "@vercel/analytics"
 import { REMAINING, TOTAL_SPOTS } from "@/lib/constants"
 
 export function FinalCTA() {
@@ -45,7 +46,7 @@ export function FinalCTA() {
           className="mt-8"
         >
           <button
-            onClick={scrollToForm}
+            onClick={() => { track("cta_click", { location: "final" }); scrollToForm() }}
             className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-[var(--teal-dark)] hover:bg-[var(--grey-50)] transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--teal-dark)]"
           >
             Secure My Spot

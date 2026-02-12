@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { track } from "@vercel/analytics"
 import { CheckCircle2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -45,6 +46,7 @@ export function SignupForm() {
     e.preventDefault()
     setState("submitting")
     setErrorMsg("")
+    track("signup_submit", { org_type: orgType, region: region || "not_set" })
 
     const supabase = createClient()
 
@@ -74,10 +76,12 @@ export function SignupForm() {
       } else {
         setErrorMsg(error.message)
       }
+      track("signup_error", { error: error.message.slice(0, 100) })
       setState("error")
       return
     }
 
+    track("signup_success", { org_type: orgType })
     if (data.user && data.session) {
       // Auto-confirmed, redirect to app
       await new Promise((resolve) => setTimeout(resolve, 100))

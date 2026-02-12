@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { track } from "@vercel/analytics"
 import { VideoPlayer } from "./VideoPlayer"
 
 export function Hero() {
@@ -13,7 +14,7 @@ export function Hero() {
       {/* Background decorations */}
       <div className="pointer-events-none absolute inset-0">
         <div
-          className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full opacity-30"
+          className="absolute top-0 right-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] rounded-full opacity-30"
           style={{
             background: "radial-gradient(circle, var(--teal-pale), transparent 70%)",
           }}
@@ -59,7 +60,7 @@ export function Hero() {
               className="mt-8 flex flex-wrap gap-4"
             >
               <button
-                onClick={scrollToForm}
+                onClick={() => { track("cta_click", { location: "hero" }); scrollToForm() }}
                 className="rounded-xl bg-[var(--teal-dark)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--teal)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
               >
                 Get Early Access

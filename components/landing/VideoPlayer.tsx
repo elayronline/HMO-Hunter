@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { track } from "@vercel/analytics"
 import { Play } from "lucide-react"
 
 const VIDEO_ID = "Yrm8N1NLQ54"
@@ -24,7 +25,7 @@ export function VideoPlayer() {
 
   return (
     <button
-      onClick={() => setPlaying(true)}
+      onClick={() => { track("video_play"); setPlaying(true) }}
       className="group relative w-full overflow-hidden rounded-2xl focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
       style={{ paddingBottom: "56.25%" }}
       aria-label="Play demo video"

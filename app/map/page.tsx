@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { track } from "@vercel/analytics"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   ChevronDown,
@@ -537,6 +538,7 @@ export default function HMOHunterPage() {
   }
 
   const handleSignOut = async () => {
+    track("sign_out")
     await supabase.auth.signOut()
     window.location.href = "/"
   }

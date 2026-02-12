@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+import { track } from "@vercel/analytics"
 import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
@@ -43,6 +44,7 @@ export default function LoginPage() {
     })
 
     if (error) {
+      track("login_error", { error: error.message.slice(0, 100) })
       if (error.message.includes("Invalid login credentials")) {
         setError("Incorrect email or password. Please try again.")
       } else if (error.status === 429 || error.message.includes("rate")) {
@@ -52,6 +54,7 @@ export default function LoginPage() {
       }
       setLoading(false)
     } else {
+      track("login_success")
       // Wait for session to be set in cookies before redirecting
       await new Promise((resolve) => setTimeout(resolve, 100))
 

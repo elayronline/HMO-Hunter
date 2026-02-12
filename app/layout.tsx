@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Plus_Jakarta_Sans, DM_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "sonner"
 import "./globals.css"
@@ -57,6 +58,7 @@ export default function RootLayout({
         <Toaster />
         <SonnerToaster position="bottom-right" />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

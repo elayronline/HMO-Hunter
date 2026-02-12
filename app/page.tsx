@@ -1,16 +1,18 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { Navbar } from "@/components/landing/Navbar"
 import { Hero } from "@/components/landing/Hero"
 import { AudiencePills } from "@/components/landing/AudiencePills"
-import { PainPoints } from "@/components/landing/PainPoints"
-import { Features } from "@/components/landing/Features"
-import { EarlyAdopterBenefits } from "@/components/landing/EarlyAdopterBenefits"
-import { HowItWorks } from "@/components/landing/HowItWorks"
-import { SignupForm } from "@/components/landing/SignupForm"
-import { FAQ } from "@/components/landing/FAQ"
-import { FinalCTA } from "@/components/landing/FinalCTA"
-import { Footer } from "@/components/landing/Footer"
+
+const PainPoints = dynamic(() => import("@/components/landing/PainPoints").then(m => m.PainPoints))
+const Features = dynamic(() => import("@/components/landing/Features").then(m => m.Features))
+const EarlyAdopterBenefits = dynamic(() => import("@/components/landing/EarlyAdopterBenefits").then(m => m.EarlyAdopterBenefits))
+const HowItWorks = dynamic(() => import("@/components/landing/HowItWorks").then(m => m.HowItWorks))
+const SignupForm = dynamic(() => import("@/components/landing/SignupForm").then(m => m.SignupForm))
+const FAQ = dynamic(() => import("@/components/landing/FAQ").then(m => m.FAQ))
+const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then(m => m.FinalCTA))
+const Footer = dynamic(() => import("@/components/landing/Footer").then(m => m.Footer))
 
 export default function LandingPage() {
   return (
