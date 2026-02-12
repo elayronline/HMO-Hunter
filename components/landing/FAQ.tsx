@@ -56,9 +56,11 @@ export function FAQ() {
             return (
               <div key={i}>
                 <button
+                  id={`faq-trigger-${i}`}
                   onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between px-4 sm:px-6 py-5 text-left"
+                  className="flex w-full items-center justify-between px-4 sm:px-6 py-5 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--teal)]"
                   aria-expanded={isOpen}
+                  aria-controls={`faq-panel-${i}`}
                 >
                   <span className="pr-4 text-sm font-semibold text-[var(--grey-800)]">
                     {faq.q}
@@ -70,6 +72,9 @@ export function FAQ() {
                   )}
                 </button>
                 <div
+                  id={`faq-panel-${i}`}
+                  role="region"
+                  aria-labelledby={`faq-trigger-${i}`}
                   className={`overflow-hidden transition-all duration-200 ${
                     isOpen ? "max-h-96 pb-5" : "max-h-0"
                   }`}

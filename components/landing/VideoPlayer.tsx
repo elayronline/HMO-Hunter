@@ -25,7 +25,7 @@ export function VideoPlayer() {
   return (
     <button
       onClick={() => setPlaying(true)}
-      className="group relative w-full overflow-hidden rounded-2xl"
+      className="group relative w-full overflow-hidden rounded-2xl focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
       style={{ paddingBottom: "56.25%" }}
       aria-label="Play demo video"
     >

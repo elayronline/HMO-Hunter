@@ -51,7 +51,7 @@ export function SignupForm() {
     const redirectUrl =
       typeof window !== "undefined"
         ? `${window.location.origin}/auth/callback`
-        : "http://localhost:3000/auth/callback"
+        : `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`
 
     const { data, error } = await supabase.auth.signUp({
       email,

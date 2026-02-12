@@ -46,7 +46,7 @@ export function FinalCTA() {
         >
           <button
             onClick={scrollToForm}
-            className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-[var(--teal-dark)] hover:bg-[var(--grey-50)] transition-colors"
+            className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-[var(--teal-dark)] hover:bg-[var(--grey-50)] transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--teal-dark)]"
           >
             Secure My Spot
           </button>

@@ -32,6 +32,9 @@ import {
   X,
   ExternalLink,
   RotateCcw,
+  ShieldCheck,
+  AlertTriangle,
+  LayoutGrid,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
@@ -737,8 +740,15 @@ export default function HMOHunterPage() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-800">
+      <a
+        href="#map-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
+      >
+        Skip to map
+      </a>
+      <h1 className="sr-only">HMO Hunter Property Map</h1>
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-1.5 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-1.5 flex items-center justify-between" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="flex items-center gap-2">
           {/* Mobile menu button */}
           <button
@@ -1527,58 +1537,68 @@ export default function HMOHunterPage() {
         )}
 
         {/* Map Area */}
-        <main className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
+        <main id="map-main" className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
           {/* Segment Tabs - Category Filter */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200 max-w-[95vw] overflow-x-auto scrollbar-hide">
+          <div role="tablist" aria-label="Property category filter" className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200 max-w-[95vw] overflow-x-auto scrollbar-hide">
             <button
+              role="tab"
+              aria-selected={activeSegment === "all"}
               onClick={() => setActiveSegment("all")}
-              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 ${
                 activeSegment === "all"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              All <span className="ml-1 opacity-70">{segmentCounts.all}</span>
+              <LayoutGrid className="w-3.5 h-3.5" /> All <span className="opacity-70">{segmentCounts.all}</span>
             </button>
             <button
+              role="tab"
+              aria-selected={activeSegment === "licensed"}
               onClick={() => setActiveSegment("licensed")}
-              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 ${
                 activeSegment === "licensed"
                   ? "bg-teal-600 text-white shadow-sm"
                   : "text-teal-700 hover:bg-teal-50"
               }`}
             >
-              Licensed <span className="ml-1 opacity-70">{segmentCounts.licensed}</span>
+              <ShieldCheck className="w-3.5 h-3.5" /> Licensed <span className="opacity-70">{segmentCounts.licensed}</span>
             </button>
             <button
+              role="tab"
+              aria-selected={activeSegment === "expired"}
               onClick={() => setActiveSegment("expired")}
-              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1 ${
                 activeSegment === "expired"
                   ? "bg-amber-500 text-white shadow-sm"
                   : "text-amber-700 hover:bg-amber-50"
               }`}
             >
-              Expired <span className="ml-1 opacity-70">{segmentCounts.expired}</span>
+              <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
             </button>
             <button
+              role="tab"
+              aria-selected={activeSegment === "opportunities"}
               onClick={() => setActiveSegment("opportunities")}
-              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 ${
                 activeSegment === "opportunities"
                   ? "bg-green-600 text-white shadow-sm"
                   : "text-green-700 hover:bg-green-50"
               }`}
             >
-              Opportunities <span className="ml-1 opacity-70">{segmentCounts.opportunities}</span>
+              <TrendingUp className="w-3.5 h-3.5" /> Opportunities <span className="opacity-70">{segmentCounts.opportunities}</span>
             </button>
             <button
+              role="tab"
+              aria-selected={activeSegment === "restricted"}
               onClick={() => setActiveSegment("restricted")}
-              className={`shrink-0 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 ${
                 activeSegment === "restricted"
                   ? "bg-red-600 text-white shadow-sm"
                   : "text-red-600 hover:bg-red-50"
               }`}
             >
-              Restricted <span className="ml-1 opacity-70">{segmentCounts.restricted}</span>
+              <AlertTriangle className="w-3.5 h-3.5" /> Restricted <span className="opacity-70">{segmentCounts.restricted}</span>
             </button>
           </div>
 

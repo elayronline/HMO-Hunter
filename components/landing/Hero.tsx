@@ -60,7 +60,7 @@ export function Hero() {
             >
               <button
                 onClick={scrollToForm}
-                className="rounded-xl bg-[var(--teal-dark)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--teal)] transition-colors"
+                className="rounded-xl bg-[var(--teal-dark)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--teal)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
               >
                 Get Early Access
               </button>
@@ -68,7 +68,7 @@ export function Hero() {
                 onClick={() =>
                   document.getElementById("video-section")?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="rounded-xl border border-[var(--grey-200)] bg-white px-6 py-3 text-sm font-medium text-[var(--grey-700)] hover:bg-[var(--grey-50)] transition-colors"
+                className="rounded-xl border border-[var(--grey-200)] bg-white px-6 py-3 text-sm font-medium text-[var(--grey-700)] hover:bg-[var(--grey-50)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
               >
                 Watch how it works
               </button>
