@@ -89,7 +89,7 @@ export function SignupForm() {
 
   if (state === "success") {
     return (
-      <div id="signup-form" className="py-16">
+      <div id="signup-success" className="py-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -143,6 +143,7 @@ export function SignupForm() {
               id="sf-name"
               type="text"
               required
+              autoComplete="name"
               placeholder="Your full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
@@ -157,6 +158,7 @@ export function SignupForm() {
               id="sf-email"
               type="email"
               required
+              autoComplete="email"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -173,6 +175,7 @@ export function SignupForm() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}
+                autoComplete="new-password"
                 placeholder="Min 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

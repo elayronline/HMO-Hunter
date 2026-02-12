@@ -10,7 +10,7 @@ const benefits = [
     icon: Rocket,
     title: "Source From Day One",
     description:
-      "Access the live platform immediately. Not a waitlist,a working tool.",
+      "Access the live platform immediately. Not a waitlist, a working tool.",
   },
   {
     icon: Eye,
@@ -73,7 +73,7 @@ export function EarlyAdopterBenefits() {
           viewport={{ once: true }}
           className="text-center font-[family-name:var(--font-plus-jakarta)] text-2xl font-bold text-[var(--grey-900)] sm:text-3xl"
         >
-          Early adopters don't just test,they lead.
+          Early adopters don't just test, they lead.
         </motion.h2>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-3">

@@ -840,6 +840,7 @@ export default function HMOHunterPage() {
             onClick={handleOpenLeftPanel}
             className="hidden md:block absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
             title="Open filters"
+            aria-label="Open filters"
           >
             <Search className="w-5 h-5 text-teal-600" />
           </button>
@@ -1867,6 +1868,7 @@ export default function HMOHunterPage() {
             onClick={handleOpenRightPanel}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white shadow-lg rounded-l-lg p-3 hover:bg-slate-50 transition-colors border border-r-0 border-slate-200"
             title="Open property panel"
+            aria-label="Open property panel"
           >
             <ChevronDown className="w-5 h-5 text-slate-600 -rotate-90" />
           </button>

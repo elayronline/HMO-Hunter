@@ -49,7 +49,7 @@ export function Hero() {
             >
               The UK's first sourcing platform built exclusively for HMO professionals.
               Search compliance data, licensing status, Article 4 zones, and yield
-              projections,all in one place.
+              projections, all in one place.
             </motion.p>
 
             <motion.div

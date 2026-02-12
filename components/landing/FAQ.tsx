@@ -7,7 +7,7 @@ import { Plus, Minus } from "lucide-react"
 const faqs = [
   {
     q: "What is HMO Hunter?",
-    a: "HMO Hunter is the UK's first property sourcing platform built exclusively for HMO professionals. It brings together compliance data, licensing status, Article 4 zone mapping, and yield projections into a single search tool,replacing the need to cross-reference multiple platforms manually.",
+    a: "HMO Hunter is the UK's first property sourcing platform built exclusively for HMO professionals. It brings together compliance data, licensing status, Article 4 zone mapping, and yield projections into a single search tool, replacing the need to cross-reference multiple platforms manually.",
   },
   {
     q: "Who is HMO Hunter for?",
@@ -19,11 +19,11 @@ const faqs = [
   },
   {
     q: "Is it free?",
-    a: "During beta, yes,completely free. We'll announce pricing before public launch. Beta testers will receive preferential early adopter rates.",
+    a: "During beta, yes, completely free. We'll announce pricing before public launch. Beta testers will receive preferential early adopter rates.",
   },
   {
     q: "How is this different from Rightmove, Zoopla, or council registers?",
-    a: "Those platforms weren't built for HMO sourcing. HMO Hunter combines property listings with compliance data, Article 4 mapping, licensing status, and yield projections,so you can assess viability in seconds instead of hours.",
+    a: "Those platforms weren't built for HMO sourcing. HMO Hunter combines property listings with compliance data, Article 4 mapping, licensing status, and yield projections, so you can assess viability in seconds instead of hours.",
   },
   {
     q: "What data does HMO Hunter use?",

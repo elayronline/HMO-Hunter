@@ -14,7 +14,7 @@ const features = [
     icon: ShieldCheck,
     title: "Compliance Built In",
     description:
-      "Licensing status, HMO compliance data, and regulatory checks,done automatically.",
+      "Licensing status, HMO compliance data, and regulatory checks, done automatically.",
   },
   {
     icon: TrendingUp,
@@ -26,7 +26,7 @@ const features = [
     icon: Building2,
     title: "All Housing Types",
     description:
-      "Temporary, shared, social, and student housing,all searchable in one place.",
+      "Temporary, shared, social, and student housing, all searchable in one place.",
   },
   {
     icon: Lightbulb,
@@ -38,7 +38,7 @@ const features = [
     icon: Zap,
     title: "Move First",
     description:
-      "Verified data means faster decisions. See it, assess it, act on it,before your competitors.",
+      "Verified data means faster decisions. See it, assess it, act on it, before your competitors.",
   },
 ]
 
@@ -57,7 +57,7 @@ export function Features() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[var(--grey-600)]">
             HMO Hunter brings together everything you need to source HMOs and spot untapped
-            opportunities,without the spreadsheet chaos.
+            opportunities, without the spreadsheet chaos.
           </p>
         </motion.div>
 
