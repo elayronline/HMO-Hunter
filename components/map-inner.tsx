@@ -6,8 +6,8 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 
 // Stadia Maps - Alidade Smooth (modern, clean style)
-// Authentication via domain registration in Stadia Maps dashboard
-const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+const STADIA_API_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY
+const MAP_STYLE = `https://tiles.stadiamaps.com/styles/alidade_smooth.json${STADIA_API_KEY ? `?api_key=${STADIA_API_KEY}` : ""}`
 
 export function MapInner({
   selectedCity,
