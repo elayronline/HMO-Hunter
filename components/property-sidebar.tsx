@@ -37,6 +37,8 @@ import { SoldPriceHistory } from "@/components/sold-price-history"
 import { AgentContactCard } from "@/components/agent-contact-card"
 import { EPCBadge } from "@/components/epc-badge"
 import { BroadbandBadge } from "@/components/broadband-badge"
+import { getVisibilityForRole } from "@/lib/role-visibility"
+import type { UserType } from "@/components/role-selection-modal"
 
 interface PropertySidebarProps {
   property: Property
@@ -47,6 +49,7 @@ interface PropertySidebarProps {
   isPremium?: boolean
   isSaved?: boolean
   className?: string
+  userRole?: UserType | null
 }
 
 type TabType = "overview" | "compliance" | "area" | "property"
@@ -60,7 +63,9 @@ export function PropertySidebar({
   isPremium = false,
   isSaved = false,
   className,
+  userRole,
 }: PropertySidebarProps) {
+  const visibility = getVisibilityForRole(userRole)
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
   const [showShareToast, setShowShareToast] = useState(false)
@@ -127,12 +132,33 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           VERDICT HEADER (80px)
       ════════════════════════════════════════════════════════════════════ */}
-      <DealVerdictHeader property={property} onClose={onClose} />
+      {visibility.showDealVerdict ? (
+        <DealVerdictHeader property={property} onClose={onClose} />
+      ) : (
+        <div className="shrink-0 p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <div className="text-[28px] font-bold text-slate-900">
+              £{(property.listing_type === "purchase" ? property.purchase_price : property.price_pcm)?.toLocaleString()}{property.listing_type === "rent" ? "/mo" : ""}
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-600">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{property.address}, {property.postcode}</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center" aria-label="Close">
+            <svg className="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════════════
           HERO METRICS BAR (72px)
       ════════════════════════════════════════════════════════════════════ */}
-      <HeroMetricsBar property={property} className="shrink-0 border-b border-slate-200" />
+      {(visibility.showYieldMetrics || visibility.showR2RMetrics) && (
+        <HeroMetricsBar property={property} className="shrink-0 border-b border-slate-200" />
+      )}
 
       {/* ════════════════════════════════════════════════════════════════════
           GALLERY STRIP (120px)
@@ -158,7 +184,7 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           KEY FLAGS ROW (40px)
       ════════════════════════════════════════════════════════════════════ */}
-      <KeyFlagsRow property={property} className="shrink-0 border-b border-slate-200" />
+      <KeyFlagsRow property={property} className="shrink-0 border-b border-slate-200" userRole={userRole} />
 
       {/* ════════════════════════════════════════════════════════════════════
           TAB NAVIGATION (48px)
@@ -192,10 +218,12 @@ export function PropertySidebar({
           {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
             <>
-              <PremiumYieldCalculator property={property} isPremium={isPremium} />
+              {visibility.showYieldCalculator && (
+                <PremiumYieldCalculator property={property} isPremium={isPremium} />
+              )}
 
-              {/* LHA Rate Comparison (rental properties) */}
-              {property.listing_type === "rent" && property.price_pcm && (() => {
+              {/* LHA Rate Comparison (rental properties, council/TA role) */}
+              {visibility.showLhaComparison && property.listing_type === "rent" && property.price_pcm && (() => {
                 const lhaWeekly = getLhaWeeklyRate(property.city, property.bedrooms, property.postcode)
                 const lhaMonthly = lhaWeekly ? Math.round((lhaWeekly * 52) / 12) : null
                 if (!lhaMonthly) return null
@@ -403,7 +431,7 @@ export function PropertySidebar({
               )}
 
               {/* Ownership - Premium Feature */}
-              {(property.owner_name || property.company_name) && (
+              {visibility.showOwnership && (property.owner_name || property.company_name) && (
                 <Section title="Ownership">
                   {isPremium ? (
                     property.company_name ? (

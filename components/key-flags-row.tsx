@@ -4,10 +4,13 @@ import { cn } from "@/lib/utils"
 import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key, Building2 } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 import { assessTASuitability } from "@/lib/services/ta-suitability"
+import type { UserType } from "@/components/role-selection-modal"
+import { getVisibilityForRole } from "@/lib/role-visibility"
 
 interface KeyFlagsRowProps {
   property: Property
   className?: string
+  userRole?: UserType | null
 }
 
 type FlagType = {
@@ -19,7 +22,8 @@ type FlagType = {
   priority: number
 }
 
-export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
+export function KeyFlagsRow({ property, className, userRole }: KeyFlagsRowProps) {
+  const visibility = getVisibilityForRole(userRole)
   const flags: FlagType[] = []
 
   // Listing type - HIGHEST priority (most fundamental info)
@@ -79,7 +83,7 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
   }
 
   // HMO Classification
-  if (property.is_potential_hmo && property.hmo_classification) {
+  if (visibility.showHmoClassification && property.is_potential_hmo && property.hmo_classification) {
     const classConfigs: Record<string, { label: string; bg: string; text: string }> = {
       ready_to_go: { label: "Ready to Go", bg: "bg-teal-100", text: "text-teal-700" },
       value_add: { label: "Value-Add", bg: "bg-blue-100", text: "text-blue-700" },
@@ -101,7 +105,7 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
 
   // TA Suitability
   const taResult = assessTASuitability(property)
-  if (taResult.suitability === "suitable") {
+  if (visibility.showTaSuitability && taResult.suitability === "suitable") {
     flags.push({
       id: "ta_suitable",
       label: "TA Suitable",
@@ -110,7 +114,7 @@ export function KeyFlagsRow({ property, className }: KeyFlagsRowProps) {
       textColor: "text-teal-700",
       priority: 5,
     })
-  } else if (taResult.suitability === "partial") {
+  } else if (visibility.showTaSuitability && taResult.suitability === "partial") {
     flags.push({
       id: "ta_partial",
       label: "TA Partial",

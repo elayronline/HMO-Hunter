@@ -1855,6 +1855,7 @@ export default function HMOHunterPage() {
                     onViewFullDetails={() => setShowFullDetails(true)}
                     isPremium={isPremiumUser}
                     isSaved={savedPropertyIds.has(selectedProperty.id)}
+                    userRole={user?.user_metadata?.user_type ?? null}
                   />
                 </div>
 
