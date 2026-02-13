@@ -1,14 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import {
-  MapPin,
-  Filter,
-  FileText,
-  Bookmark,
-  Crown,
   ChevronRight,
   ChevronLeft,
   X,
@@ -19,90 +14,16 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react"
+import { getStepsForRole, type HighlightPosition, type ArrowDirection } from "@/lib/walkthrough-steps"
+import type { UserType } from "@/components/role-selection-modal"
 
 interface OnboardingWalkthroughProps {
   isOpen: boolean
   onComplete: () => void
   onShowPropertyDetails?: () => void
   onHidePropertyDetails?: () => void
+  userRole?: UserType | null
 }
-
-type HighlightPosition = "center" | "top-left" | "top-center" | "top-right" | "left" | "right" | "bottom-left" | "bottom-center" | "center-left" | "center-right"
-type ArrowDirection = "up" | "down" | "left" | "right" | "none"
-
-interface Step {
-  icon: typeof Sparkles
-  title: string
-  description: string
-  color: string
-  bgColor: string
-  highlight: HighlightPosition
-  arrow: ArrowDirection
-  targetHint: string
-}
-
-const steps: Step[] = [
-  {
-    icon: Sparkles,
-    title: "Welcome to HMO Hunter",
-    description: "Your smart platform for finding HMO investment opportunities. Let's take a quick tour to get you started.",
-    color: "text-teal-600",
-    bgColor: "bg-teal-100",
-    highlight: "center",
-    arrow: "none",
-    targetHint: "",
-  },
-  {
-    icon: Filter,
-    title: "Search & Filters",
-    description: "Use the left sidebar to search locations, set price ranges, and filter by property type. Your filters are saved automatically.",
-    color: "text-purple-600",
-    bgColor: "bg-purple-100",
-    highlight: "center-left",
-    arrow: "left",
-    targetHint: "The filter panel is on the left side",
-  },
-  {
-    icon: MapPin,
-    title: "Property Map",
-    description: "The map shows all properties. Teal pins = Licensed HMOs, Green pins = Opportunities, Red pins = Article 4 restricted areas.",
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
-    highlight: "center",
-    arrow: "none",
-    targetHint: "Click any pin to view property details",
-  },
-  {
-    icon: FileText,
-    title: "Quick Filter Tabs",
-    description: "Use these tabs above the map to quickly filter: All, Licensed, Expired, Opportunities, or Restricted properties.",
-    color: "text-orange-600",
-    bgColor: "bg-orange-100",
-    highlight: "bottom-center",
-    arrow: "up",
-    targetHint: "Tabs are at the top-center of the map",
-  },
-  {
-    icon: Bookmark,
-    title: "Property Details",
-    description: "Click any property pin to open the details sidebar on the right. View pricing, yields, compliance info, and save properties.",
-    color: "text-pink-600",
-    bgColor: "bg-pink-100",
-    highlight: "center-left",
-    arrow: "right",
-    targetHint: "Details panel is now open on the right",
-  },
-  {
-    icon: Crown,
-    title: "You're Ready!",
-    description: "Start exploring! Click any pin on the map to begin. Your credit balance is shown in the top bar.",
-    color: "text-amber-600",
-    bgColor: "bg-amber-100",
-    highlight: "center",
-    arrow: "none",
-    targetHint: "",
-  },
-]
 
 const ArrowIcon = ({ direction }: { direction: ArrowDirection }) => {
   switch (direction) {
@@ -164,23 +85,27 @@ const getArrowPositionClasses = (position: HighlightPosition, direction: ArrowDi
   }
 }
 
-// Step index for property details demo
-const PROPERTY_DETAILS_STEP = 4 // Step 5 (0-indexed)
-
-export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetails, onHidePropertyDetails }: OnboardingWalkthroughProps) {
+export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetails, onHidePropertyDetails, userRole }: OnboardingWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
+
+  const steps = useMemo(() => getStepsForRole(userRole), [userRole])
+
+  // Reset to step 0 when role changes
+  useEffect(() => {
+    setCurrentStep(0)
+  }, [userRole])
 
   // Show/hide property details based on current step (only when walkthrough is active)
   useEffect(() => {
     if (!isOpen) return
 
-    if (currentStep === PROPERTY_DETAILS_STEP) {
+    if (steps[currentStep]?.showPropertyDetails) {
       onShowPropertyDetails?.()
     } else {
       onHidePropertyDetails?.()
     }
-  }, [currentStep, isOpen, onShowPropertyDetails, onHidePropertyDetails])
+  }, [currentStep, isOpen, steps, onShowPropertyDetails, onHidePropertyDetails])
 
   const handleComplete = async () => {
     setIsClosing(true)

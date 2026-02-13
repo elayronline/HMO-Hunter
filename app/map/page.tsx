@@ -2310,6 +2310,7 @@ export default function HMOHunterPage() {
       <OnboardingWalkthrough
         isOpen={showWalkthrough}
         onComplete={() => setShowWalkthrough(false)}
+        userRole={user?.user_metadata?.user_type ?? null}
         onShowPropertyDetails={() => {
           // Select first property to demo the details panel
           if (properties.length > 0 && !selectedProperty) {
