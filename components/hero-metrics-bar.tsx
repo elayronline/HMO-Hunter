@@ -109,7 +109,7 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
 
   const metrics = isRent ? [
     {
-      label: "R2R Margin",
+      label: "R2HMO Margin",
       value: r2rMargin !== null ? `${r2rMargin >= 0 ? "+" : ""}${r2rMargin}%` : "—",
       status: getR2RMarginStatus(r2rMargin),
     },

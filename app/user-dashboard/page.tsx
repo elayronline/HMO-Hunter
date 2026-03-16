@@ -120,7 +120,7 @@ export default function UserDashboard() {
 
           <Card className="bg-white border-purple-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-purple-700">Rent-to-Rent</CardTitle>
+              <CardTitle className="text-sm font-medium text-purple-700">Rent-to-HMO</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">

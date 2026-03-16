@@ -29,7 +29,7 @@ export function KeyFlagsRow({ property, className, userRole }: KeyFlagsRowProps)
   // Listing type - HIGHEST priority (most fundamental info)
   flags.push({
     id: "listing_type",
-    label: property.listing_type === "rent" ? "Rent-to-Rent" : "Purchase",
+    label: property.listing_type === "rent" ? "Rent-to-HMO" : "Purchase",
     icon: property.listing_type === "rent" ? Home : Key,
     bgColor: property.listing_type === "rent" ? "bg-purple-100" : "bg-blue-100",
     textColor: property.listing_type === "rent" ? "text-purple-700" : "text-blue-700",

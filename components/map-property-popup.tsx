@@ -93,7 +93,7 @@ export function MapPropertyPopup({ property, onClick, onClose, className }: MapP
                     : "bg-blue-100 text-blue-700"
                 )}>
                   {property.listing_type === "rent" ? (
-                    <><Home className="w-3 h-3" /> R2R</>
+                    <><Home className="w-3 h-3" /> R2HMO</>
                   ) : (
                     <><Key className="w-3 h-3" /> BUY</>
                   )}

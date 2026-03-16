@@ -84,7 +84,8 @@ import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { RoleSelectionModal, roles as roleOptions, type UserType } from "@/components/role-selection-modal"
 import { assessTASuitability } from "@/lib/services/ta-suitability"
-import { Scale } from "lucide-react"
+import { Scale, Map, List } from "lucide-react"
+import { PropertyListView } from "@/components/property-list-view"
 
 export default function HMOHunterPage() {
   const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
@@ -151,6 +152,7 @@ export default function HMOHunterPage() {
 
   // Onboarding walkthrough state
   const [showWalkthrough, setShowWalkthrough] = useState(false)
+  const [viewMode, setViewMode] = useState<"map" | "list">("map")
 
   // Property comparison hook
   const {
@@ -1501,7 +1503,7 @@ export default function HMOHunterPage() {
                         }`}
                       >
                         <Home className="w-4 h-4" />
-                        Rent-to-Rent
+                        Rent-to-HMO
                       </button>
                     </div>
                     <p className="text-xs text-slate-500">
@@ -1604,8 +1606,34 @@ export default function HMOHunterPage() {
             </button>
           </div>
 
-          {/* Property Count Indicator & Export */}
+          {/* View Mode Toggle + Property Count Indicator & Export */}
           <div className="absolute top-[4.5rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 max-w-[95vw]">
+            <div className="flex items-center bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-slate-200 p-0.5">
+              <button
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  viewMode === "map"
+                    ? "bg-slate-800 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+                aria-label="Map view"
+              >
+                <Map className="w-3.5 h-3.5" /> Map
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  viewMode === "list"
+                    ? "bg-slate-800 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+                aria-label="List view"
+              >
+                <List className="w-3.5 h-3.5" /> List
+              </button>
+            </div>
+          </div>
+          <div className="absolute top-[7rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 max-w-[95vw]">
             <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -1637,32 +1665,47 @@ export default function HMOHunterPage() {
             )}
           </div>
 
-          {/* Empty state when no properties match filters */}
-          {!loading && displayProperties.length === 0 && (
-            <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20">
-              <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg text-center">
-                No properties match your filters.
-                <button onClick={handleResetFilters} className="ml-1 underline text-teal-300">Reset filters</button>
-              </div>
-            </div>
+          {viewMode === "map" ? (
+            <>
+              {/* Empty state when no properties match filters */}
+              {!loading && displayProperties.length === 0 && (
+                <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20">
+                  <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full shadow-lg text-center">
+                    No properties match your filters.
+                    <button onClick={handleResetFilters} className="ml-1 underline text-teal-300">Reset filters</button>
+                  </div>
+                </div>
+              )}
+
+              {/* MapLibre GL Map */}
+              <MainMapView
+                selectedCity={selectedLocation}
+                properties={displayProperties}
+                selectedProperty={selectedProperty}
+                onPropertySelect={(property) => {
+                  setSelectedProperty(property)
+                  setRightPanelOpen(true)
+                }}
+                loading={loading}
+                showArticle4Overlay={showArticle4Overlay}
+                showPotentialHMOLayer={showPotentialHMOLayer}
+              />
+            </>
+          ) : (
+            <PropertyListView
+              properties={displayProperties}
+              selectedProperty={selectedProperty}
+              onPropertySelect={(property) => {
+                setSelectedProperty(property)
+                setRightPanelOpen(true)
+              }}
+              loading={loading}
+              savedPropertyIds={savedPropertyIds}
+            />
           )}
 
-          {/* MapLibre GL Map */}
-          <MainMapView
-            selectedCity={selectedLocation}
-            properties={displayProperties}
-            selectedProperty={selectedProperty}
-            onPropertySelect={(property) => {
-              setSelectedProperty(property)
-              setRightPanelOpen(true)
-            }}
-            loading={loading}
-            showArticle4Overlay={showArticle4Overlay}
-            showPotentialHMOLayer={showPotentialHMOLayer}
-          />
-
-          {/* Map legend - Reorganized by user intent */}
-          <Card className="absolute bottom-4 md:bottom-8 left-2 md:left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[200px] md:max-w-[280px]">
+          {/* Map legend - Reorganized by user intent (hidden in list view) */}
+          {viewMode === "map" && <Card className="absolute bottom-4 md:bottom-8 left-2 md:left-6 shadow-xl bg-white border-slate-200 z-20 overflow-hidden max-w-[200px] md:max-w-[280px]">
             <button
               onClick={handleToggleLegend}
               className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
@@ -1766,7 +1809,7 @@ export default function HMOHunterPage() {
                 </div>
               </div>
             )}
-          </Card>
+          </Card>}
 
           {/* Add Property button */}
           <div className="absolute bottom-4 md:bottom-8 right-2 md:right-8 z-20">
@@ -1957,7 +2000,7 @@ export default function HMOHunterPage() {
                       : "bg-blue-100 text-blue-700"
                   }`}>
                     {selectedProperty.listing_type === "rent" ? (
-                      <><Home className="w-4 h-4" /> Rent-to-Rent</>
+                      <><Home className="w-4 h-4" /> Rent-to-HMO</>
                     ) : (
                       <><Key className="w-4 h-4" /> Purchase</>
                     )}
