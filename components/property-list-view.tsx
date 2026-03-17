@@ -1,21 +1,21 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { BedDouble, Bath, MapPin, TrendingUp, ShieldCheck, Clock, AlertTriangle, ChevronUp, ChevronDown, ExternalLink } from "lucide-react"
+import { useState, useMemo, memo } from "react"
+import Link from "next/link"
+import { BedDouble, Bath, MapPin, TrendingUp, ShieldCheck, Clock, AlertTriangle, ExternalLink } from "lucide-react"
 import { PropertyImage } from "@/components/property-image"
-import { SavePropertyButton } from "@/components/save-property-button"
 import type { Property } from "@/lib/types/database"
 
 type SortKey = "price_asc" | "price_desc" | "yield_desc" | "bedrooms_desc" | "deal_score_desc" | "newest"
 
+const PAGE_SIZE = 48
+
 interface PropertyListViewProps {
   properties: Property[]
-  selectedProperty: Property | null
-  onPropertySelect: (property: Property) => void
+  selectedProperty?: Property | null
+  onPropertySelect?: (property: Property) => void
   loading: boolean
   savedPropertyIds: Set<string>
-  onSaveToggle?: (propertyId: string) => void
-  userRole?: string | null
 }
 
 function getStatusBadge(property: Property) {
@@ -70,18 +70,29 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "newest", label: "Newest First" },
 ]
 
-export function PropertyListView({
+export const PropertyListView = memo(function PropertyListView({
   properties,
   selectedProperty,
-  onPropertySelect,
   loading,
   savedPropertyIds,
 }: PropertyListViewProps) {
   const [sortKey, setSortKey] = useState<SortKey>("deal_score_desc")
+  const [page, setPage] = useState(1)
+
+  // Reset to page 1 when properties change
+  const prevPropertiesLength = useMemo(() => properties.length, [properties])
+  useMemo(() => {
+    setPage(1)
+  }, [prevPropertiesLength])
 
   const sorted = useMemo(() => {
     return [...properties].sort((a, b) => getSortValue(a, sortKey) - getSortValue(b, sortKey))
   }, [properties, sortKey])
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginatedProperties = useMemo(() => {
+    return sorted.slice(0, page * PAGE_SIZE)
+  }, [sorted, page])
 
   if (loading) {
     return (
@@ -127,15 +138,15 @@ export function PropertyListView({
 
       {/* Property grid */}
       <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {sorted.map((property) => {
+        {paginatedProperties.map((property) => {
           const status = getStatusBadge(property)
           const isSelected = selectedProperty?.id === property.id
           const isSaved = savedPropertyIds.has(property.id)
 
           return (
-            <button
+            <Link
               key={property.id}
-              onClick={() => onPropertySelect(property)}
+              href={`/property/${property.id}`}
               className={`group relative text-left rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 ${
                 isSelected ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-200"
               }`}
@@ -238,10 +249,22 @@ export function PropertyListView({
                   </a>
                 )}
               </div>
-            </button>
+            </Link>
           )
         })}
       </div>
+
+      {/* Load More / Pagination */}
+      {page < totalPages && (
+        <div className="flex justify-center py-6 pb-8">
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+          >
+            Load More ({sorted.length - paginatedProperties.length} remaining)
+          </button>
+        </div>
+      )}
     </div>
   )
-}
+})

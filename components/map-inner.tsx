@@ -5,9 +5,9 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 
-// Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard)
-const STADIA_API_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY
-const MAP_STYLE = `https://tiles.stadiamaps.com/styles/alidade_smooth.json${STADIA_API_KEY ? `?api_key=${STADIA_API_KEY}` : ""}`
+// Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard, no API key needed)
+const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+
 
 export function MapInner({
   selectedCity,
@@ -60,10 +60,6 @@ export function MapInner({
         antialias: true,
         attributionControl: false,
         transformRequest: (url: string) => {
-          if (STADIA_API_KEY && url.includes("stadiamaps.com") && !url.includes("api_key")) {
-            const separator = url.includes("?") ? "&" : "?"
-            return { url: `${url}${separator}api_key=${STADIA_API_KEY}` }
-          }
           return { url }
         },
       })
@@ -80,17 +76,13 @@ export function MapInner({
         loadArticle4Areas(map)
       })
 
+
       map.on("error", (e) => {
         console.error("Map error:", e)
         const msg = e.error?.message || ""
-        // Surface tile auth errors to users (e.g. 401 from Stadia)
         if (msg.includes("401") || msg.includes("403")) {
           setError("Map tiles failed to load. Please refresh the page.")
         }
-      })
-
-      map.on("sourcedata", (e) => {
-        console.log("Source data:", e.sourceId, e.isSourceLoaded ? "loaded" : "loading")
       })
 
       mapRef.current = map

@@ -84,11 +84,18 @@ import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { RoleSelectionModal, roles as roleOptions, type UserType } from "@/components/role-selection-modal"
 import { assessTASuitability } from "@/lib/services/ta-suitability"
-import { Scale, Map, List } from "lucide-react"
+import { Map, List } from "lucide-react"
 import { PropertyListView } from "@/components/property-list-view"
 
 export default function HMOHunterPage() {
-  const [listingType, setListingType] = useState<"rent" | "purchase">("purchase")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Initialize state from URL params for persistence across navigation
+  const [listingType, setListingType] = useState<"rent" | "purchase">(() => {
+    const param = searchParams.get("type")
+    return param === "rent" ? "rent" : "purchase"
+  })
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
@@ -117,7 +124,11 @@ export default function HMOHunterPage() {
   const [licenceExpiryYear, setLicenceExpiryYear] = useState<number>(new Date().getFullYear())
 
   // Segment filter - main category tabs for clearer UX
-  const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">("all")
+  const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">(() => {
+    const param = searchParams.get("segment")
+    if (param === "licensed" || param === "expired" || param === "opportunities" || param === "restricted") return param
+    return "all"
+  })
 
   // Potential HMO filters - show all but highlight opportunities
   const [showPotentialHMOs, setShowPotentialHMOs] = useState(true)
@@ -142,6 +153,7 @@ export default function HMOHunterPage() {
   const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(false)
   const [recentExpanded, setRecentExpanded] = useState(false)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
   const [comparisonMetric, setComparisonMetric] = useState<"yield" | "rent" | "bedrooms">("yield")
@@ -152,7 +164,10 @@ export default function HMOHunterPage() {
 
   // Onboarding walkthrough state
   const [showWalkthrough, setShowWalkthrough] = useState(false)
-  const [viewMode, setViewMode] = useState<"map" | "list">("map")
+  const [viewMode, setViewMode] = useState<"map" | "list">(() => {
+    const param = searchParams.get("view")
+    return param === "list" ? "list" : "map"
+  })
 
   // Property comparison hook
   const {
@@ -169,13 +184,26 @@ export default function HMOHunterPage() {
   // For now, check user_metadata.is_premium flag (can be set via Supabase dashboard)
   const isPremiumUser = user?.user_metadata?.is_premium === true
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   const { toast } = useToast()
 
   // Check for demo mode via URL parameter
   const isDemoMode = searchParams.get('demo') === 'true'
+
+  // Sync key filter state to URL for persistence across navigation
+  const isInitialMount = useRef(true)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    const params = new URLSearchParams(searchParams.toString())
+    if (viewMode !== "map") params.set("view", viewMode); else params.delete("view")
+    if (listingType !== "purchase") params.set("type", listingType); else params.delete("type")
+    if (activeSegment !== "all") params.set("segment", activeSegment); else params.delete("segment")
+    const newUrl = params.toString() ? `?${params.toString()}` : "/map"
+    router.replace(newUrl, { scroll: false })
+  }, [viewMode, listingType, activeSegment])
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
   const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
@@ -439,7 +467,6 @@ export default function HMOHunterPage() {
           isFurnished: isFurnished || undefined,
           hasParking: hasParking || undefined,
         })
-        console.log("[Page] Properties fetched:", data.length)
         setProperties(data)
       } catch (error) {
         console.error("[v0] Failed to fetch properties:", error)
@@ -712,7 +739,6 @@ export default function HMOHunterPage() {
 
   // Filter properties based on active segment
   const segmentFilteredProperties = useMemo(() => {
-    console.log("[Page] Segment filter - activeSegment:", activeSegment, "properties count:", properties.length)
     if (activeSegment === "all") return properties
 
     const filtered = properties.filter(p => {
@@ -729,7 +755,6 @@ export default function HMOHunterPage() {
           return true
       }
     })
-    console.log("[Page] Segment filtered count:", filtered.length)
     return filtered
   }, [properties, activeSegment])
 
@@ -848,8 +873,8 @@ export default function HMOHunterPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0 }}>
-        {/* Left Sidebar Toggle Button - Desktop only */}
-        {!leftPanelOpen && (
+        {/* Left Sidebar Toggle Button - Desktop only, map view only */}
+        {!leftPanelOpen && viewMode === "map" && (
           <button
             onClick={handleOpenLeftPanel}
             className="hidden md:block absolute left-4 top-4 z-30 bg-white shadow-lg rounded-lg p-3 hover:bg-slate-50 transition-colors border border-slate-200"
@@ -861,7 +886,7 @@ export default function HMOHunterPage() {
         )}
 
         {/* Mobile overlay backdrop */}
-        {leftPanelOpen && (
+        {leftPanelOpen && viewMode === "map" && (
           <div
             className="md:hidden fixed inset-0 bg-black/50 z-40"
             onClick={handleCloseLeftPanel}
@@ -869,8 +894,8 @@ export default function HMOHunterPage() {
           />
         )}
 
-        {/* Left Sidebar - Fixed overlay on mobile, normal sidebar on desktop */}
-        {leftPanelOpen && (
+        {/* Left Sidebar - Fixed overlay on mobile, normal sidebar on desktop (hidden in list view) */}
+        {leftPanelOpen && viewMode === "map" && (
         <aside className="fixed md:relative top-[56px] md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
@@ -940,6 +965,41 @@ export default function HMOHunterPage() {
                       <SelectItem value="house">Houses & Bungalows</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Search Mode - Purchase vs R2HMO */}
+                <div>
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">Search Mode</label>
+                  <div className="flex rounded-lg overflow-hidden border border-slate-200">
+                    <button
+                      onClick={() => {
+                        setListingType("purchase")
+                        setPriceRange([50000, 2000000])
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
+                        listingType === "purchase"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      Purchase
+                    </button>
+                    <button
+                      onClick={() => {
+                        setListingType("rent")
+                        setPriceRange([500, 15000])
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
+                        listingType === "rent"
+                          ? "bg-purple-600 text-white"
+                          : "bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Home className="w-3.5 h-3.5" />
+                      R2HMO
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -1472,48 +1532,6 @@ export default function HMOHunterPage() {
                   )}
                 </div>
 
-                {/* Acquisition Strategy - Toggle between Purchase and Rent-to-Rent */}
-                <div className="pt-3 border-t border-slate-100">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Search Mode</span>
-                    <div className="flex rounded-lg overflow-hidden border border-slate-200">
-                      <button
-                        onClick={() => {
-                          setListingType("purchase")
-                          setPriceRange([50000, 2000000])
-                        }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
-                          listingType === "purchase"
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        <Key className="w-4 h-4" />
-                        Purchase
-                      </button>
-                      <button
-                        onClick={() => {
-                          setListingType("rent")
-                          setPriceRange([500, 15000])
-                        }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium transition-colors ${
-                          listingType === "rent"
-                            ? "bg-purple-600 text-white"
-                            : "bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        <Home className="w-4 h-4" />
-                        Rent-to-HMO
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      {listingType === "purchase"
-                        ? "Find properties to buy and operate as HMOs"
-                        : "Find properties to lease and sublet as HMO rooms"
-                      }
-                    </p>
-                  </div>
-                </div>
                 </>)}
               </div>
             )}
@@ -1541,8 +1559,138 @@ export default function HMOHunterPage() {
         )}
 
         {/* Map Area */}
-        <main id="map-main" className="flex-1 relative bg-slate-200 min-h-0 min-w-0" style={{ position: 'relative' }}>
-          {/* Segment Tabs - Category Filter */}
+        <main id="map-main" className={`flex-1 relative bg-slate-200 min-h-0 min-w-0 ${viewMode === "list" ? "flex flex-col" : ""}`} style={{ position: 'relative' }}>
+
+          {/* List View Top Bar - search, segments, and filters at the top */}
+          {viewMode === "list" && (
+            <div className="bg-white border-b border-slate-200 z-20 shrink-0">
+              {/* Row 1: Segment tabs + View toggle */}
+              <div className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-slate-100">
+                <div role="tablist" aria-label="Property category filter" className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+                  <button role="tab" aria-selected={activeSegment === "all"} onClick={() => setActiveSegment("all")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "all" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
+                    <LayoutGrid className="w-3.5 h-3.5" /> All <span className="opacity-70">{segmentCounts.all}</span>
+                  </button>
+                  <button role="tab" aria-selected={activeSegment === "licensed"} onClick={() => setActiveSegment("licensed")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "licensed" ? "bg-teal-600 text-white" : "text-teal-700 hover:bg-teal-50"}`}>
+                    <ShieldCheck className="w-3.5 h-3.5" /> Licensed <span className="opacity-70">{segmentCounts.licensed}</span>
+                  </button>
+                  <button role="tab" aria-selected={activeSegment === "expired"} onClick={() => setActiveSegment("expired")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "expired" ? "bg-amber-500 text-white" : "text-amber-700 hover:bg-amber-50"}`}>
+                    <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
+                  </button>
+                  <button role="tab" aria-selected={activeSegment === "opportunities"} onClick={() => setActiveSegment("opportunities")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "opportunities" ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"}`}>
+                    <TrendingUp className="w-3.5 h-3.5" /> Opportunities <span className="opacity-70">{segmentCounts.opportunities}</span>
+                  </button>
+                  <button role="tab" aria-selected={activeSegment === "restricted"} onClick={() => setActiveSegment("restricted")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "restricted" ? "bg-red-600 text-white" : "text-red-600 hover:bg-red-50"}`}>
+                    <AlertTriangle className="w-3.5 h-3.5" /> Restricted <span className="opacity-70">{segmentCounts.restricted}</span>
+                  </button>
+                </div>
+                <div className="flex items-center bg-slate-100 rounded-full p-0.5 ml-3 shrink-0">
+                  <button onClick={() => setViewMode("map")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${viewMode === "map" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-200"}`} aria-label="Map view">
+                    <Map className="w-3.5 h-3.5" /> Map
+                  </button>
+                  <button onClick={() => setViewMode("list")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${viewMode === "list" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-200"}`} aria-label="List view">
+                    <List className="w-3.5 h-3.5" /> List
+                  </button>
+                </div>
+              </div>
+              {/* Row 2: Mobile filter toggle + key filters */}
+              <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-slate-100">
+                <button
+                  onClick={() => setMobileFiltersOpen(prev => !prev)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  Filters
+                  {mobileFiltersOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-slate-100 rounded-full p-0.5">
+                    <button onClick={() => setListingType("purchase")}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${listingType === "purchase" ? "bg-blue-600 text-white" : "text-slate-600"}`}>
+                      Buy
+                    </button>
+                    <button onClick={() => setListingType("rent")}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${listingType === "rent" ? "bg-purple-600 text-white" : "text-slate-600"}`}>
+                      R2HMO
+                    </button>
+                  </div>
+                  <span className="text-xs text-slate-500"><span className="font-semibold text-slate-700">{displayProperties.length}</span></span>
+                </div>
+              </div>
+              <div className={`${mobileFiltersOpen ? "flex" : "hidden"} md:flex items-center gap-3 px-3 md:px-4 py-2 overflow-x-auto scrollbar-hide`}>
+                <div className="shrink-0 w-48">
+                  <LocationSearch
+                    selectedLocation={selectedLocation}
+                    onLocationChange={setSelectedLocation}
+                  />
+                </div>
+                <div className="shrink-0">
+                  <Select
+                    defaultValue="all"
+                    onValueChange={(value) => {
+                      if (value === "all") setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
+                      else if (value === "flat") setPropertyTypes(["Flat", "Studio"])
+                      else if (value === "house") setPropertyTypes(["House", "Bungalow"])
+                    }}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs bg-white border-slate-200">
+                      <SelectValue placeholder="Property Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="flat">Flats & Studios</SelectItem>
+                      <SelectItem value="house">Houses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-600">
+                  <PoundSterling className="w-3 h-3" />
+                  <span>{priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}</span>
+                </div>
+                <div className="shrink-0 hidden md:flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Mode:</span>
+                  <div className="flex items-center bg-slate-100 rounded-full p-0.5">
+                    <button onClick={() => setListingType("purchase")}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${listingType === "purchase" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-200"}`}>
+                      Buy
+                    </button>
+                    <button onClick={() => setListingType("rent")}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${listingType === "rent" ? "bg-purple-600 text-white" : "text-slate-600 hover:bg-slate-200"}`}>
+                      R2HMO
+                    </button>
+                  </div>
+                </div>
+                <div className="shrink-0 hidden md:block text-xs text-slate-500">
+                  <span className="font-semibold text-slate-700">{displayProperties.length}</span> properties
+                </div>
+                {user && displayProperties.length > 0 && (
+                  <div className="shrink-0">
+                    <ExportButton
+                      filters={{
+                        listingType,
+                        city: selectedLocation.name,
+                        minPrice: priceRange[0],
+                        maxPrice: priceRange[1],
+                        minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
+                        minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
+                        isFurnished: isFurnished || undefined,
+                        hasParking: hasParking || undefined,
+                      }}
+                      disabled={loading}
+                      isAdmin={user.user_metadata?.is_admin === true}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Segment Tabs - Category Filter (map view only) */}
+          {viewMode === "map" && (
           <div role="tablist" aria-label="Property category filter" className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-1.5 border border-slate-200 max-w-[95vw] overflow-x-auto scrollbar-hide">
             <button
               role="tab"
@@ -1605,8 +1753,11 @@ export default function HMOHunterPage() {
               <AlertTriangle className="w-3.5 h-3.5" /> Restricted <span className="opacity-70">{segmentCounts.restricted}</span>
             </button>
           </div>
+          )}
 
-          {/* View Mode Toggle + Property Count Indicator & Export */}
+          {/* View Mode Toggle + Property Count Indicator & Export (map view only) */}
+          {viewMode === "map" && (
+          <>
           <div className="absolute top-[4.5rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 max-w-[95vw]">
             <div className="flex items-center bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-slate-200 p-0.5">
               <button
@@ -1664,6 +1815,8 @@ export default function HMOHunterPage() {
               />
             )}
           </div>
+          </>
+          )}
 
           {viewMode === "map" ? (
             <>

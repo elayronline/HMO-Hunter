@@ -59,6 +59,12 @@ const statusColors: Record<MetricStatus, string> = {
   negative: "text-red-600",
 }
 
+const statusLabels: Record<MetricStatus, string> = {
+  positive: "Good",
+  neutral: "Average",
+  negative: "Poor",
+}
+
 const statusDots: Record<MetricStatus, string> = {
   positive: "bg-emerald-500",
   neutral: "bg-slate-300",
@@ -149,14 +155,17 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     <div className={cn("grid grid-cols-3 divide-x divide-slate-200 bg-slate-50", className)}>
       {metrics.map((metric, i) => (
         <div key={i} className="py-2.5 px-2 sm:py-3 sm:px-3 text-center min-w-0">
-          <p className="text-[10px] sm:text-xs font-medium text-slate-500 uppercase tracking-wide truncate">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">
             {metric.label}
           </p>
           <p className={cn("text-lg sm:text-xl font-bold mt-0.5 sm:mt-1 truncate", statusColors[metric.status])}>
             {metric.value}
           </p>
-          <div className="flex justify-center mt-1.5">
+          <div className="flex items-center justify-center gap-1 mt-1.5">
             <div className={cn("w-1.5 h-1.5 rounded-full", statusDots[metric.status])} />
+            <span className={cn("text-[10px] font-medium", statusColors[metric.status])}>
+              {statusLabels[metric.status]}
+            </span>
           </div>
         </div>
       ))}
