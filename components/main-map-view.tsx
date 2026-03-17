@@ -13,6 +13,7 @@ export interface MainMapViewProps {
   loading: boolean
   showArticle4Overlay?: boolean
   showPotentialHMOLayer?: boolean
+  showPredictedArticle4?: boolean
   onArticle4AreaClick?: (areaInfo: Article4AreaInfo) => void
 }
 

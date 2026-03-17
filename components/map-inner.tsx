@@ -17,6 +17,7 @@ export function MapInner({
   loading,
   showArticle4Overlay = true,
   showPotentialHMOLayer = true,
+  showPredictedArticle4 = false,
   onArticle4AreaClick,
 }: MainMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -27,6 +28,7 @@ export function MapInner({
   const [mapReady, setMapReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [article4Loaded, setArticle4Loaded] = useState(false)
+  const [predictedArticle4Loaded, setPredictedArticle4Loaded] = useState(false)
   const retryCountRef = useRef(0)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const MAX_INIT_RETRIES = 20 // 20 * 150ms = 3 seconds max
@@ -74,6 +76,11 @@ export function MapInner({
 
         // Load Article 4 areas GeoJSON
         loadArticle4Areas(map)
+
+        // Load predicted Article 4 areas if enabled
+        if (showPredictedArticle4) {
+          loadPredictedArticle4Areas(map)
+        }
       })
 
 
@@ -275,6 +282,226 @@ export function MapInner({
     }
   }
 
+  // Load predicted Article 4 areas (premium feature)
+  const loadPredictedArticle4Areas = async (map: maplibregl.Map) => {
+    try {
+      console.log("[Map] Fetching predicted Article 4 zones...")
+      const response = await fetch("/api/predicted-article4")
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.log("[Map] Predicted Article 4: premium access required")
+          return
+        }
+        console.warn("[Map] Predicted Article 4 fetch failed:", response.status)
+        return
+      }
+
+      const geojson: GeoJSON.FeatureCollection = await response.json()
+
+      if (!geojson?.features || geojson.features.length === 0) {
+        console.log("[Map] No predicted Article 4 zones generated")
+        return
+      }
+
+      console.log(`[Map] Loaded ${geojson.features.length} predicted Article 4 zones`)
+
+      // Remove existing source/layers if re-loading
+      if (map.getSource("predicted-article4")) {
+        if (map.getLayer("predicted-article4-fill")) map.removeLayer("predicted-article4-fill")
+        if (map.getLayer("predicted-article4-outline")) map.removeLayer("predicted-article4-outline")
+        if (map.getLayer("predicted-article4-labels")) map.removeLayer("predicted-article4-labels")
+        map.removeSource("predicted-article4")
+      }
+
+      map.addSource("predicted-article4", {
+        type: "geojson",
+        data: geojson,
+      })
+
+      // Amber/orange fill — distinct from red Article 4
+      map.addLayer({
+        id: "predicted-article4-fill",
+        type: "fill",
+        source: "predicted-article4",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "risk_score"],
+            35, "#fde68a",  // amber-200 (low risk)
+            55, "#fbbf24",  // amber-400 (medium risk)
+            75, "#f59e0b",  // amber-500 (high risk)
+          ],
+          "fill-opacity": 0.35,
+          "fill-antialias": true,
+        },
+      })
+
+      // Dashed amber outline
+      map.addLayer({
+        id: "predicted-article4-outline",
+        type: "line",
+        source: "predicted-article4",
+        paint: {
+          "line-color": "#d97706", // amber-600
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            8, 1.5,
+            12, 2.5,
+            16, 3,
+          ],
+          "line-opacity": 0.7,
+          "line-dasharray": [3, 2],
+        },
+      })
+
+      // Labels showing risk score
+      map.addLayer({
+        id: "predicted-article4-labels",
+        type: "symbol",
+        source: "predicted-article4",
+        layout: {
+          "text-field": [
+            "concat",
+            "Risk: ",
+            ["to-string", ["get", "risk_score"]],
+            "%",
+          ],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10, 9,
+            14, 11,
+            16, 12,
+          ],
+          "text-anchor": "center",
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+          "text-max-width": 12,
+        },
+        paint: {
+          "text-color": "#92400e", // amber-800
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2,
+        },
+        minzoom: 10,
+      })
+
+      // Escape HTML helper
+      const escapeHtml = (str: string): string => {
+        const div = document.createElement("div")
+        div.textContent = str
+        return div.innerHTML
+      }
+
+      // Click handler for predicted zones
+      map.on("click", "predicted-article4-fill", (e) => {
+        if (!e.features || !e.features[0]) return
+
+        const props = e.features[0].properties
+        const coordinates = e.lngLat
+
+        if (popupRef.current) {
+          popupRef.current.remove()
+        }
+
+        const riskScore = props?.risk_score || 0
+        const riskLevel = escapeHtml(props?.risk_level || "unknown")
+        const postcodeSector = escapeHtml(props?.postcode_sector || "")
+        const council = escapeHtml(props?.council || "")
+        const hmoCount = props?.hmo_count || 0
+        const unlicensedCount = props?.unlicensed_count || 0
+        const expiredCount = props?.expired_count || 0
+
+        // Parse factors if available
+        let factorsHtml = ""
+        try {
+          const factors = JSON.parse(props?.factors || "[]")
+          factorsHtml = factors
+            .filter((f: any) => f.score > 0)
+            .map((f: any) =>
+              `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;">
+                <span style="color:#64748b;">${escapeHtml(f.name)}</span>
+                <span style="color:#92400e;font-weight:600;">${f.score}/${f.max}</span>
+              </div>`
+            )
+            .join("")
+        } catch {}
+
+        const riskColor = riskScore >= 70 ? "#dc2626" : riskScore >= 50 ? "#d97706" : "#ca8a04"
+        const riskBg = riskScore >= 70 ? "#fef2f2" : riskScore >= 50 ? "#fffbeb" : "#fefce8"
+
+        const popup = new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: "320px",
+        })
+          .setLngLat(coordinates)
+          .setHTML(`
+            <div style="padding: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <strong style="color: #d97706;">Predicted Article 4 Risk</strong>
+                <span style="font-size:10px;color:${riskColor};background:${riskBg};padding:2px 6px;border-radius:4px;font-weight:700;text-transform:uppercase;">${riskLevel}</span>
+              </div>
+              <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px;">
+                ${postcodeSector}
+              </div>
+              ${council ? `<div style="font-size:13px;color:#64748b;margin-bottom:8px;">${council}</div>` : ""}
+              <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <div style="flex:1;text-align:center;padding:6px;background:#f8fafc;border-radius:6px;">
+                  <div style="font-size:18px;font-weight:700;color:${riskColor};">${riskScore}</div>
+                  <div style="font-size:10px;color:#94a3b8;">Risk Score</div>
+                </div>
+                <div style="flex:1;text-align:center;padding:6px;background:#f8fafc;border-radius:6px;">
+                  <div style="font-size:18px;font-weight:700;color:#0f766e;">${hmoCount}</div>
+                  <div style="font-size:10px;color:#94a3b8;">HMOs</div>
+                </div>
+                <div style="flex:1;text-align:center;padding:6px;background:#f8fafc;border-radius:6px;">
+                  <div style="font-size:18px;font-weight:700;color:#dc2626;">${unlicensedCount}</div>
+                  <div style="font-size:10px;color:#94a3b8;">Unlicensed</div>
+                </div>
+              </div>
+              ${factorsHtml ? `
+                <div style="border-top:1px solid #e2e8f0;padding-top:6px;margin-top:4px;">
+                  <div style="font-size:10px;font-weight:600;color:#475569;margin-bottom:4px;text-transform:uppercase;">Risk Factors</div>
+                  ${factorsHtml}
+                </div>
+              ` : ""}
+              ${expiredCount > 0 ? `<div style="font-size:11px;color:#d97706;margin-top:6px;">${expiredCount} expired licence${expiredCount > 1 ? "s" : ""} in area</div>` : ""}
+              <div style="font-size:11px;color:#f59e0b;background:#fffbeb;padding:8px;border-radius:4px;margin-top:8px;">
+                <strong>Predictive analysis</strong> — this area may be at risk of future Article 4 designation based on HMO concentration patterns.
+              </div>
+            </div>
+          `)
+          .addTo(map)
+
+        popupRef.current = popup
+      })
+
+      // Cursor change on hover
+      map.on("mouseenter", "predicted-article4-fill", () => {
+        map.getCanvas().style.cursor = "pointer"
+      })
+      map.on("mouseleave", "predicted-article4-fill", () => {
+        map.getCanvas().style.cursor = ""
+      })
+
+      setPredictedArticle4Loaded(true)
+      console.log("[Map] Predicted Article 4 zones loaded:", geojson.features.length)
+    } catch (err) {
+      console.error("[Map] Failed to load predicted Article 4 zones:", err)
+    }
+  }
+
   // Toggle Article 4 layer visibility
   useEffect(() => {
     if (!mapRef.current || !mapReady || !article4Loaded) return
@@ -290,6 +517,29 @@ export function MapInner({
       console.log("Article 4 layers not ready yet")
     }
   }, [showArticle4Overlay, mapReady, article4Loaded])
+
+  // Toggle predicted Article 4 layer visibility and lazy-load on first enable
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return
+
+    if (showPredictedArticle4 && !predictedArticle4Loaded) {
+      // Lazy-load: only fetch when first toggled on
+      loadPredictedArticle4Areas(mapRef.current)
+      return
+    }
+
+    if (!predictedArticle4Loaded) return
+
+    const visibility = showPredictedArticle4 ? "visible" : "none"
+
+    try {
+      mapRef.current.setLayoutProperty("predicted-article4-fill", "visibility", visibility)
+      mapRef.current.setLayoutProperty("predicted-article4-outline", "visibility", visibility)
+      mapRef.current.setLayoutProperty("predicted-article4-labels", "visibility", visibility)
+    } catch (err) {
+      console.log("Predicted Article 4 layers not ready yet")
+    }
+  }, [showPredictedArticle4, mapReady, predictedArticle4Loaded])
 
   // Initialize map on mount
   useEffect(() => {

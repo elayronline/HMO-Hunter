@@ -159,6 +159,7 @@ export default function HMOHunterPage() {
   const [comparisonMetric, setComparisonMetric] = useState<"yield" | "rent" | "bedrooms">("yield")
   const [legendExpanded, setLegendExpanded] = useState(true)
   const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
+  const [showPredictedArticle4, setShowPredictedArticle4] = useState(false)
 
   const filterDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1146,6 +1147,32 @@ export default function HMOHunterPage() {
                   </Select>
                 </div>
 
+                {/* Predicted Future Article 4 — Premium Toggle */}
+                <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-slate-800">Future Article 4 Risk</span>
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-200 px-1.5 py-0.5 rounded-full shrink-0">
+                            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            PRO
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Predictive overlay on map</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={showPredictedArticle4}
+                      onCheckedChange={setShowPredictedArticle4}
+                      className="data-[state=checked]:bg-amber-500 shrink-0"
+                    />
+                  </div>
+                </div>
+
                 {/* Advanced Filters Toggle */}
                 {(() => {
                   const activeCount = [
@@ -1842,6 +1869,7 @@ export default function HMOHunterPage() {
                 loading={loading}
                 showArticle4Overlay={showArticle4Overlay}
                 showPotentialHMOLayer={showPotentialHMOLayer}
+                showPredictedArticle4={showPredictedArticle4}
               />
             </>
           ) : (
@@ -1958,6 +1986,53 @@ export default function HMOHunterPage() {
                         Data: planning.data.gov.uk
                       </a>
                     </div>
+                  )}
+                </div>
+
+                {/* PREDICTED ARTICLE 4 — PREMIUM */}
+                <div className="space-y-1.5 pt-2.5 border-t border-slate-100">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Predicted Risk</span>
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                        PRO
+                      </span>
+                    </div>
+                    <Switch
+                      checked={showPredictedArticle4}
+                      onCheckedChange={setShowPredictedArticle4}
+                      className="data-[state=checked]:bg-amber-500 scale-75"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-amber-400 border-2 border-amber-600 border-dashed"></div>
+                    <span className="text-xs text-slate-600">Future Article 4 Risk</span>
+                  </div>
+                  {showPredictedArticle4 && (
+                    <>
+                      <div className="space-y-1 mt-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-1.5 rounded-full bg-amber-500"></div>
+                          <span className="text-[10px] text-slate-500">High risk (70+)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-1.5 rounded-full bg-amber-400"></div>
+                          <span className="text-[10px] text-slate-500">Medium risk (50-69)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-1.5 rounded-full bg-amber-200"></div>
+                          <span className="text-[10px] text-slate-500">Low risk (35-49)</span>
+                        </div>
+                      </div>
+                      <div className="pt-1 mt-1 border-t border-slate-200">
+                        <span className="text-[10px] text-slate-400">
+                          Based on HMO density, licensing patterns & council trends
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
