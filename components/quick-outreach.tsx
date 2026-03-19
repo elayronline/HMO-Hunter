@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import {
   Mail, FileText, Send, Eye, AlertTriangle, CheckCircle,
-  User, MapPin, Sparkles, Clock, ShieldCheck, XCircle,
+  User, MapPin, Sparkles, Clock, ShieldCheck, XCircle, ImagePlus,
 } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 import type { D2VTemplate } from "@/lib/types/pipeline"
@@ -35,7 +35,7 @@ import {
   FOLLOW_UP_TEMPLATES,
   type LetterScenario,
 } from "@/lib/d2v-templates"
-import { SenderProfileEditor, loadSenderProfile, type SenderProfile } from "@/components/sender-profile"
+import { SenderProfileEditor, loadSenderProfile, saveSenderProfile, type SenderProfile } from "@/components/sender-profile"
 
 interface QuickOutreachProps {
   property: Property
@@ -56,6 +56,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
   const [enableFollowUps, setEnableFollowUps] = useState(true)
   const [senderProfile, setSenderProfile] = useState<SenderProfile | null>(null)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-detect scenario from property data
   const detectedScenario = useMemo(() => detectScenario(property), [property])
@@ -338,27 +339,84 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
                 <p className="text-[10px] text-slate-400 mt-1">{scenarioConfig.description}</p>
               </div>
 
-              {/* Sender profile bar */}
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border">
-                <div className="flex items-center gap-2">
-                  {senderProfile?.logoUrl ? (
-                    <img src={senderProfile.logoUrl} alt="" className="h-6 w-auto object-contain" />
-                  ) : (
-                    <div className="w-6 h-6 rounded bg-slate-200 flex items-center justify-center">
-                      <User className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  )}
-                  <div className="text-xs">
-                    <span className="font-medium">{senderProfile?.name || "Set up your profile"}</span>
-                    {senderProfile?.company && <span className="text-slate-400 ml-1">· {senderProfile.company}</span>}
+              {/* Your letterhead — inline logo upload + details */}
+              <div className="rounded-lg border bg-white p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-slate-500">Your Letterhead</label>
+                  <button
+                    onClick={() => setShowProfileEditor(true)}
+                    className="text-[10px] text-teal-600 hover:underline"
+                  >
+                    Edit all details
+                  </button>
+                </div>
+                <div className="flex items-start gap-3">
+                  {/* Logo upload area */}
+                  <div className="flex-shrink-0">
+                    {senderProfile?.logoUrl ? (
+                      <div className="relative group">
+                        <img
+                          src={senderProfile.logoUrl}
+                          alt="Your logo"
+                          className="h-14 w-auto max-w-[140px] object-contain rounded border bg-slate-50 p-1"
+                        />
+                        <button
+                          onClick={() => logoInputRef.current?.click()}
+                          className="absolute inset-0 bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px]"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => logoInputRef.current?.click()}
+                        className="w-[140px] h-14 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition-colors"
+                      >
+                        <ImagePlus className="h-5 w-5" />
+                        <span className="text-[10px]">Upload Logo</span>
+                      </button>
+                    )}
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast.error("Logo must be under 2MB")
+                          return
+                        }
+                        const reader = new FileReader()
+                        reader.onload = async () => {
+                          const url = reader.result as string
+                          const updated = { ...(senderProfile || { name: "", company: "", phone: "", email: "", address: "", website: "", logoUrl: null }), logoUrl: url }
+                          setSenderProfile(updated)
+                          await saveSenderProfile(updated)
+                          toast.success("Logo saved")
+                        }
+                        reader.readAsDataURL(file)
+                      }}
+                    />
+                  </div>
+
+                  {/* Sender details summary */}
+                  <div className="flex-1 text-xs text-slate-600 leading-relaxed">
+                    {senderProfile?.name ? (
+                      <>
+                        <p className="font-semibold">{senderProfile.name}</p>
+                        {senderProfile.company && <p>{senderProfile.company}</p>}
+                        {senderProfile.phone && <p>{senderProfile.phone}</p>}
+                        {senderProfile.email && <p className="text-teal-600">{senderProfile.email}</p>}
+                      </>
+                    ) : (
+                      <p className="text-slate-400 italic">
+                        Add your name and details via "Edit all details" — they'll appear on your letters.
+                      </p>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowProfileEditor(true)}
-                  className="text-xs text-teal-600 hover:underline font-medium"
-                >
-                  {senderProfile?.name ? "Edit" : "Set Up"}
-                </button>
               </div>
 
               {/* Channel selection */}
