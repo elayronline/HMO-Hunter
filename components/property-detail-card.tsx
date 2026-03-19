@@ -61,6 +61,8 @@ interface PropertyDetailCardProps {
   isSaved?: boolean
   className?: string
   userRole?: UserType | null
+  hideFooter?: boolean
+  hideHeader?: boolean
 }
 
 type TabType = "analysis" | "details" | "compliance"
@@ -72,6 +74,8 @@ export function PropertyDetailCard({
   isSaved = false,
   className,
   userRole,
+  hideFooter = false,
+  hideHeader = false,
 }: PropertyDetailCardProps) {
   const visibility = getVisibilityForRole(userRole)
   const [activeTab, setActiveTab] = useState<TabType>("analysis")
@@ -123,7 +127,6 @@ export function PropertyDetailCard({
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return
-        console.error("Auto-enrichment failed:", error)
       } finally {
         if (!controller.signal.aborted) setIsEnriching(false)
       }
@@ -143,10 +146,7 @@ export function PropertyDetailCard({
     try {
       await navigator.clipboard.writeText(url)
       toast.success("Link copied to clipboard!")
-      // Also show alert as backup visual feedback
-      console.log("[Share] Copied:", url)
     } catch (error) {
-      console.error("[Share] Failed:", error)
       toast.error("Failed to copy link")
       // Show alert as fallback
       alert(`Copy this link:\n${url}`)
@@ -204,7 +204,7 @@ export function PropertyDetailCard({
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="shrink-0 p-4 border-b border-slate-200">
+      {!hideHeader && <div className="shrink-0 p-4 border-b border-slate-200">
 
         {/* Row 1: Price + Deal Score */}
         <div className="flex items-center justify-between">
@@ -302,7 +302,7 @@ export function PropertyDetailCard({
             <TASuitabilityBadge property={property} isPremium={isPremium} />
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ═══════════════════════════════════════════════════════════════════
           METRICS BAR
@@ -553,7 +553,7 @@ export function PropertyDetailCard({
       {/* ═══════════════════════════════════════════════════════════════════
           FOOTER
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="shrink-0 p-4 border-t border-slate-200 bg-white">
+      {!hideFooter && <div className="shrink-0 p-4 border-t border-slate-200 bg-white">
         <div className="flex flex-wrap gap-2">
           {property.listing_type === "purchase" && (
             <Button
@@ -600,7 +600,7 @@ export function PropertyDetailCard({
             View listing <ExternalLink className="w-3 h-3" />
           </a>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

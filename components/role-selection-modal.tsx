@@ -86,7 +86,6 @@ export function RoleSelectionModal({ isOpen, onComplete, currentRole, onClose }:
       setSaving(false)
       onComplete(selectedRole)
     } catch (error) {
-      console.error("[RoleSelection] Error saving user type:", error)
       toast.error("Failed to save your role. Please try again.")
       setSaving(false)
       return
@@ -107,20 +106,22 @@ export function RoleSelectionModal({ isOpen, onComplete, currentRole, onClose }:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4" role="radiogroup" aria-label="Select your role">
           {roles.map((role) => {
             const Icon = role.icon
             const isSelected = selectedRole === role.id
             return (
               <button
                 key={role.id}
+                role="radio"
+                aria-checked={isSelected}
                 onClick={() => setSelectedRole(role.id)}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all cursor-pointer text-center",
                   isSelected ? role.selectedColor : role.color
                 )}
               >
-                <Icon className={cn("w-8 h-8", isSelected ? "text-slate-900" : "text-slate-400")} />
+                <Icon className={cn("w-8 h-8", isSelected ? "text-slate-900" : "text-slate-400")} aria-hidden="true" />
                 <span className="text-sm font-semibold text-slate-900">{role.label}</span>
                 <span className="text-xs text-slate-500 leading-tight">{role.description}</span>
                 <span className="text-[10px] text-slate-400 leading-tight mt-1">{role.hint}</span>

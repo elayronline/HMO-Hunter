@@ -18,7 +18,7 @@ import type { UserType } from "@/components/role-selection-modal"
 
 const ALL_ROLES: UserType[] = ["investor", "council_ta", "operator", "agent"]
 
-const ALL_FLAGS: (keyof RoleVisibility)[] = [
+const ALL_BOOLEAN_FLAGS: (keyof RoleVisibility)[] = [
   "showDealScore",
   "showDealVerdict",
   "showYieldMetrics",
@@ -28,7 +28,14 @@ const ALL_FLAGS: (keyof RoleVisibility)[] = [
   "showYieldCalculator",
   "showOwnership",
   "showHmoClassification",
+  "showPipeline",
+  "showD2VOutreach",
+  "showViewingTracker",
+  "showOffMarketSourcing",
 ]
+
+// Original 9 flags for backward-compat checks
+const ALL_FLAGS: (keyof RoleVisibility)[] = ALL_BOOLEAN_FLAGS
 
 // ============================================================================
 // 1. Exact per-role flag values
@@ -181,10 +188,15 @@ describe("Cross-Role Invariants", () => {
     expect(ROLE_VISIBILITY.council_ta.showOwnership).toBe(false)
   })
 
-  // Operator is minimal — only ownership
-  it("operator only has showOwnership", () => {
+  // Operator is minimal for original flags — only ownership
+  it("operator only has showOwnership among original flags", () => {
     const op = ROLE_VISIBILITY.operator
-    const trueFlags = ALL_FLAGS.filter((f) => op[f])
+    const originalFlags: (keyof RoleVisibility)[] = [
+      "showDealScore", "showDealVerdict", "showYieldMetrics",
+      "showR2RMetrics", "showLhaComparison", "showTaSuitability",
+      "showYieldCalculator", "showOwnership", "showHmoClassification",
+    ]
+    const trueFlags = originalFlags.filter((f) => op[f])
     expect(trueFlags).toEqual(["showOwnership"])
   })
 
@@ -224,14 +236,15 @@ describe("Structure & Type Safety", () => {
     expect(Object.keys(ROLE_VISIBILITY)).toHaveLength(4)
   })
 
-  it("every role config has exactly 9 boolean flags", () => {
+  it("every role config has exactly 14 fields (13 boolean + 1 string)", () => {
     ALL_ROLES.forEach((role) => {
       const config = ROLE_VISIBILITY[role]
       const keys = Object.keys(config)
-      expect(keys).toHaveLength(9)
-      keys.forEach((k) => {
-        expect(typeof config[k as keyof RoleVisibility]).toBe("boolean")
+      expect(keys).toHaveLength(14)
+      ALL_BOOLEAN_FLAGS.forEach((k) => {
+        expect(typeof config[k]).toBe("boolean")
       })
+      expect(typeof config.defaultViewingType).toBe("string")
     })
   })
 
@@ -288,34 +301,34 @@ describe("Idempotency & Immutability", () => {
 // 8. Flag count sanity per role
 // ============================================================================
 describe("Flag Count Sanity", () => {
-  it("investor has 6 true flags", () => {
+  it("investor has 10 true boolean flags", () => {
     const v = ROLE_VISIBILITY.investor
-    const trueCount = ALL_FLAGS.filter((f) => v[f]).length
-    expect(trueCount).toBe(6)
+    const trueCount = ALL_BOOLEAN_FLAGS.filter((f) => v[f]).length
+    expect(trueCount).toBe(10)
   })
 
-  it("council_ta has 3 true flags", () => {
+  it("council_ta has 5 true boolean flags", () => {
     const v = ROLE_VISIBILITY.council_ta
-    const trueCount = ALL_FLAGS.filter((f) => v[f]).length
+    const trueCount = ALL_BOOLEAN_FLAGS.filter((f) => v[f]).length
+    expect(trueCount).toBe(5)
+  })
+
+  it("operator has 3 true boolean flags", () => {
+    const v = ROLE_VISIBILITY.operator
+    const trueCount = ALL_BOOLEAN_FLAGS.filter((f) => v[f]).length
     expect(trueCount).toBe(3)
   })
 
-  it("operator has 1 true flag", () => {
-    const v = ROLE_VISIBILITY.operator
-    const trueCount = ALL_FLAGS.filter((f) => v[f]).length
-    expect(trueCount).toBe(1)
-  })
-
-  it("agent has 6 true flags", () => {
+  it("agent has 10 true boolean flags", () => {
     const v = ROLE_VISIBILITY.agent
-    const trueCount = ALL_FLAGS.filter((f) => v[f]).length
-    expect(trueCount).toBe(6)
+    const trueCount = ALL_BOOLEAN_FLAGS.filter((f) => v[f]).length
+    expect(trueCount).toBe(10)
   })
 
-  it("fallback has all 9 flags true", () => {
+  it("fallback has all 13 boolean flags true", () => {
     const v = getVisibilityForRole(null)
-    const trueCount = ALL_FLAGS.filter((f) => v[f]).length
-    expect(trueCount).toBe(9)
+    const trueCount = ALL_BOOLEAN_FLAGS.filter((f) => v[f]).length
+    expect(trueCount).toBe(13)
   })
 })
 
@@ -323,8 +336,15 @@ describe("Flag Count Sanity", () => {
 // 9. Symmetry checks
 // ============================================================================
 describe("Symmetry Checks", () => {
-  it("investor and agent have identical visibility", () => {
-    expect(ROLE_VISIBILITY.investor).toEqual(ROLE_VISIBILITY.agent)
+  it("investor and agent have identical boolean visibility for original flags", () => {
+    const originalFlags: (keyof RoleVisibility)[] = [
+      "showDealScore", "showDealVerdict", "showYieldMetrics",
+      "showR2RMetrics", "showLhaComparison", "showTaSuitability",
+      "showYieldCalculator", "showOwnership", "showHmoClassification",
+    ]
+    originalFlags.forEach((flag) => {
+      expect(ROLE_VISIBILITY.investor[flag]).toEqual(ROLE_VISIBILITY.agent[flag])
+    })
   })
 
   it("council_ta is the only role with R2R metrics", () => {

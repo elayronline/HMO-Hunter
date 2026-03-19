@@ -10,6 +10,12 @@ export interface RoleVisibility {
   showYieldCalculator: boolean
   showOwnership: boolean
   showHmoClassification: boolean
+  // Pipeline & outreach features
+  showPipeline: boolean
+  showD2VOutreach: boolean
+  showViewingTracker: boolean
+  showOffMarketSourcing: boolean
+  defaultViewingType: "site_visit" | "inspection" | "portfolio_check" | "client_viewing"
 }
 
 const FALLBACK_VISIBILITY: RoleVisibility = {
@@ -22,6 +28,11 @@ const FALLBACK_VISIBILITY: RoleVisibility = {
   showYieldCalculator: true,
   showOwnership: true,
   showHmoClassification: true,
+  showPipeline: true,
+  showD2VOutreach: true,
+  showViewingTracker: true,
+  showOffMarketSourcing: true,
+  defaultViewingType: "site_visit",
 }
 
 export const ROLE_VISIBILITY: Record<UserType, RoleVisibility> = {
@@ -35,6 +46,11 @@ export const ROLE_VISIBILITY: Record<UserType, RoleVisibility> = {
     showYieldCalculator: true,
     showOwnership: true,
     showHmoClassification: true,
+    showPipeline: true,
+    showD2VOutreach: true,
+    showViewingTracker: true,
+    showOffMarketSourcing: true,
+    defaultViewingType: "site_visit",
   },
   council_ta: {
     showDealScore: false,
@@ -46,6 +62,11 @@ export const ROLE_VISIBILITY: Record<UserType, RoleVisibility> = {
     showYieldCalculator: false,
     showOwnership: false,
     showHmoClassification: false,
+    showPipeline: true,
+    showD2VOutreach: false,     // Council officers don't do D2V
+    showViewingTracker: true,
+    showOffMarketSourcing: false,
+    defaultViewingType: "inspection",
   },
   operator: {
     showDealScore: false,
@@ -57,6 +78,11 @@ export const ROLE_VISIBILITY: Record<UserType, RoleVisibility> = {
     showYieldCalculator: false,
     showOwnership: true,
     showHmoClassification: false,
+    showPipeline: true,
+    showD2VOutreach: false,     // Operators manage existing portfolio
+    showViewingTracker: true,
+    showOffMarketSourcing: false,
+    defaultViewingType: "portfolio_check",
   },
   agent: {
     showDealScore: true,
@@ -68,6 +94,11 @@ export const ROLE_VISIBILITY: Record<UserType, RoleVisibility> = {
     showYieldCalculator: true,
     showOwnership: true,
     showHmoClassification: true,
+    showPipeline: true,
+    showD2VOutreach: true,
+    showViewingTracker: true,
+    showOffMarketSourcing: true,
+    defaultViewingType: "client_viewing",
   },
 }
 

@@ -84,7 +84,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
         setSearches(data)
       }
     } catch (error) {
-      console.error('Error fetching searches:', error)
+      // silently ignore
     } finally {
       setLoading(false)
     }
@@ -141,7 +141,6 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
         })
       }
     } catch (error) {
-      console.error('Error saving search:', error)
       toast({
         title: "Error",
         description: "Failed to save search",
@@ -167,7 +166,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
         description: `Applied filters from "${search.name}"`
       })
     } catch (error) {
-      console.error('Error loading search:', error)
+      // silently ignore
     }
   }
 
@@ -185,7 +184,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
         setSearches(prev => prev.filter(s => s.id !== searchId))
       }
     } catch (error) {
-      console.error('Error deleting search:', error)
+      // silently ignore
     }
   }
 

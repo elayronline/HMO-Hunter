@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/collapsible"
 import { toast } from "@/hooks/use-toast"
 import type { Director, Property } from "@/lib/types/database"
+import { QuickOutreach } from "@/components/quick-outreach"
 
 interface OwnerInformationSectionProps {
   property: Property
@@ -77,7 +78,6 @@ async function trackContactAccess(
 
     return { success: true, warning: data.warning }
   } catch (error) {
-    console.error("Failed to track access:", error)
     return { success: true } // Allow action even if tracking fails
   }
 }
@@ -270,6 +270,14 @@ export function OwnerInformationSection({
                       <Copy className="h-4 w-4" />
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* D2V Quick Outreach — one-click personalised letter/email */}
+              {isPremium && (property.owner_name || property.licence_holder_name) && (
+                <div className="pt-2 border-t border-blue-200">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">Direct Outreach</p>
+                  <QuickOutreach property={property} />
                 </div>
               )}
             </div>

@@ -36,6 +36,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   LayoutGrid,
+  Briefcase,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
@@ -314,7 +315,6 @@ export default function HMOHunterPage() {
       window.dispatchEvent(new Event("credits-changed"))
     } catch (error) {
       // Silently fail - don't block property viewing
-      console.error('Failed to track property view:', error)
     }
   }, [user, toast])
 
@@ -344,7 +344,7 @@ export default function HMOHunterPage() {
         try {
           property = await getPropertyById(propertyId!) ?? undefined
         } catch (error) {
-          console.error("[Page] Failed to fetch property from URL:", error)
+          // silently ignore
         }
       }
 
@@ -390,7 +390,7 @@ export default function HMOHunterPage() {
     }).catch((error: Error) => {
       // Silently handle abort errors during unmount
       if (error.name !== 'AbortError') {
-        console.error('Auth error:', error)
+        // silently ignore non-abort auth errors
       }
     })
 
@@ -470,7 +470,6 @@ export default function HMOHunterPage() {
         })
         setProperties(data)
       } catch (error) {
-        console.error("[v0] Failed to fetch properties:", error)
         if (error instanceof Error) {
           if (error.message.includes("Rate limit")) {
             // Show user-friendly message when rate limited
@@ -561,7 +560,7 @@ export default function HMOHunterPage() {
       })
       setProperties(data)
     } catch (error) {
-      console.error("[v0] Failed to fetch properties:", error)
+      // silently ignore
     } finally {
       setLoading(false)
     }
@@ -811,6 +810,13 @@ export default function HMOHunterPage() {
                 {savedProperties.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => router.push("/pipeline")}
+            className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
+          >
+            <Briefcase className="w-4 h-4" />
+            Deals
           </button>
         </nav>
 
@@ -2116,7 +2122,7 @@ export default function HMOHunterPage() {
                       title={isInCompare(selectedProperty.id) ? "Remove from comparison" : "Add to comparison"}
                       aria-label={isInCompare(selectedProperty.id) ? "Remove from comparison" : "Add to comparison"}
                     >
-                      <Scale className="w-4 h-4" />
+                      <BarChart3 className="w-4 h-4" />
                     </button>
                   </div>
 

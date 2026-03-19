@@ -3,6 +3,18 @@
     {
       "path": "/api/send-notifications",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-data",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/detect-stale",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/ingest-off-market",
+      "schedule": "0 5 * * *"
     }
   ]
 }

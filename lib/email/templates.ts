@@ -330,6 +330,105 @@ Questions? Reply to this email or visit our FAQ page.
   return { subject, html, text }
 }
 
+// D2V outreach email template
+export function d2vOutreachEmail(data: {
+  recipientName: string
+  subject: string
+  body: string
+}): { subject: string; html: string; text: string } {
+  const subject = data.subject
+
+  const html = emailWrapper(`
+    <div style="font-size: 16px; color: #1e293b; line-height: 1.8;">
+      ${data.body.split("\n").map(line => `<p style="margin: 0 0 12px 0;">${line}</p>`).join("")}
+    </div>
+  `)
+
+  const text = data.body
+
+  return { subject, html, text }
+}
+
+// Viewing confirmation email template
+export function viewingConfirmationEmail(data: {
+  userName: string
+  propertyAddress: string
+  propertyPostcode: string
+  scheduledAt: string
+  viewingType: string
+  contactName?: string
+  contactPhone?: string
+  propertyUrl: string
+}): { subject: string; html: string; text: string } {
+  const formattedDate = new Date(data.scheduledAt).toLocaleDateString("en-GB", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+
+  const viewingLabels: Record<string, string> = {
+    site_visit: "Site Visit",
+    inspection: "Inspection",
+    portfolio_check: "Portfolio Check",
+    client_viewing: "Client Viewing",
+  }
+
+  const subject = `Viewing scheduled: ${data.propertyAddress}`
+
+  const html = emailWrapper(`
+    <h2 style="margin: 0 0 20px 0; color: #0f172a; font-size: 20px;">
+      Hi ${data.userName},
+    </h2>
+    <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
+      Your ${viewingLabels[data.viewingType] || "viewing"} has been scheduled.
+    </p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 18px;">
+        ${data.propertyAddress}
+      </h3>
+      <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">
+        ${data.propertyPostcode}
+      </p>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
+        <p style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">
+          <strong>Date & Time:</strong> ${formattedDate}
+        </p>
+        <p style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">
+          <strong>Type:</strong> ${viewingLabels[data.viewingType] || data.viewingType}
+        </p>
+        ${data.contactName ? `
+          <p style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">
+            <strong>Contact:</strong> ${data.contactName}${data.contactPhone ? ` (${data.contactPhone})` : ""}
+          </p>
+        ` : ""}
+      </div>
+    </div>
+
+    <a href="${data.propertyUrl}" style="display: inline-block; background-color: ${BRAND_COLOR}; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 500; font-size: 16px;">
+      View Property Details
+    </a>
+  `)
+
+  const text = `
+Hi ${data.userName},
+
+Your ${viewingLabels[data.viewingType] || "viewing"} has been scheduled.
+
+${data.propertyAddress}, ${data.propertyPostcode}
+Date: ${formattedDate}
+Type: ${viewingLabels[data.viewingType] || data.viewingType}
+${data.contactName ? `Contact: ${data.contactName}${data.contactPhone ? ` (${data.contactPhone})` : ""}` : ""}
+
+View property: ${data.propertyUrl}
+`
+
+  return { subject, html, text }
+}
+
 // Low credits warning email
 export function lowCreditsEmail(data: {
   userName: string

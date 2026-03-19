@@ -6,13 +6,21 @@ import { saveProperty, unsaveProperty } from "@/app/actions/saved-properties"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 interface SavePropertyButtonProps {
   propertyId: string
   initialSaved?: boolean
+  size?: "sm" | "default" | "icon"
+  className?: string
 }
 
-export function SavePropertyButton({ propertyId, initialSaved = false }: SavePropertyButtonProps) {
+export function SavePropertyButton({
+  propertyId,
+  initialSaved = false,
+  size = "icon",
+  className,
+}: SavePropertyButtonProps) {
   const [isSaved, setIsSaved] = useState(initialSaved)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -22,7 +30,6 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
       if (isSaved) {
         const result = await unsaveProperty(propertyId)
         if (result.error) {
-          console.error("[v0] Error unsaving property:", result.error)
           toast({
             title: "Error",
             description: "Failed to unsave property. Please try again.",
@@ -36,20 +43,24 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
         if (result.error) {
           if (result.error === "You must be logged in to save properties") {
             router.push("/auth/login")
-          } else if ((result as any).limitReached) {
+            return
+          }
+
+          const extResult = result as Record<string, unknown>
+
+          if (extResult.limitReached) {
             toast({
               title: "Saved Properties Limit Reached",
-              description: `You've reached your limit of ${(result as any).limit} saved properties. Remove some to save more.`,
+              description: `You've reached your limit of ${extResult.limit ?? 100} saved properties. Remove some to save more.`,
               variant: "destructive",
             })
-          } else if ((result as any).insufficientCredits) {
+          } else if (extResult.insufficientCredits) {
             toast({
               title: "Daily Credits Exhausted",
               description: "You've used all your credits for today. Resets at midnight UTC.",
               variant: "destructive",
             })
           } else {
-            console.error("[v0] Error saving property:", result.error)
             toast({
               title: "Error",
               description: result.error,
@@ -59,13 +70,13 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
         } else {
           setIsSaved(true)
           toast({ title: "Property saved", description: "Added to your saved properties." })
-          // Notify credit balance to refresh
           window.dispatchEvent(new Event("credits-changed"))
-          // Show warning if credits are running low
-          if ((result as any).warning) {
+
+          const extResult = result as Record<string, unknown>
+          if (extResult.warning) {
             toast({
               title: "Credits Running Low",
-              description: (result as any).warning,
+              description: String(extResult.warning),
             })
           }
         }
@@ -76,12 +87,13 @@ export function SavePropertyButton({ propertyId, initialSaved = false }: SavePro
   return (
     <Button
       variant="ghost"
-      size="icon"
-      className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white"
+      size={size}
+      className={cn("bg-white/90 hover:bg-white", className)}
       onClick={handleToggleSave}
       disabled={isPending}
+      aria-label={isSaved ? "Remove from saved properties" : "Save property"}
     >
-      <Heart className={`h-5 w-5 ${isSaved ? "fill-teal-600 text-teal-600" : "text-slate-600"}`} />
+      <Heart className={cn("h-5 w-5", isSaved ? "fill-teal-600 text-teal-600" : "text-slate-600")} />
     </Button>
   )
 }

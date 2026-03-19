@@ -9,6 +9,11 @@ export const CREDIT_COSTS = {
   save_search: 2,
   create_price_alert: 5,
   csv_export: 10,
+  // Pipeline & outreach features
+  add_to_pipeline: 1,
+  d2v_send_letter: 3,
+  d2v_send_email: 2,
+  schedule_viewing: 2,
 } as const
 
 export type CreditAction = keyof typeof CREDIT_COSTS

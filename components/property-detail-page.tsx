@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
-import { useState, useMemo, Component, type ReactNode } from "react"
+import { useState, useMemo, useEffect, useCallback, Component, type ReactNode } from "react"
 import {
   ArrowLeft,
   BedDouble,
@@ -20,10 +20,14 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   X,
   Home,
   Zap,
   Shield,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HeroMetricsBar } from "@/components/hero-metrics-bar"
@@ -108,8 +112,20 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
 
   const validImages = allImages.filter(img => !failedImages.has(img))
 
-  const goNext = () => setSelectedImageIndex(i => (i + 1) % Math.max(1, validImages.length))
-  const goPrev = () => setSelectedImageIndex(i => (i - 1 + validImages.length) % Math.max(1, validImages.length))
+  const goNext = useCallback(() => setSelectedImageIndex(i => (i + 1) % Math.max(1, validImages.length)), [validImages.length])
+  const goPrev = useCallback(() => setSelectedImageIndex(i => (i - 1 + validImages.length) % Math.max(1, validImages.length)), [validImages.length])
+
+  // Keyboard navigation for fullscreen gallery
+  useEffect(() => {
+    if (!showFullscreen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") goNext()
+      else if (e.key === "ArrowLeft") goPrev()
+      else if (e.key === "Escape") setShowFullscreen(false)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [showFullscreen, goNext, goPrev])
 
   const dealScoreConfig = property.deal_score != null ? getDealScoreConfig(property.deal_score) : null
 
@@ -375,12 +391,7 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
             {property.description && (
-              <section className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-200/80">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">About this property</h3>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                  {property.description}
-                </p>
-              </section>
+              <PropertyDescription description={property.description} />
             )}
 
             {/* Analysis & Details Card */}
@@ -389,6 +400,8 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
                 property={property}
                 onViewFullDetails={() => {}}
                 className="w-full border-0 shadow-none rounded-none"
+                hideFooter
+                hideHeader
               />
             </div>
           </div>
@@ -545,6 +558,171 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
         </div>
       )}
     </div>
+  )
+}
+
+// ─── Description Parser & Formatter ─────────────────────────────────
+// Handles messy agent descriptions: bullet chars, no line breaks,
+// mixed legal/feature text. Extracts highlights, truncates, and formats.
+
+const HIGHLIGHT_PATTERNS: { pattern: RegExp; label: string }[] = [
+  { pattern: /\b(?:fully\s+)?furnished\b/i, label: "Furnished" },
+  { pattern: /\bunfurnished\b/i, label: "Unfurnished" },
+  { pattern: /\bgarden\b/i, label: "Garden" },
+  { pattern: /\bparking|off[\s-]?street\b/i, label: "Parking" },
+  { pattern: /\b(?:recently|newly)\s+(?:renovated|refurbished|decorated)\b/i, label: "Recently Renovated" },
+  { pattern: /\bdouble\s+glazing|double\s+glazed\b/i, label: "Double Glazed" },
+  { pattern: /\bcentral\s+heating|gas\s+heating\b/i, label: "Central Heating" },
+  { pattern: /\bfibre|fiber|broadband\b/i, label: "Broadband" },
+  { pattern: /\bwashing\s+machine\b/i, label: "Washing Machine" },
+  { pattern: /\ben[\s-]?suite\b/i, label: "En-suite" },
+  { pattern: /\bbalcony\b/i, label: "Balcony" },
+  { pattern: /\bbike\s+storage|cycle\s+storage\b/i, label: "Bike Storage" },
+  { pattern: /\bpets?\s+(?:allowed|friendly|considered)\b/i, label: "Pets Considered" },
+  { pattern: /\bstudents?\s+only\b/i, label: "Students Only" },
+  { pattern: /\bprofessionals?\s+only\b/i, label: "Professionals Only" },
+  { pattern: /\bavailable\s+(?:now|immediately)\b/i, label: "Available Now" },
+  { pattern: /\bhigh\s+standard\b/i, label: "High Standard" },
+]
+
+// Noise patterns to strip or de-emphasize
+const NOISE_PATTERNS = [
+  /(?:a\s+)?holding\s+deposit\s+of\s+£[\d,.]+\s+will\s+be\s+required[^.•*]*/gi,
+  /(?:a\s+)?security\s+deposit\s*:\s*£[\d,.]+[^.•*]*/gi,
+  /the\s+above\s+details\s+are\s+intended\s+for[^.•*]*/gi,
+  /(?:call|contact)\s+(?:now\s+)?(?:to\s+)?(?:enquire|book)[^.•*]*/gi,
+  /(?:for\s+)?further\s+(?:details|information)\s+(?:please\s+)?(?:call|contact|visit)[^.•*]*/gi,
+  /disclaimer[^.•*]*/gi,
+  /please\s+note[^.•*]*/gi,
+]
+
+function extractHighlights(text: string): string[] {
+  const found: string[] = []
+  for (const { pattern, label } of HIGHLIGHT_PATTERNS) {
+    if (pattern.test(text) && !found.includes(label)) {
+      found.push(label)
+    }
+  }
+  return found.slice(0, 8) // Cap at 8 highlights
+}
+
+function cleanDescription(text: string): string {
+  let cleaned = text
+  for (const pattern of NOISE_PATTERNS) {
+    cleaned = cleaned.replace(pattern, "")
+  }
+  return cleaned.trim()
+}
+
+interface ParsedBlock {
+  type: "paragraph" | "bullet"
+  text: string
+}
+
+function parseDescription(raw: string): ParsedBlock[] {
+  const cleaned = cleanDescription(raw)
+  const blocks: ParsedBlock[] = []
+
+  // Split on bullet characters, newlines, or sentence boundaries after bullets
+  // Common patterns: •item•item, *item*item, - item\n- item
+  const bulletSplit = cleaned.split(/(?:•|\*{1,2}|^-\s|\n-\s)/gm)
+
+  if (bulletSplit.length > 2) {
+    // Likely a bullet-style description
+    for (const part of bulletSplit) {
+      const trimmed = part.trim().replace(/^[-–]\s*/, "")
+      if (!trimmed || trimmed.length < 3) continue
+      blocks.push({ type: "bullet", text: trimmed })
+    }
+  } else {
+    // Paragraph-style — split on double newlines or sentence boundaries where
+    // sentences run together (no space after period before capital)
+    const withBreaks = cleaned
+      .replace(/([.!?])([A-Z])/g, "$1\n$2") // Add break between sentences that run together
+      .replace(/\n{2,}/g, "\n\n")
+
+    const paragraphs = withBreaks.split(/\n\n+/)
+    for (const para of paragraphs) {
+      const trimmed = para.trim()
+      if (!trimmed || trimmed.length < 3) continue
+      blocks.push({ type: "paragraph", text: trimmed })
+    }
+  }
+
+  return blocks
+}
+
+const COLLAPSED_LINES = 4 // Show this many lines/bullets before truncating
+
+function PropertyDescription({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const highlights = useMemo(() => extractHighlights(description), [description])
+  const blocks = useMemo(() => parseDescription(description), [description])
+
+  const needsTruncation = blocks.length > COLLAPSED_LINES
+  const visibleBlocks = expanded ? blocks : blocks.slice(0, COLLAPSED_LINES)
+
+  if (blocks.length === 0 && highlights.length === 0) return null
+
+  return (
+    <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+      <div className="p-5 md:p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">About this property</h3>
+
+        {/* Key highlights extracted from description */}
+        {highlights.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b border-slate-100">
+            {highlights.map((h, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 bg-teal-50 px-2.5 py-1.5 rounded-lg ring-1 ring-teal-100"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                {h}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Formatted description */}
+        <div className="relative">
+          <div className={`space-y-2 ${!expanded && needsTruncation ? "max-h-[140px] overflow-hidden" : ""}`}>
+            {visibleBlocks.map((block, i) => (
+              block.type === "bullet" ? (
+                <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2 shrink-0" />
+                  <span>{block.text}</span>
+                </div>
+              ) : (
+                <p key={i} className="text-sm text-slate-600 leading-relaxed">
+                  {block.text}
+                </p>
+              )
+            ))}
+          </div>
+
+          {/* Fade overlay when collapsed */}
+          {!expanded && needsTruncation && (
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+          )}
+        </div>
+
+        {/* Read more / less toggle */}
+        {needsTruncation && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700 mt-3 transition-colors"
+          >
+            {expanded ? (
+              <>Show less <ChevronUp className="w-4 h-4" /></>
+            ) : (
+              <>Read full description <ChevronDown className="w-4 h-4" /></>
+            )}
+          </button>
+        )}
+      </div>
+    </section>
   )
 }
 

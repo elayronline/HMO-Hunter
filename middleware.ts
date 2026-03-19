@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { validateCSRF, ensureCSRFCookie } from "@/lib/csrf"
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -25,6 +26,12 @@ export async function middleware(request: NextRequest) {
 
     if (rateLimitResponse) {
       return rateLimitResponse
+    }
+
+    // CSRF protection for mutating API requests
+    const csrfResponse = validateCSRF(request)
+    if (csrfResponse) {
+      return csrfResponse
     }
   }
 
@@ -81,7 +88,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  // Ensure CSRF cookie is set on every response
+  return ensureCSRFCookie(request, supabaseResponse)
 }
 
 // Configure which routes the middleware runs on

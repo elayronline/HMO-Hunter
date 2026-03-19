@@ -146,6 +146,74 @@ export const propertyFiltersSchema = z.object({
   taSuitability: z.enum(["suitable", "partial"]).optional(),
 })
 
+// Pipeline schemas
+export const pipelineDealCreateSchema = z.object({
+  property_id: z.string().uuid("Invalid property ID"),
+  stage: z.string().min(1).max(50).default("identified"),
+  label: z.string().max(50).optional(),
+  notes: z.string().max(2000).optional(),
+  priority: z.number().int().min(0).max(3).default(0),
+  expected_value: z.number().positive().optional(),
+})
+
+export const pipelineDealUpdateSchema = z.object({
+  id: z.string().uuid("Invalid deal ID"),
+  stage: z.string().min(1).max(50).optional(),
+  label: z.string().max(50).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  priority: z.number().int().min(0).max(3).optional(),
+  expected_value: z.number().positive().nullable().optional(),
+  archived_at: z.string().datetime().nullable().optional(),
+})
+
+export const pipelineLabelCreateSchema = z.object({
+  name: z.string().min(1).max(30).trim(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid hex color").default("#3b82f6"),
+})
+
+// D2V schemas
+export const d2vTemplateCreateSchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  subject: z.string().max(200).optional(),
+  body: z.string().min(10).max(5000),
+  channel: z.enum(["letter", "email"]),
+})
+
+export const d2vCampaignCreateSchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  template_id: z.string().uuid().optional(),
+  channel: z.enum(["letter", "email"]),
+  property_ids: z.array(z.string().uuid()).min(1).max(100),
+})
+
+export const d2vCampaignSendSchema = z.object({
+  campaign_id: z.string().uuid("Invalid campaign ID"),
+})
+
+// Viewing schemas
+export const viewingCreateSchema = z.object({
+  property_id: z.string().uuid("Invalid property ID"),
+  pipeline_deal_id: z.string().uuid().optional(),
+  viewing_type: z.enum(["site_visit", "inspection", "portfolio_check", "client_viewing"]),
+  scheduled_at: z.string().datetime("Invalid date format"),
+  duration_minutes: z.number().int().min(15).max(240).default(30),
+  notes: z.string().max(1000).optional(),
+  attendees: z.array(z.string().max(100)).max(10).optional(),
+  contact_name: z.string().max(200).optional(),
+  contact_phone: z.string().max(20).optional(),
+  contact_email: z.string().email().optional(),
+})
+
+export const viewingUpdateSchema = z.object({
+  id: z.string().uuid("Invalid viewing ID"),
+  status: z.enum(["scheduled", "confirmed", "completed", "cancelled", "no_show"]).optional(),
+  rating: z.number().int().min(1).max(5).optional(),
+  notes: z.string().max(1000).nullable().optional(),
+  checklist: z.record(z.boolean()).optional(),
+  completed_at: z.string().datetime().nullable().optional(),
+  scheduled_at: z.string().datetime().optional(),
+})
+
 // Type exports
 export type PriceAlertCreate = z.infer<typeof priceAlertCreateSchema>
 export type PriceAlertUpdate = z.infer<typeof priceAlertUpdateSchema>
@@ -157,3 +225,9 @@ export type AdminUpdateUser = z.infer<typeof adminUpdateUserSchema>
 export type GdprDataRequest = z.infer<typeof gdprDataRequestSchema>
 export type GdprLogAccess = z.infer<typeof gdprLogAccessSchema>
 export type PropertyFilters = z.infer<typeof propertyFiltersSchema>
+export type PipelineDealCreate = z.infer<typeof pipelineDealCreateSchema>
+export type PipelineDealUpdate = z.infer<typeof pipelineDealUpdateSchema>
+export type D2VTemplateCreate = z.infer<typeof d2vTemplateCreateSchema>
+export type D2VCampaignCreate = z.infer<typeof d2vCampaignCreateSchema>
+export type ViewingCreate = z.infer<typeof viewingCreateSchema>
+export type ViewingUpdate = z.infer<typeof viewingUpdateSchema>

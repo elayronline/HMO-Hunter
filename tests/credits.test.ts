@@ -26,6 +26,10 @@ describe("CREDIT_COSTS", () => {
       "save_search",
       "create_price_alert",
       "csv_export",
+      "add_to_pipeline",
+      "d2v_send_letter",
+      "d2v_send_email",
+      "schedule_viewing",
     ]
     expect(Object.keys(CREDIT_COSTS)).toEqual(expectedActions)
   })
