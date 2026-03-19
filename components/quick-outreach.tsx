@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import {
   Mail, FileText, Send, Eye, AlertTriangle, CheckCircle,
-  User, MapPin, Sparkles, Clock, ShieldCheck, XCircle, ImagePlus,
+  User, MapPin, Sparkles, Clock, ShieldCheck, XCircle, Upload,
 } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 import type { D2VTemplate } from "@/lib/types/pipeline"
@@ -372,7 +372,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
                         onClick={() => logoInputRef.current?.click()}
                         className="w-[140px] h-14 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:border-teal-300 hover:text-teal-500 transition-colors"
                       >
-                        <ImagePlus className="h-5 w-5" />
+                        <Upload className="h-5 w-5" />
                         <span className="text-[10px]">Upload Logo</span>
                       </button>
                     )}
