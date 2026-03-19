@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { PipelineBoard } from "@/components/pipeline-board"
 import { D2VComposer } from "@/components/d2v-composer"
 import { ViewingTracker } from "@/components/viewing-tracker"
+import { SenderProfileEditor, loadSenderProfile, type SenderProfile } from "@/components/sender-profile"
 import { createClient } from "@/lib/supabase/client"
 import { getVisibilityForRole } from "@/lib/role-visibility"
 import type { UserType } from "@/components/role-selection-modal"
@@ -71,7 +72,10 @@ const ICP_VALUE: Record<UserType, {
 export default function PipelinePage() {
   const [userType, setUserType] = useState<UserType>("investor")
   const [loading, setLoading] = useState(true)
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
+  const [senderProfile, setSenderProfile] = useState<SenderProfile | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     async function loadUserType() {
@@ -84,10 +88,20 @@ export default function PipelinePage() {
       if (user.user_metadata?.user_type) {
         setUserType(user.user_metadata.user_type as UserType)
       }
+
+      // Load sender profile
+      const profile = await loadSenderProfile()
+      setSenderProfile(profile)
+
+      // Open profile editor if ?tab=profile
+      if (searchParams.get("tab") === "profile") {
+        setShowProfileEditor(true)
+      }
+
       setLoading(false)
     }
     loadUserType()
-  }, [router])
+  }, [router, searchParams])
 
   const visibility = getVisibilityForRole(userType)
   const value = ICP_VALUE[userType]
@@ -190,6 +204,35 @@ export default function PipelinePage() {
 
           {visibility.showD2VOutreach && (
             <TabsContent value="d2v">
+              {/* Sender profile banner */}
+              <div className="flex items-center justify-between mb-4 px-4 py-3 bg-white rounded-lg border">
+                <div className="flex items-center gap-3">
+                  {senderProfile?.logoUrl ? (
+                    <img src={senderProfile.logoUrl} alt="" className="h-8 w-auto object-contain" />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-slate-400" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">
+                      {senderProfile?.name || "Set up your sender profile"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {senderProfile?.name
+                        ? "Your logo and details appear on letters and email signatures"
+                        : "Add your name, company, and logo for professional outreach"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProfileEditor(true)}
+                >
+                  {senderProfile?.name ? "Edit Profile" : "Set Up Profile"}
+                </Button>
+              </div>
               <D2VComposer />
             </TabsContent>
           )}
@@ -207,6 +250,14 @@ export default function PipelinePage() {
           )}
         </Tabs>
       </div>
+
+      {/* Sender Profile Editor — accessible from D2V tab, user menu, or ?tab=profile */}
+      <SenderProfileEditor
+        open={showProfileEditor}
+        onClose={() => setShowProfileEditor(false)}
+        onSave={(p) => setSenderProfile(p)}
+        initialProfile={senderProfile || undefined}
+      />
     </div>
   )
 }

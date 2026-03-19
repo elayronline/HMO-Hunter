@@ -857,6 +857,10 @@ export default function HMOHunterPage() {
                     Admin Portal
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => router.push("/pipeline?tab=profile")}>
+                  <UserIcon className="w-4 h-4 mr-2" />
+                  Sender Profile & Logo
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/help")}>
                   <HelpCircle className="w-4 h-4 mr-2" />
                   Help
