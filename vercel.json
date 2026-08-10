@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/ingest-off-market",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/planning/ingest-hmo",
+      "schedule": "0 6 * * *"
     }
   ]
 }

@@ -26,6 +26,7 @@ import {
   Share2,
   ChevronRight,
   Zap,
+  HelpCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -37,6 +38,7 @@ import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
 import { KammaComplianceCard } from "@/components/kamma-compliance-card"
 import { LicenceDetailsCard } from "@/components/licence-details-card"
+import { HmoPlanningDecisionsCard } from "@/components/hmo-planning-decisions-card"
 // DataEnrichmentCard removed - enrichment is automated, not user-triggered
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 import { SavePropertyButton } from "@/components/save-property-button"
@@ -293,9 +295,14 @@ export function PropertyDetailCard({
               <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Expired Licence
             </span>
           )}
-          {property.article_4_area && (
+          {property.article_4_status === "in_force" && (
             <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-purple-50 text-purple-700" role="listitem">
               <AlertCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Area
+            </span>
+          )}
+          {property.article_4_status === "unknown" && (
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-slate-100 text-slate-600" role="listitem">
+              <HelpCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Unknown
             </span>
           )}
           {visibility.showTaSuitability && (
@@ -497,18 +504,69 @@ export function PropertyDetailCard({
               {/* Licence Details from Council Register */}
               <LicenceDetailsCard propertyId={property.id} />
 
-              {/* Article 4 Warning */}
-              {property.article_4_area && (
+              {/* Article 4 status — all three states are shown. An unchecked or
+                  uncovered council must not render as silence, because silence
+                  reads as "no restriction". */}
+              {property.article_4_status === "in_force" && (
                 <div className="rounded-lg p-4 bg-purple-50">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-purple-600 shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-purple-800">Article 4 Direction</p>
-                      <p className="text-xs text-purple-600 mt-1">Planning permission required for HMO use.</p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        Planning permission required for HMO use.
+                        {property.article_4_area_name ? ` ${property.article_4_area_name}.` : ""}
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
+
+              {property.article_4_status === "unknown" && (
+                <div className="rounded-lg p-4 bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <HelpCircle className="w-5 h-5 text-slate-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Article 4 status unknown</p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        {property.article_4_council
+                          ? `${property.article_4_council} does not publish HMO Article 4 boundaries to the national planning dataset.`
+                          : "This property has not been checked against Article 4 boundaries yet."}{" "}
+                        Confirm directly with the council before relying on this.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {property.article_4_status === "none_found" && (
+                <div className="rounded-lg p-4 bg-emerald-50">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800">No Article 4 direction found</p>
+                      <p className="text-xs text-emerald-700 mt-1">
+                        Checked against {property.article_4_council ?? "the local authority"}&rsquo;s
+                        published boundaries
+                        {property.article_4_checked_at
+                          ? ` on ${new Date(property.article_4_checked_at).toLocaleDateString("en-GB")}`
+                          : ""}
+                        .
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sits directly under the Article 4 status because it answers the
+                  question that status raises: permission is required here, but
+                  is it actually granted? */}
+              <HmoPlanningDecisionsCard
+                latitude={property.latitude}
+                longitude={property.longitude}
+                radiusKm={2}
+                defaultExpanded={property.article_4_status === "in_force"}
+              />
 
               {/* Current Licence Status (if property has one) */}
               {property.licensed_hmo && (
