@@ -94,7 +94,7 @@ export function PriceAlertButton({
         setTimeout(() => setSuccess(false), 2000)
       }
     } catch (error) {
-      console.error("Failed to create alert:", error)
+      // silently ignore
     } finally {
       setLoading(false)
     }
@@ -124,7 +124,7 @@ export function PriceAlertButton({
         setTimeout(() => setSuccess(false), 2000)
       }
     } catch (error) {
-      console.error("Failed to create alert:", error)
+      // silently ignore
     } finally {
       setLoading(false)
     }

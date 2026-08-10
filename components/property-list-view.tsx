@@ -256,7 +256,11 @@ export const PropertyListView = memo(function PropertyListView({
 
       {/* Load More / Pagination */}
       {page < totalPages && (
-        <div className="flex justify-center py-6 pb-8">
+        <div className="flex flex-col items-center gap-2 py-6 pb-8">
+          <p className="text-xs text-slate-500">
+            Showing <span className="font-semibold text-slate-700">{paginatedProperties.length}</span> of{" "}
+            <span className="font-semibold text-slate-700">{sorted.length}</span> properties
+          </p>
           <button
             onClick={() => setPage(p => p + 1)}
             className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"

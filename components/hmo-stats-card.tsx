@@ -74,7 +74,6 @@ export function HmoStatsCard({ className, defaultExpanded = true }: HmoStatsCard
       setStats(data)
     } catch (err) {
       setError("Unable to load HMO statistics")
-      console.error("[HmoStats] Error:", err)
     } finally {
       setLoading(false)
     }

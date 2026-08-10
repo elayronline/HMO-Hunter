@@ -103,11 +103,10 @@ export function PropertyGallery({
           if (data.images && data.images.length > 0) {
             setZooplaImages(data.images)
             setZooplaMatchQuality(data.matchType || "none")
-            console.log(`[PropertyGallery] Zoopla match: ${data.matchType} (${data.confidence}%) for ${address}`)
           }
         }
       } catch (err) {
-        console.log("[PropertyGallery] Could not fetch Zoopla images")
+        // Could not fetch Zoopla images
       } finally {
         setIsLoadingImages(false)
       }

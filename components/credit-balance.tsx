@@ -53,7 +53,7 @@ export function CreditBalance() {
           setCredits(data)
         }
       } catch (error) {
-        console.error('Failed to fetch credits:', error)
+        // silently ignore
       } finally {
         setIsLoading(false)
       }

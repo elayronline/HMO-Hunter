@@ -79,7 +79,6 @@ export function SoldPriceHistory({
       setPrices(data.prices || [])
       setStats(data.stats || null)
     } catch (err) {
-      console.error("[SoldPriceHistory] Error:", err)
       setError("Unable to load sold prices")
     } finally {
       setLoading(false)

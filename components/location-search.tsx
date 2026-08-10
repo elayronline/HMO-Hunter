@@ -83,7 +83,6 @@ async function lookupPostcode(postcode: string): Promise<SearchLocation | null> 
 
     return null
   } catch (error) {
-    console.error("[LocationSearch] Postcode lookup failed:", error)
     return null
   }
 }

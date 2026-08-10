@@ -51,8 +51,6 @@ export function MapInner({
     retryCountRef.current = 0
 
     try {
-      console.log("Initializing map with city:", selectedCity.name, "Container size:", rect.width, "x", rect.height)
-
       const map = new maplibregl.Map({
         container: mapContainerRef.current,
         style: MAP_STYLE,
@@ -69,7 +67,6 @@ export function MapInner({
       map.addControl(new maplibregl.NavigationControl(), "top-right")
 
       map.on("load", () => {
-        console.log("Map loaded successfully")
         setMapReady(true)
         // Trigger resize to ensure proper rendering
         map.resize()
@@ -85,7 +82,6 @@ export function MapInner({
 
 
       map.on("error", (e) => {
-        console.error("Map error:", e)
         const msg = e.error?.message || ""
         if (msg.includes("401") || msg.includes("403")) {
           setError("Map tiles failed to load. Please refresh the page.")
@@ -93,9 +89,7 @@ export function MapInner({
       })
 
       mapRef.current = map
-      console.log("Map instance created successfully")
     } catch (err) {
-      console.error("Failed to initialize map:", err)
       setError(err instanceof Error ? err.message : "Failed to initialize map")
     }
   }, [selectedCity.name, selectedCity.longitude, selectedCity.latitude, selectedCity.zoom])
@@ -104,22 +98,17 @@ export function MapInner({
   const loadArticle4Areas = async (map: maplibregl.Map) => {
     try {
       // Fetch from our API which uses planning.data.gov.uk (accurate polygon boundaries)
-      console.log("[Map] Fetching Article 4 data from official API...")
       const apiResponse = await fetch("/api/article4-data")
 
       if (!apiResponse.ok) {
-        console.warn("[Map] API fetch failed:", apiResponse.status)
         return
       }
 
       const geojson: GeoJSON.FeatureCollection = await apiResponse.json()
 
       if (!geojson?.features || geojson.features.length === 0) {
-        console.warn("[Map] No Article 4 areas available")
         return
       }
-
-      console.log(`[Map] Loaded ${geojson.features.length} Article 4 areas with accurate boundaries`)
 
       map.addSource("article4-areas", {
         type: "geojson",
@@ -276,35 +265,28 @@ export function MapInner({
       })
 
       setArticle4Loaded(true)
-      console.log("Article 4 areas loaded:", geojson?.features?.length || 0, "areas")
     } catch (err) {
-      console.error("Failed to load Article 4 areas:", err)
+      // silently ignore
     }
   }
 
   // Load predicted Article 4 areas (premium feature)
   const loadPredictedArticle4Areas = async (map: maplibregl.Map) => {
     try {
-      console.log("[Map] Fetching predicted Article 4 zones...")
       const response = await fetch("/api/predicted-article4")
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          console.log("[Map] Predicted Article 4: premium access required")
           return
         }
-        console.warn("[Map] Predicted Article 4 fetch failed:", response.status)
         return
       }
 
       const geojson: GeoJSON.FeatureCollection = await response.json()
 
       if (!geojson?.features || geojson.features.length === 0) {
-        console.log("[Map] No predicted Article 4 zones generated")
         return
       }
-
-      console.log(`[Map] Loaded ${geojson.features.length} predicted Article 4 zones`)
 
       // Remove existing source/layers if re-loading
       if (map.getSource("predicted-article4")) {
@@ -496,9 +478,8 @@ export function MapInner({
       })
 
       setPredictedArticle4Loaded(true)
-      console.log("[Map] Predicted Article 4 zones loaded:", geojson.features.length)
     } catch (err) {
-      console.error("[Map] Failed to load predicted Article 4 zones:", err)
+      // silently ignore
     }
   }
 
@@ -514,7 +495,6 @@ export function MapInner({
       mapRef.current.setLayoutProperty("article4-labels", "visibility", visibility)
     } catch (err) {
       // Layer might not exist yet
-      console.log("Article 4 layers not ready yet")
     }
   }, [showArticle4Overlay, mapReady, article4Loaded])
 
@@ -537,7 +517,7 @@ export function MapInner({
       mapRef.current.setLayoutProperty("predicted-article4-outline", "visibility", visibility)
       mapRef.current.setLayoutProperty("predicted-article4-labels", "visibility", visibility)
     } catch (err) {
-      console.log("Predicted Article 4 layers not ready yet")
+      // Layer might not exist yet
     }
   }, [showPredictedArticle4, mapReady, predictedArticle4Loaded])
 
@@ -560,7 +540,6 @@ export function MapInner({
       markerElementsRef.current.clear()
 
       if (mapRef.current) {
-        console.log("Cleaning up map")
         mapRef.current.remove()
         mapRef.current = null
       }
@@ -590,7 +569,6 @@ export function MapInner({
   useEffect(() => {
     if (!mapRef.current || !mapReady) return
 
-    console.log("Flying to city:", selectedCity.name)
     mapRef.current.flyTo({
       center: [selectedCity.longitude, selectedCity.latitude],
       zoom: selectedCity.zoom,
@@ -729,17 +707,12 @@ export function MapInner({
   useEffect(() => {
     if (!mapRef.current || !mapReady) return
 
-    // Debug: log properties received
-    console.log("[MapInner] Properties received:", properties.length)
-
     // Filter properties with valid coordinates
     const validProperties = properties.filter(p => {
       const lat = Number(p.latitude)
       const lng = Number(p.longitude)
       return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0
     })
-
-    console.log("[MapInner] Valid properties with coords:", validProperties.length)
 
     const currentPropertyIds = new Set(validProperties.map(p => p.id))
     const existingMarkerIds = new Set(markersRef.current.keys())
@@ -798,7 +771,7 @@ export function MapInner({
           markersRef.current.set(property.id, marker)
           markerElementsRef.current.set(property.id, el)
         } catch (err) {
-          console.error("Failed to add marker:", err)
+          // silently ignore
         }
       }
     })

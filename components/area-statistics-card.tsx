@@ -65,7 +65,6 @@ export function AreaStatisticsCard({
       const data = await response.json()
       setStats(data)
     } catch (err) {
-      console.error("[AreaStats] Error:", err)
       setError("Unable to load area statistics")
     } finally {
       setLoading(false)

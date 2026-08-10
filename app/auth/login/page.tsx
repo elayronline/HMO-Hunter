@@ -55,11 +55,9 @@ export default function LoginPage() {
       setLoading(false)
     } else {
       track("login_success")
-      // Wait for session to be set in cookies before redirecting
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Use window.location.href for a hard redirect to ensure session is loaded
-      window.location.href = "/map"
+      // Brief delay for session cookie to be set, then navigate
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      router.replace("/map")
     }
   }
 

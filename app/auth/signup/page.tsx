@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
 
 export default function SignUpPage() {
-  redirect("/#signup-form")
+  redirect("/auth/login?message=Create+your+account+to+get+started")
 }

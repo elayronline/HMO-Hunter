@@ -20,8 +20,8 @@ interface EPCBadgeProps {
 const ratingColors: Record<string, { bg: string; text: string; border: string }> = {
   A: { bg: "bg-green-500", text: "text-white", border: "border-green-600" },
   B: { bg: "bg-green-400", text: "text-white", border: "border-green-500" },
-  C: { bg: "bg-lime-400", text: "text-gray-900", border: "border-lime-500" },
-  D: { bg: "bg-yellow-400", text: "text-gray-900", border: "border-yellow-500" },
+  C: { bg: "bg-lime-500", text: "text-white", border: "border-lime-600" },
+  D: { bg: "bg-yellow-500", text: "text-white", border: "border-yellow-600" },
   E: { bg: "bg-orange-400", text: "text-white", border: "border-orange-500" },
   F: { bg: "bg-orange-500", text: "text-white", border: "border-orange-600" },
   G: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },

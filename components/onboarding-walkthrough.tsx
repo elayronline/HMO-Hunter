@@ -118,7 +118,7 @@ export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetail
         data: { onboarding_completed: true }
       })
     } catch (error) {
-      console.error("[Walkthrough] Failed to mark onboarding complete:", error)
+      // silently ignore
     }
 
     onComplete()

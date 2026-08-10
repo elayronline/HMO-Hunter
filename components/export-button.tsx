@@ -123,7 +123,6 @@ export function ExportButton({
         }
       }
     } catch (error) {
-      console.error('Export error:', error)
       toast({
         title: "Export Failed",
         description: "An error occurred during export",

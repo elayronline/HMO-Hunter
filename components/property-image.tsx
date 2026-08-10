@@ -105,7 +105,7 @@ export function PropertyImage({
             }
           }
         } catch (err) {
-          console.log("[PropertyImage] Zoopla images not available, falling back")
+          // Zoopla images not available, falling back
         }
       }
 

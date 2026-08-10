@@ -90,7 +90,7 @@ export function PropertySidebar({
       setShowShareToast(true)
       setTimeout(() => setShowShareToast(false), 2000)
     } catch (err) {
-      console.error("Failed to copy:", err)
+      // silently ignore
     }
 
     onShare?.()

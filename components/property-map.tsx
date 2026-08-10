@@ -82,8 +82,8 @@ export default function PropertyMap({ properties }: PropertyMapProps) {
             mapInstance.getCanvas().style.cursor = "";
           });
         })
-        .catch((err) => {
-          console.error("Failed to load Article 4 data:", err);
+        .catch(() => {
+          // silently ignore
         });
     });
 

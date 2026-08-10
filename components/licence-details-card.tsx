@@ -56,7 +56,6 @@ export function LicenceDetailsCard({ propertyId, className }: LicenceDetailsCard
       setLicences(data.licences || [])
     } catch (err) {
       setError("Unable to load licence details")
-      console.error("[LicenceDetails] Error:", err)
     } finally {
       setLoading(false)
     }
