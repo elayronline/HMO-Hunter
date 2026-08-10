@@ -116,10 +116,23 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Phase 3 - Article 4 Filter
+    //
+    // This used to match `article_4_area.eq.false,article_4_area.is.null`, which
+    // swept in every property whose council simply isn't covered by the national
+    // feed and presented Manchester, Leeds and Sheffield stock as Article-4-free.
+    //
+    // Two distinct intents are now separable, because conflating them is what
+    // produced the false negative:
+    //   exclude         - "don't show me known-restricted stock". Unknowns stay
+    //                     in, and the cards badge them as unverified.
+    //   confirmed_clear - "only show me what's verified as outside one". Today
+    //                     that means the councils that publish to the feed.
     if (validatedFilters.article4Filter === "exclude") {
-      query = query.or("article_4_area.eq.false,article_4_area.is.null")
+      query = query.neq("article_4_status", "in_force")
+    } else if (validatedFilters.article4Filter === "confirmed_clear") {
+      query = query.eq("article_4_status", "none_found")
     } else if (validatedFilters.article4Filter === "only") {
-      query = query.eq("article_4_area", true)
+      query = query.eq("article_4_status", "in_force")
     }
     // "include" means no filter - show all properties
 

@@ -114,7 +114,9 @@ export default function HMOHunterPage() {
   const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
   const propertyTypesKey = propertyTypes.join(",")
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
-  const [article4Filter, setArticle4Filter] = useState<"include" | "exclude" | "only">("include")
+  const [article4Filter, setArticle4Filter] = useState<
+    "include" | "exclude" | "confirmed_clear" | "only"
+  >("include")
   const [licenceTypeFilter, setLicenceTypeFilter] = useState<string>("all")
   const [broadbandFilter, setBroadbandFilter] = useState<"all" | "fiber" | "superfast" | "any">("all")
   const [ownerDataFilter, setOwnerDataFilter] = useState(false)
@@ -612,6 +614,14 @@ export default function HMOHunterPage() {
     if (p.area_avg_rent && p.area_avg_rent > 0) return p.area_avg_rent
     return 0
   }
+
+  // How much of the current result set carries an unverified Article 4 status.
+  // Surfaced in the filter panel so the uncertainty is stated rather than left
+  // for the user to infer from an absent badge.
+  const article4UnknownCount = useMemo(
+    () => properties.filter((p) => p.article_4_status === "unknown").length,
+    [properties]
+  )
 
   const calculateAverageMetric = () => {
     if (properties.length === 0) return 0
@@ -1151,10 +1161,34 @@ export default function HMOHunterPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="include">Include All</SelectItem>
-                      <SelectItem value="exclude">Exclude Article 4</SelectItem>
+                      <SelectItem value="exclude">Exclude known Article 4</SelectItem>
+                      <SelectItem value="confirmed_clear">Confirmed outside only</SelectItem>
                       <SelectItem value="only">Only Article 4</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                    {article4Filter === "exclude" &&
+                      "Hides areas with a known Article 4 direction. Properties whose council publishes no data are still shown, badged as unverified."}
+                    {article4Filter === "confirmed_clear" &&
+                      "Strict: only properties checked against a council that publishes its Article 4 boundaries. Far fewer results."}
+                    {article4Filter === "only" &&
+                      "Only properties inside a known Article 4 direction area."}
+                    {article4Filter === "include" &&
+                      "No Article 4 filter applied."}
+                  </p>
+                  {article4Filter !== "only" &&
+                    article4Filter !== "confirmed_clear" &&
+                    article4UnknownCount > 0 && (
+                      <p className="text-[11px] leading-snug text-slate-600 mt-1.5 flex items-start gap-1.5">
+                        <HelpCircle className="w-3 h-3 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        <span>
+                          <strong className="font-medium">{article4UnknownCount}</strong> of{" "}
+                          {properties.length} shown have an unverified Article 4 status — their
+                          council publishes no boundary data. Confirm with the council before
+                          relying on it.
+                        </span>
+                      </p>
+                    )}
                 </div>
 
                 {/* Predicted Future Article 4 — Premium Toggle */}

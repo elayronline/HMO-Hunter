@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key, Building2 } from "lucide-react"
+import { Shield, AlertTriangle, Zap, CheckCircle2, Home, Key, Building2, HelpCircle } from "lucide-react"
 import type { Property } from "@/lib/types/database"
 import { assessTASuitability } from "@/lib/services/ta-suitability"
 import type { UserType } from "@/components/role-selection-modal"
@@ -58,13 +58,24 @@ export function KeyFlagsRow({ property, className, userRole }: KeyFlagsRowProps)
   }
 
   // Article 4 (high priority warning)
-  if (property.article_4_area) {
+  if (property.article_4_status === "in_force") {
     flags.push({
       id: "article4",
       label: "Article 4",
       icon: AlertTriangle,
       bgColor: "bg-purple-100",
       textColor: "text-purple-700",
+      priority: 2,
+    })
+  } else if (property.article_4_status === "unknown") {
+    // Not a negative — the council publishes no boundaries, or we haven't
+    // checked. Surfacing it stops absence of a flag reading as "all clear".
+    flags.push({
+      id: "article4-unknown",
+      label: "Article 4 unknown",
+      icon: HelpCircle,
+      bgColor: "bg-slate-100",
+      textColor: "text-slate-600",
       priority: 2,
     })
   }

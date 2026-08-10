@@ -16,7 +16,7 @@ const VALID_PROPERTY_TYPES = new Set([
 const VALID_EPC_RATINGS = new Set(["A", "B", "C", "D", "E", "F", "G"])
 
 // Valid article 4 filter values
-const VALID_ARTICLE4_FILTERS = new Set(["include", "exclude", "only"])
+const VALID_ARTICLE4_FILTERS = new Set(["include", "exclude", "confirmed_clear", "only"])
 
 // Valid licence statuses
 const VALID_LICENCE_STATUSES = new Set(["active", "expired", "all"])
@@ -87,7 +87,7 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
 
   // Article 4 filter
   if (filters.article4Filter && VALID_ARTICLE4_FILTERS.has(filters.article4Filter)) {
-    sanitized.article4Filter = filters.article4Filter as "include" | "exclude" | "only"
+    sanitized.article4Filter = filters.article4Filter as "include" | "exclude" | "confirmed_clear" | "only"
   }
 
   // Licence status

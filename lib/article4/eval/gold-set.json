@@ -1,0 +1,1507 @@
+{
+  "version": 1,
+  "description": "Hand-verified ground truth for HMO Article 4 by council. Only entries with status='verified' AND evidence.independentSource=true are scored.",
+  "seededAt": "2026-08-10T22:33:21.444Z",
+  "councils": [
+    {
+      "slug": "barking-and-dagenham",
+      "name": "Barking and Dagenham",
+      "gssCode": "E09000002",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-05-14"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.lbbd.gov.uk/planning-building-control-and-local-land-charges/planning-guidance-and-policies/article-4",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "barnet",
+      "name": "Barnet",
+      "gssCode": "E09000003",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2016-05-29"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://open.barnet.gov.uk/download/2ylny/jyz",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "basingstoke-and-deane",
+      "name": "Basingstoke and Deane",
+      "gssCode": "E07000084",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-06-16"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.basingstoke.gov.uk/content/page/26656/Article%204%20Direction%2013%20June%202011.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "bath-and-north-east-somerset",
+      "name": "Bath and North East Somerset",
+      "gssCode": "E06000022",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "birmingham",
+      "name": "Birmingham",
+      "gssCode": "E08000025",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2014-08-31"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.birmingham.gov.uk/download/downloads/id/14851/signed_and_sealed_city_wide_article_4_direction.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "blackpool",
+      "name": "Blackpool",
+      "gssCode": "E06000009",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2022-10-03"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "brent",
+      "name": "Brent",
+      "gssCode": "E09000005",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2022-11-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.brent.gov.uk/-/media/files/resident-documents/planning-and-bc-documents/confirmation-order-004-_redacted.pdf?rev=da00503d608a4ee5bbed3a991aa76f4f",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "brighton-and-hove",
+      "name": "Brighton and Hove",
+      "gssCode": "E06000043",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "bristol",
+      "name": "Bristol, City of",
+      "gssCode": "E06000023",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-12-11"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.bristol.gov.uk/files/documents/149-final-art-4-direction-north/file",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "burnley",
+      "name": "Burnley",
+      "gssCode": "E07000117",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2024-10-14"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://burnley.gov.uk/wp-content/uploads/2024/06/Burnley-Council-HMO-Article-4-Direction-Confirmed-June-2024.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "bury",
+      "name": "Bury",
+      "gssCode": "E08000002",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2026-07-16"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.bury.gov.uk/asset-library/article-4-direction-and-plan-dated-10.07.26.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "cambridge",
+      "name": "Cambridge",
+      "gssCode": "E07000008",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "canterbury",
+      "name": "Canterbury",
+      "gssCode": "E07000106",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2016-02-25"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "charnwood",
+      "name": "Charnwood",
+      "gssCode": "E07000130",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "cheltenham",
+      "name": "Cheltenham",
+      "gssCode": "E07000078",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2019-10-08"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "coventry",
+      "name": "Coventry",
+      "gssCode": "E08000026",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2022-09-08"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.coventry.gov.uk/downloads/file/40973/article-4-direction-hmo-30-9-23",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "crawley",
+      "name": "Crawley",
+      "gssCode": "E07000226",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2022-06-15"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://crawley.gov.uk/sites/default/files/2022-06/Article%204%20Notice%20Aintree%20and%20Epsom%20Road.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "dartford",
+      "name": "Dartford",
+      "gssCode": "E07000107",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2025-12-08"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.dartford.gov.uk/downloads/file/2829/hmo-north",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "doncaster",
+      "name": "Doncaster",
+      "gssCode": "E08000017",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2019-10-14"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "durham",
+      "name": "County Durham",
+      "gssCode": "E06000047",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "eden",
+      "name": "Eden",
+      "gssCode": "E07000030",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "enfield",
+      "name": "Enfield",
+      "gssCode": "E09000010",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "exeter",
+      "name": "Exeter",
+      "gssCode": "E07000041",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-10-31"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://exeter.gov.uk/media/5g0ba52s/a4d13-article-4-direction-hmo.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "fenland",
+      "name": "Fenland",
+      "gssCode": "E07000010",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2025-02-26"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.fenland.gov.uk/article/18372/Article-4-Direction-Small-Houses-in-Multiple-Occupation-HMOs-in-Wisbech",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "great-yarmouth",
+      "name": "Great Yarmouth",
+      "gssCode": "E07000145",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-09-24"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "halton",
+      "name": "Halton",
+      "gssCode": "E06000006",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2025-09-24"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www3.halton.gov.uk/Documents/planning/article4/Sealed%20Article%204%20Direction%20with%20Maps.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "harlow",
+      "name": "Harlow",
+      "gssCode": "E07000073",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2013-07-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.harlow.gov.uk/sites/default/files/documents/Morley%20Grove%20Article%204%20direction%20%28numbers%201%20to%2056%29.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "hillingdon",
+      "name": "Hillingdon",
+      "gssCode": "E09000017",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2013-03-24"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.hillingdon.gov.uk/media/3039/order-and-map/pdf/edArticle_4_Order_and_ward_map_1.pdf?m=1597832897160",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "hounslow",
+      "name": "Hounslow",
+      "gssCode": "E09000018",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2023-09-04"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.hounslow.gov.uk/downloads/file/13696/article-4-direction-and-corresponding-map",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "ipswich",
+      "name": "Ipswich",
+      "gssCode": "E07000202",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2024-06-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.ipswich.gov.uk/sites/ipswich/files/m-files/confirmed_ipswich_borough_council_hmo_article_4_direction_dated_24_november_2023_0.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "kingston-upon-hull",
+      "name": "Kingston upon Hull, City of",
+      "gssCode": "E06000010",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "kingston-upon-thames",
+      "name": "Kingston upon Thames",
+      "gssCode": "E09000021",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2022-08-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "lancaster",
+      "name": "Lancaster",
+      "gssCode": "E07000121",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "leeds",
+      "name": "Leeds",
+      "gssCode": "E08000035",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "leicester",
+      "name": "Leicester",
+      "gssCode": "E06000016",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2013-08-08"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.leicester.gov.uk/media/modf1zhq/2021-hmo-article-4-direction-addendum.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "lewisham",
+      "name": "Lewisham",
+      "gssCode": "E09000023",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "lincoln",
+      "name": "Lincoln",
+      "gssCode": "E07000138",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "liverpool",
+      "name": "Liverpool",
+      "gssCode": "E08000012",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "1991-06-04"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "luton",
+      "name": "Luton",
+      "gssCode": "E06000032",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "manchester",
+      "name": "Manchester",
+      "gssCode": "E08000003",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "middlesbrough",
+      "name": "Middlesbrough",
+      "gssCode": "E06000002",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "milton-keynes",
+      "name": "Milton Keynes",
+      "gssCode": "E06000042",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-06-28"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.milton-keynes.gov.uk/sites/default/files/2026-07/Article%204%20Direction%20Non-Immediate%20-%20Redacted.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "newcastle-under-lyme",
+      "name": "Newcastle-under-Lyme",
+      "gssCode": "E07000195",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2015-12-22"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.newcastle-staffs.gov.uk/downloads/file/2126/article-4-directions-that-affect-changes-of-use",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "newcastle-upon-tyne",
+      "name": "Newcastle upon Tyne",
+      "gssCode": "E08000021",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-11-25"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.newcastle.gov.uk/sites/default/files/2019-01/article41direction_3.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "north-norfolk",
+      "name": "North Norfolk",
+      "gssCode": "E07000147",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "north-somerset",
+      "name": "North Somerset",
+      "gssCode": "E06000024",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "1983-07-14"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "north-warwickshire",
+      "name": "North Warwickshire",
+      "gssCode": "E07000218",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2026-03-02"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.northwarks.gov.uk/downloads/file/2901/hmo-article-4",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "norwich",
+      "name": "Norwich",
+      "gssCode": "E07000148",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "nottingham",
+      "name": "Nottingham",
+      "gssCode": "E06000018",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "nuneaton-and-bedworth",
+      "name": "Nuneaton and Bedworth",
+      "gssCode": "E07000219",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "oxford",
+      "name": "Oxford",
+      "gssCode": "E07000178",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-02-25"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.oxford.gov.uk/downloads/file/1625/houses-in-multiple-occupaction-article-4-direction",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "peterborough",
+      "name": "Peterborough",
+      "gssCode": "E06000031",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "plymouth",
+      "name": "Plymouth",
+      "gssCode": "E06000026",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-09-14"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.plymouth.gov.uk/sites/default/files/Article4Direction.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "portsmouth",
+      "name": "Portsmouth",
+      "gssCode": "E06000044",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "preston",
+      "name": "Preston",
+      "gssCode": "E07000123",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "reading",
+      "name": "Reading",
+      "gssCode": "E06000038",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "rossendale",
+      "name": "Rossendale",
+      "gssCode": "E07000125",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2025-09-19"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.rossendale.gov.uk/planning-building-control/planning/6",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "rother",
+      "name": "Rother",
+      "gssCode": "E07000064",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2011-02-04"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://rdcpublic.blob.core.windows.net/website-uploads/2025/07/A4D68_MapNotice.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "ryedale",
+      "name": "Ryedale",
+      "gssCode": "E07000167",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "salford",
+      "name": "Salford",
+      "gssCode": "E08000006",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2018-11-25"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.salford.gov.uk/media/391571/article-4-direction.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "sefton",
+      "name": "Sefton",
+      "gssCode": "E08000014",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2017-09-20"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.sefton.gov.uk/media/vikfk02x/odparticle4directions.csv",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "sheffield",
+      "name": "Sheffield",
+      "gssCode": "E08000019",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "south-hams",
+      "name": "South Hams",
+      "gssCode": "E07000044",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "southampton",
+      "name": "Southampton",
+      "gssCode": "E06000045",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-03-23"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.southampton.gov.uk/media/leddnlac/article_4_tcm63-360879.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "southwark",
+      "name": "Southwark",
+      "gssCode": "E09000028",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.southwark.gov.uk/planning-and-building-control/planning-policy-and-transport-policy/article-4-directions?chapter=3",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "stevenage",
+      "name": "Stevenage",
+      "gssCode": "E07000243",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2017-01-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.stevenage.gov.uk/documents/planning-policy/article-4-directions/article-4-direction-houses-in-multiple-occupation-hmos.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "stoke-on-trent",
+      "name": "Stoke-on-Trent",
+      "gssCode": "E06000021",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "swindon",
+      "name": "Swindon",
+      "gssCode": "E06000030",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "tendring",
+      "name": "Tendring",
+      "gssCode": "E07000076",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2021-12-24"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://legacy.tendringdc.gov.uk/sites/default/files/documents/planning/planning%20policy/DistrictHIMOArticle431May2013%20%282%29.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "torridge",
+      "name": "Torridge",
+      "gssCode": "E07000046",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "tower-hamlets",
+      "name": "Tower Hamlets",
+      "gssCode": "E09000030",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2021-01-01"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.towerhamlets.gov.uk/Documents/Planning-and-building-control/Strategic-Planning/HMOsArticle4Direction.pdf",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    },
+    {
+      "slug": "warwick",
+      "name": "Warwick",
+      "gssCode": "E07000222",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "west-devon",
+      "name": "West Devon",
+      "gssCode": "E07000047",
+      "status": "unverified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": null,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+    },
+    {
+      "slug": "wolverhampton",
+      "name": "Wolverhampton",
+      "gssCode": "E08000031",
+      "status": "unverified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": null,
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+    },
+    {
+      "slug": "york",
+      "name": "York",
+      "gssCode": "E06000014",
+      "status": "unverified",
+      "seededAs": "machine-positive",
+      "expected": {
+        "hasHmoArticle4": true,
+        "extent": null,
+        "commencedOn": "2012-04-20"
+      },
+      "evidence": {
+        "independentSource": false,
+        "sourceUrl": "https://www.york.gov.uk/private-landlords-tenants/article-4-direction-relation-houses-multiple-occupation-hmo",
+        "quote": null
+      },
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+    }
+  ]
+}

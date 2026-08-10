@@ -1,3 +1,7 @@
+import type { Article4Status } from "@/lib/article4/coverage"
+
+export type { Article4Status }
+
 export type Property = {
   id: string
   title: string
@@ -79,7 +83,25 @@ export type Property = {
   epc_certificate_url: string | null
   epc_expiry_date: string | null
   // Phase 3 - Planning Constraints
-  article_4_area: boolean
+  /**
+   * @deprecated Use `article_4_status`. A boolean cannot express "unknown", and
+   * the national feed covers only 38 councils — so `false` here has historically
+   * meant "not found in a feed that does not cover this council". Never filter a
+   * negative on this field. Mirrors `article_4_status === "in_force"`.
+   */
+  article_4_area: boolean | null
+  /** in_force | none_found | unknown. `none_found` is the only verified negative. */
+  article_4_status: Article4Status
+  /** When status was last determined. null means never checked. */
+  article_4_checked_at: string | null
+  /** Provenance for the status — governs redistribution in the phase-2 API. */
+  article_4_source: string | null
+  /** Name of the matched direction area, when status is in_force. */
+  article_4_area_name: string | null
+  /** Local planning authority resolved for this point. */
+  article_4_council: string | null
+  /** Whether that authority publishes HMO Article 4 data. Gates none_found. */
+  article_4_council_covered: boolean | null
   planning_constraints: PlanningConstraint[] | null
   conservation_area: boolean
   listed_building_grade: "I" | "II*" | "II" | null
@@ -231,7 +253,14 @@ export type PropertyFilters = {
   licenceStatus?: "active" | "expired" | "all"
   // Phase 3 - New filters
   minEpcRating?: "A" | "B" | "C" | "D" | "E" | null
-  article4Filter?: "include" | "exclude" | "only"
+  /**
+   * include         - no filter
+   * exclude         - drop only properties known to be in an Article 4 area.
+   *                   Keeps `unknown`, which the cards badge as unverified.
+   * confirmed_clear - strict: only properties verified as outside one.
+   * only            - only properties inside an Article 4 area.
+   */
+  article4Filter?: "include" | "exclude" | "confirmed_clear" | "only"
   // Licence Type Filter
   licenceTypeFilter?: string // "all" | "any_licensed" | "unlicensed" | specific licence type code
   // Phase 4 - Potential HMO filters

@@ -127,7 +127,7 @@ export const propertyFiltersSchema = z.object({
   city: z.string().optional(),
   postcodePrefix: z.string().max(10).optional(),
   minEpcRating: z.enum(["A", "B", "C", "D", "E"]).optional(),
-  article4Filter: z.enum(["include", "exclude", "only"]).optional(),
+  article4Filter: z.enum(["include", "exclude", "confirmed_clear", "only"]).optional(),
   licenceTypeFilter: z.string().optional(),
   showPotentialHMOs: z.coerce.boolean().optional(),
   hmoClassification: z.enum(["ready_to_go", "value_add"]).optional(),
