@@ -40,6 +40,16 @@ export interface CuratedDirection {
   extent: string | null
   commencedOn: string | null
   endedOn: string | null
+  /**
+   * Immediate directions only. They bind from the day they are made, but cease
+   * to have effect unless the council confirms them within six months. So this
+   * is a restriction that is real today and provisional at the same time —
+   * neither `in_force` nor `made_not_in_force` says that. Bury's window closes
+   * on 2027-01-16.
+   */
+  confirmBy?: string | null
+  /** Set once confirmed, which settles it. Rossendale confirmed on 2026-03-18. */
+  confirmedOn?: string | null
   /** The page or document the quote came from. Always the council's own. */
   sourceUrl: string
   /** Verbatim wording, so a dispute is settled against the council's words. */
@@ -80,6 +90,13 @@ export interface CuratedAssessment {
   nextCommencementDate: string | null
   /** Extent text for whatever is in force, for display. */
   extents: string[]
+  /**
+   * Unconfirmed immediate directions whose deadline has now passed. Either the
+   * council confirmed it and this record is stale, or it lapsed and the
+   * restriction is gone. Both are possible and we cannot tell from here, so the
+   * entry needs re-checking rather than trusting.
+   */
+  needsReconfirmation: CuratedDirection[]
   states: { direction: CuratedDirection; state: ForceState }[]
 }
 
@@ -92,9 +109,15 @@ export function assessCurated(council: CuratedCouncil, now: Date = new Date()): 
 
   const pending = states.filter((s) => s.state === "made_not_in_force").map((s) => s.direction)
 
+  const today = now.toISOString().slice(0, 10)
+  const needsReconfirmation = council.directions.filter(
+    (d) => d.confirmBy && !d.confirmedOn && d.confirmBy < today
+  )
+
   return {
     inForce: states.some((s) => s.state === "in_force"),
     pending,
+    needsReconfirmation,
     nextCommencementDate:
       pending
         .map((d) => d.commencedOn)
@@ -140,6 +163,7 @@ export function applyCuratedOverlay(
     publishesHmoArticle4: record.publishesHmoArticle4 || c.inForce,
     hasHmoArticle4InForce: record.hasHmoArticle4InForce || c.inForce,
     directionsNotYetInForce: pendingCount,
+    provisionalPastDeadline: c.needsReconfirmation[0]?.confirmBy ?? null,
     nextCommencementDate: nextDates[0] ?? null,
     coverageLevel:
       record.coverageLevel === "boundaries"

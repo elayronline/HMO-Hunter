@@ -186,12 +186,13 @@
       "gssCode": "E08000002",
       "directions": [
         {
-          "name": "HMO Article 4 direction — Entire Borough of Bury",
+          "name": "Immediate HMO Article 4 direction — entire Borough of Bury",
           "extent": "Entire Borough of Bury",
           "commencedOn": "2026-07-16",
           "endedOn": null,
           "sourceUrl": "https://www.bury.gov.uk/planning-building-control/planning-permission/article-4-directions",
-          "quote": "The Council has introduced an Article 4 Direction that removes the permitted development rights for the material change of use from a dwellinghouse (Use Class C3) to a small House in Multiple Occupation (Use Class C4). This means that planning permission is now required to create any new Houses in Multiple Occupation (HMOs) within the Borough. ... The Direction applies to the entire Borough of Bury and came into effect on 16 July 2026."
+          "quote": "The Council has introduced an Article 4 Direction that removes the permitted development rights for the material change of use from a dwellinghouse (Use Class C3) to a small House in Multiple Occupation (Use Class C4). This means that planning permission is now required to create any new Houses in Multiple Occupation (HMOs) within the Borough. ... The Direction applies to the entire Borough of Bury and came into effect on 16 July 2026.",
+          "confirmBy": "2027-01-16"
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -797,12 +798,13 @@
       "gssCode": "E07000125",
       "directions": [
         {
-          "name": "HMO Article 4 direction — Whole of Rossendale",
+          "name": "Immediate HMO Article 4 direction — whole of Rossendale",
           "extent": "Whole of Rossendale",
           "commencedOn": "2025-09-19",
           "endedOn": null,
           "sourceUrl": "https://www.rossendale.gov.uk/news/article/10764/supplementary-planning-guidance-to-support-article-4-direction-on-hmos",
-          "quote": "Rossendale Borough Council will publish Supplementary Planning Guidance (SPG) to support the recently introduced Immediate Article 4 Direction relating to small Houses in Multiple Occupation (HMOs). ... following the introduction of the Article 4 Direction which means that planning permission is now required for any new HMO conversions that would previously have been permitted development."
+          "quote": "Rossendale Borough Council will publish Supplementary Planning Guidance (SPG) to support the recently introduced Immediate Article 4 Direction relating to small Houses in Multiple Occupation (HMOs). ... following the introduction of the Article 4 Direction which means that planning permission is now required for any new HMO conversions that would previously have been permitted development.",
+          "confirmedOn": "2026-03-18"
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",

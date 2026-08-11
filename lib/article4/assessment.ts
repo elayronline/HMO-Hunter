@@ -128,6 +128,16 @@ export function buildCaveats(council: CouncilRecord, jurisdiction: Jurisdiction)
     )
   }
 
+  // An immediate direction binds at once but dies unless confirmed within six
+  // months. Past that date our record is simply out of date — the direction was
+  // either confirmed or it lapsed, and this file cannot tell which. Say so
+  // rather than presenting a stale answer as current.
+  if (council.provisionalPastDeadline) {
+    caveats.push(
+      `${council.name}'s HMO Article 4 direction was an immediate direction, which had to be confirmed by ${council.provisionalPastDeadline} or cease to have effect. Our record does not show a confirmation, so it is treated as still in force but needs checking with the council before you rely on it.`
+    )
+  }
+
   if (council.directionsExpired > 0 && !council.hasHmoArticle4InForce) {
     caveats.push(
       `The HMO Article 4 direction${council.directionsExpired === 1 ? "" : "s"} published for ${

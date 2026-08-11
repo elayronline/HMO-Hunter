@@ -232,7 +232,7 @@
       },
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z",
-      "notes": "Rare immediate direction — effect first, consultation after: 'Although the Article 4 Direction takes effect immediately, the Council is required to carry out public consultation before deciding whether to confirm.' Worth re-checking, because an immediate direction lapses if not confirmed within six months. Commencement matches the seeded date."
+      "notes": "Rare immediate direction — effect first, consultation after: \"Although the Article 4 Direction takes effect immediately, the Council is required to carry out public consultation before deciding whether to confirm.\" Commencement matches the seeded date. Re-checked on 2026-08-11: IN FORCE AND STILL PROVISIONAL. Consultation runs 16 July to 27 August 2026 and the council must confirm within six months of 16 July 2026, so the deadline is 16 January 2027. Recorded in the curated overlay as confirmBy, which makes the entry flag itself for re-checking rather than ageing into a wrong answer."
     },
     {
       "slug": "cambridge",
@@ -1198,7 +1198,7 @@
       },
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z",
-      "notes": "An immediate direction, effective from 19 September 2025 — commencement matches the seeded date. Immediate directions lapse if not confirmed within six months, so this is worth re-checking."
+      "notes": "An immediate direction, effective 19 September 2025 — commencement matches the seeded date. Re-checked on 2026-08-11: CONFIRMED. The council publishes \"Confirmation of Article 4 Direction for HMOs (18 March 2026)\", one day inside the six-month window an immediate direction has before it ceases to have effect. Not lapsed."
     },
     {
       "slug": "rother",

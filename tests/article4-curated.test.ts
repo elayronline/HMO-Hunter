@@ -22,6 +22,7 @@ function record(over: Partial<CouncilRecord> = {}): CouncilRecord {
     directionsNotYetInForce: 0,
     nextCommencementDate: null,
     directionsExpired: 0,
+    provisionalPastDeadline: null,
     coverageLevel: "none",
     areaCount: 0,
     areaCountWithGeometry: 0,
@@ -187,5 +188,57 @@ describe("caveat wording for a curated council", () => {
     const caveats = buildCaveats(out, "england")
     expect(caveats.some((c) => c.includes("publishes 0"))).toBe(false)
     expect(caveats.some((c) => c.includes("council's own published information"))).toBe(true)
+  })
+})
+
+/**
+ * Immediate directions bind from day one but cease to have effect unless the
+ * council confirms them within six months. Two in the curated set were made this
+ * way, and they land on opposite sides of that deadline.
+ */
+describe("immediate directions and their confirmation deadline", () => {
+  it("Rossendale was confirmed, one day inside its window", () => {
+    const rossendale = curatedBySlug("rossendale")!
+    const direction = rossendale.directions[0]
+
+    // In force 19 September 2025, so the six-month deadline fell on 19 March 2026.
+    expect(direction.commencedOn).toBe("2025-09-19")
+    expect(direction.confirmedOn).toBe("2026-03-18")
+
+    const assessed = assessCurated(rossendale, new Date("2026-08-11T00:00:00.000Z"))
+    expect(assessed.inForce).toBe(true)
+    expect(assessed.needsReconfirmation).toHaveLength(0)
+  })
+
+  it("Bury is in force with its deadline still ahead", () => {
+    const bury = curatedBySlug("bury")!
+    const direction = bury.directions[0]
+
+    expect(direction.confirmBy).toBe("2027-01-16")
+    expect(direction.confirmedOn).toBeUndefined()
+
+    const assessed = assessCurated(bury, new Date("2026-08-11T00:00:00.000Z"))
+    expect(assessed.inForce).toBe(true)
+    expect(assessed.needsReconfirmation).toHaveLength(0)
+  })
+
+  // The point of the field: after the deadline the entry stops being trustworthy
+  // on its own, and says so, instead of quietly ageing into a wrong answer.
+  it("flags Bury for re-checking once its deadline passes unconfirmed", () => {
+    const bury = curatedBySlug("bury")!
+    const assessed = assessCurated(bury, new Date("2027-01-17T00:00:00.000Z"))
+
+    expect(assessed.needsReconfirmation).toHaveLength(1)
+    expect(assessed.inForce).toBe(true) // fail closed: still treated as restricted
+
+    const out = applyCuratedOverlay(
+      record({ slug: "bury", name: "Bury" }),
+      new Date("2027-01-17T00:00:00.000Z")
+    )
+    expect(out.provisionalPastDeadline).toBe("2027-01-16")
+
+    const caveat = buildCaveats(out, "england").find((c) => c.includes("cease to have effect"))
+    expect(caveat).toBeDefined()
+    expect(caveat).toContain("needs checking with the council")
   })
 })

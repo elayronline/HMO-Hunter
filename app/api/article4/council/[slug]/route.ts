@@ -50,6 +50,7 @@ function toCouncilRecord(row: any, directions: any[], now: Date = new Date()): C
     nextCommencementDate:
       pending.map((d) => d.commencedOn).filter(Boolean).sort()[0] ?? null,
     directionsExpired: mapped.filter((d) => d.forceState === "expired").length,
+    provisionalPastDeadline: null,
     coverageLevel: (row.coverage_level ?? "none") as CoverageLevel,
     areaCount: row.area_count ?? 0,
     areaCountWithGeometry: row.area_count_with_geometry ?? 0,

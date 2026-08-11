@@ -106,6 +106,12 @@ export interface CouncilRecord {
   nextCommencementDate: string | null
   /** Retired directions, kept so a lapsed restriction is not read as current. */
   directionsExpired: number
+  /**
+   * Set when a restriction rests on an immediate direction whose confirmation
+   * deadline has passed with no confirmation recorded. It is still treated as
+   * live — fail-closed — but the reader is told the record needs checking.
+   */
+  provisionalPastDeadline: string | null
   /** Only "boundaries" may gate `none_found`. */
   coverageLevel: CoverageLevel
   areaCount: number
@@ -331,6 +337,7 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
         ...pendingAreas.map((a) => a["start-date"]),
       ]).earliest,
       directionsExpired: mapped.filter((d) => d.forceState === "expired").length,
+      provisionalPastDeadline: null,
       coverageLevel,
       areaCount: councilAreas.length,
       areaCountWithGeometry: areasWithGeometry,

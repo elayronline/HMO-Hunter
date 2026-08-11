@@ -22,6 +22,7 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     directionsNotYetInForce: 0,
     nextCommencementDate: null,
     directionsExpired: 0,
+    provisionalPastDeadline: null,
     coverageLevel: "none",
     areaCount: 0,
     areaCountWithGeometry: 0,
