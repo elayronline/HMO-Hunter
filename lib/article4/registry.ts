@@ -30,9 +30,24 @@ import { normaliseCouncilName, ARTICLE4_SOURCE_PLANNING_DATA } from "./coverage"
 const ENTITY = "https://www.planning.data.gov.uk/entity.json"
 const ORG = "https://www.planning.data.gov.uk/entity"
 
-/** Matches HMO-relevant Article 4 records by name/notes/description. */
+/**
+ * Matches HMO-relevant Article 4 records by name/notes/description.
+ *
+ * `\bhmo` earns its boundary. Without it the bare `hmo` alternative matches
+ * inside ordinary place names — Ric**hmo**nd, Winc**hmo**re, Rus**hmo**re,
+ * Roc**hmo**unt — and it did: ten records in the live feed were classified as
+ * HMO directions on that basis, including the four "Richmond Road" areas that
+ * made Kingston upon Thames look like an HMO Article 4 council when its own
+ * list contains no such direction. That is a false positive, the one failure
+ * this pipeline is otherwise structurally incapable of.
+ *
+ * The boundary goes only at the start. `\bhmo\b` would drop the plural "HMOs",
+ * which is how councils most often write it — "Article 4 for HMOs", "HMOs
+ * Mutley, Greenbank, City Centre" — and losing those is the more expensive
+ * mistake of the two.
+ */
 export const HMO_PATTERN =
-  /hmo|houses? in multiple occupation|multiple occupation|class c4|c3 to c4|c3-c4|c3\/c4|small hmo|shared (house|dwelling)/i
+  /\bhmo|houses? in multiple occupation|multiple occupation|class c4|c3 to c4|c3-c4|c3\/c4|small hmo|shared (house|dwelling)/i
 
 /** Records that mention HMOs incidentally but restrict something else. */
 export const HMO_EXCLUSIONS =

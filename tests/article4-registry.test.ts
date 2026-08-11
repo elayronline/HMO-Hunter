@@ -203,3 +203,35 @@ describe("forceStateOn", () => {
     expect(forceStateOn("2011-12-10", "2026-08-10", today)).toBe("expired")
   })
 })
+
+// The bare `hmo` alternative used to match inside place names. Ten records in
+// the live feed were affected, and four of them ("Richmond Road", a commercial
+// to residential direction) made Kingston upon Thames read as an HMO Article 4
+// council — a false positive, which is the one failure mode this pipeline is
+// otherwise incapable of. Kingston's own list of directions contains no HMO one.
+describe("isHmoRelated does not match place names containing 'hmo'", () => {
+  const notHmo = [
+    { name: "Richmond Road", description: "Article 4 Direction for commercial, business and service use to residential use" },
+    { name: "Winchmore Hill", description: "Winchmore Hill Conservation Area" },
+    { name: "Rochmount, St Annes Crescent, L17", description: "incomplete data" },
+    { name: "Land bounded by Parkhurst Road/Wandsworth Road/Ellergreen Road/Rushmore Road", description: null },
+    { name: "Land at the Junction of Beach Road and Richmond Street, Weston-super-Mare", description: "Restrictions on the use of land" },
+    { name: "Former Vicarage adjoining Land at Richmond Park, L6", description: null },
+  ]
+
+  for (const entity of notHmo) {
+    it(`rejects "${entity.name.slice(0, 40)}"`, () => {
+      expect(isHmoRelated(entity)).toBe(false)
+    })
+  }
+
+  // The boundary must not cost us the plural, which is how councils usually
+  // write it. Dropping a real direction is worse than the bug being fixed.
+  it("still matches the plural and the parenthesised forms councils actually use", () => {
+    expect(isHmoRelated({ name: "Article 4 for HMOs" })).toBe(true)
+    expect(isHmoRelated({ name: "HMOs Mutley, Greenbank, City Centre and surrounding areas" })).toBe(true)
+    expect(isHmoRelated({ name: "Small HMO Article 4 Direction" })).toBe(true)
+    expect(isHmoRelated({ name: "Houses in Multiple Occupation (HMO) Direction" })).toBe(true)
+    expect(isHmoRelated({ name: "Change of use C3 to C4" })).toBe(true)
+  })
+})
