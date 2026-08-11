@@ -34,6 +34,27 @@ import { categorise, MARKET_LABELS, LICENCE_LABELS, type CategorisableProperty }
 
 export type Confidence = "verified" | "recorded" | "inferred" | "unknown"
 
+/**
+ * What the reader is actually asking.
+ *
+ * An existing HMO and a possible conversion are different questions, and a
+ * report that answers both at once answers neither well. Someone looking at an
+ * operating HMO wants to know what it is and what it holds; someone looking at
+ * an off-market house or a shop wants to know whether they could turn it into
+ * one, and at what cost in permissions.
+ */
+export type ReportPurpose = "existing_hmo" | "conversion"
+
+/** A decided HMO application in the same council. Precedent, not promise. */
+export interface PlanningDecision {
+  reference: string
+  address: string | null
+  description: string
+  outcome: string
+  decidedDate: string | null
+  addsSupply: boolean
+}
+
 export interface ReportFact {
   label: string
   value: string
@@ -52,6 +73,7 @@ export interface ReportSection {
 }
 
 export interface HmoCheckReport {
+  purpose: ReportPurpose
   address: string
   postcode: string | null
   council: string | null
@@ -90,6 +112,14 @@ export interface HmoCheckInput extends CategorisableProperty, UseClassInput {
   hmoArticle4InForce?: boolean
   classMaArticle4InForce?: boolean
   councilPositionKnown?: boolean
+  /**
+   * Recent decided HMO applications in this council. Only ever supplied when an
+   * application would actually be needed — see needsPlanningApplication.
+   */
+  recentDecisions?: PlanningDecision[]
+  /** Share of supply-adding applications this council permitted, 0-1. */
+  councilApprovalRate?: number | null
+  councilDecisionCount?: number | null
 }
 
 const DISCLAIMER =
@@ -338,6 +368,78 @@ function moneySection(input: HmoCheckInput): ReportSection {
   }
 }
 
+/**
+ * Whether the reader would actually have to apply for permission.
+ *
+ * This is the gate on showing planning precedent. What other people got
+ * approved is only useful to someone facing a decision of their own — if the
+ * change is permitted development, no committee is going to consider it, and
+ * listing recent approvals would suggest a hurdle that is not there. Where the
+ * council's position is unestablished the gate opens too, because an unchecked
+ * restriction may well require an application and the reader should see what
+ * that would look like.
+ */
+export function needsPlanningApplication(conversion: ConversionAssessment): boolean {
+  return conversion.steps.some(
+    (s) =>
+      s.status === "planning_permission_required" ||
+      s.status === "no_permitted_route" ||
+      s.status === "unknown"
+  )
+}
+
+/**
+ * What this council has actually decided on comparable applications.
+ *
+ * Precedent, not promise: every application turns on its own merits, and an
+ * approval rate is a description of the past. It earns its place because the
+ * alternative is a buyer guessing, and a council that refused four of the last
+ * five supply-adding applications is telling you something a policy document
+ * will not.
+ *
+ * Descriptions are included because what was approved matters more than how
+ * many: permission for a six-bed sui generis HMO and permission to add an
+ * en-suite are both "approved" and mean entirely different things.
+ */
+function precedentSection(input: HmoCheckInput): ReportSection {
+  const facts: ReportFact[] = []
+  const decisions = input.recentDecisions ?? []
+
+  if (input.councilApprovalRate != null && (input.councilDecisionCount ?? 0) > 0) {
+    const pct = Math.round(input.councilApprovalRate * 100)
+    facts.push({
+      label: "Approval rate for HMO applications",
+      value: `${pct}% of ${input.councilDecisionCount} decided applications`,
+      confidence: "recorded",
+      source: "PlanIt / council planning registers",
+      note:
+        (input.councilDecisionCount ?? 0) < 10
+          ? "Too few decisions to read as a trend. Treat it as context, not a probability."
+          : pct < 50
+            ? "This council refuses more supply-adding HMO applications than it permits. Budget for the possibility of refusal."
+            : undefined,
+    })
+  }
+
+  for (const d of decisions.slice(0, 5)) {
+    facts.push({
+      label: [d.decidedDate, d.address].filter(Boolean).join(" · ") || d.reference,
+      value: d.outcome,
+      confidence: "recorded",
+      source: `Planning reference ${d.reference}`,
+      // The description is the point: it says what was actually allowed.
+      note: d.description.length > 240 ? `${d.description.slice(0, 240)}…` : d.description,
+    })
+  }
+
+  return {
+    title: "What this council has recently decided",
+    emptyMessage:
+      "No decided HMO applications recorded for this council. That reflects our coverage rather than the council's activity.",
+    facts,
+  }
+}
+
 export function buildHmoCheckReport(input: HmoCheckInput, now: Date = new Date()): HmoCheckReport {
   const category = categorise(input, now)
   const conversion = assessConversion({
@@ -350,16 +452,31 @@ export function buildHmoCheckReport(input: HmoCheckInput, now: Date = new Date()
     bedrooms: input.bedrooms,
   })
 
-  // The headline states the position rather than rating it. Someone who reads
-  // only this line should still be told the thing that would change their mind.
+  // Which question is being asked. An operating HMO and a possible conversion
+  // are different reports, and answering both at once answers neither.
+  const purpose: ReportPurpose =
+    category.licence === "unlicensed" && !input.licensed_hmo ? "conversion" : "existing_hmo"
+
+  const applicationNeeded = needsPlanningApplication(conversion)
+
+  // The headline answers the question that was asked, and states the position
+  // rather than rating it. Someone who reads only this line should still be
+  // told the thing that would change their mind.
   const headline =
-    input.article_4_status === "in_force"
-      ? "An Article 4 direction applies here — converting to an HMO needs planning permission."
-      : input.article_4_status === "none_found"
-        ? `No Article 4 direction found. ${MARKET_LABELS[category.market]}, ${LICENCE_LABELS[category.licence].toLowerCase()}.`
-        : "This council's Article 4 position has not been established — treat the planning position as unchecked."
+    purpose === "existing_hmo"
+      ? input.article_4_status === "in_force"
+        ? `An operating HMO in an Article 4 area. ${LICENCE_LABELS[category.licence]}.`
+        : `An operating HMO. ${LICENCE_LABELS[category.licence]}.`
+      : input.article_4_status === "in_force"
+        ? "An Article 4 direction applies here — converting to an HMO needs planning permission."
+        : input.article_4_status === "none_found"
+          ? conversion.wholeRoutePermitted
+            ? "No Article 4 direction found — conversion to a small HMO looks like permitted development."
+            : "No Article 4 direction found, but the route is not clear — see the steps below."
+          : "This council's Article 4 position has not been established — treat the planning position as unchecked."
 
   return {
+    purpose,
     address: input.address ?? "",
     postcode: input.postcode ?? null,
     council: input.article_4_council ?? null,
@@ -367,8 +484,14 @@ export function buildHmoCheckReport(input: HmoCheckInput, now: Date = new Date()
     headline,
     sections: [
       article4Section(input),
-      licenceSection(input, now),
-      useAndConversionSection(input, conversion),
+      // An existing HMO leads with what it holds; a conversion leads with
+      // whether it is possible at all.
+      ...(purpose === "existing_hmo"
+        ? [licenceSection(input, now), useAndConversionSection(input, conversion)]
+        : [useAndConversionSection(input, conversion), licenceSection(input, now)]),
+      // Precedent only where an application would actually be required. For
+      // permitted development it would imply a hurdle that does not exist.
+      ...(applicationNeeded ? [precedentSection(input)] : []),
       buildingSection(input),
       moneySection(input),
     ],

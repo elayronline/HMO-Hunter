@@ -136,3 +136,105 @@ describe("the facts a buyer would act on", () => {
     expect(titles.indexOf("Licensing")).toBeLessThan(titles.indexOf("Money"))
   })
 })
+
+/**
+ * Two questions, two reports. Someone looking at an operating HMO wants to know
+ * what it holds; someone looking at a house or a shop wants to know whether they
+ * could turn it into one.
+ */
+describe("the report answers the question that was asked", () => {
+  it("treats a licensed property as an existing HMO", () => {
+    const r = buildHmoCheckReport(input({ licensed_hmo: true, hmo_licence_expiry: "2028-01-01" }), NOW)
+    expect(r.purpose).toBe("existing_hmo")
+    expect(r.headline).toContain("operating HMO")
+  })
+
+  it("treats an unlicensed property as a conversion question", () => {
+    const r = buildHmoCheckReport(input({ licensed_hmo: false }), NOW)
+    expect(r.purpose).toBe("conversion")
+  })
+
+  // For a conversion the route is the point, so it comes before the licence.
+  it("leads a conversion with the route and an existing HMO with its licence", () => {
+    const conv = buildHmoCheckReport(input({ licensed_hmo: false, article_4_status: "none_found" }), NOW)
+    const titles = conv.sections.map((s) => s.title)
+    expect(titles.indexOf("Use class and conversion route")).toBeLessThan(titles.indexOf("Licensing"))
+
+    const existing = buildHmoCheckReport(input({ licensed_hmo: true }), NOW)
+    const eTitles = existing.sections.map((s) => s.title)
+    expect(eTitles.indexOf("Licensing")).toBeLessThan(eTitles.indexOf("Use class and conversion route"))
+  })
+
+  it("says plainly when a conversion looks like permitted development", () => {
+    const r = buildHmoCheckReport(input({ licensed_hmo: false, article_4_status: "none_found" }), NOW)
+    expect(r.headline).toContain("permitted development")
+  })
+})
+
+/**
+ * Precedent is only useful to someone who has to apply. Showing it where the
+ * change is permitted development suggests a hurdle that is not there.
+ */
+describe("planning precedent appears if and only if it applies", () => {
+  const decisions = [
+    {
+      reference: "26/01234/FUL",
+      address: "10 Example Road",
+      description: "Change of use from C3 dwellinghouse to 6 person HMO (sui generis)",
+      outcome: "Permitted",
+      decidedDate: "2026-05-01",
+      addsSupply: true,
+    },
+  ]
+
+  it("is shown where an Article 4 means an application is required", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", recentDecisions: decisions, councilApprovalRate: 0.4, councilDecisionCount: 20 }),
+      NOW
+    )
+    const section = r.sections.find((s) => s.title === "What this council has recently decided")
+    expect(section).toBeDefined()
+    // What was approved matters more than how many were.
+    expect(section!.facts.some((f) => f.note?.includes("6 person HMO"))).toBe(true)
+  })
+
+  it("is hidden where the change is permitted development", () => {
+    const r = buildHmoCheckReport(
+      input({ licensed_hmo: false, article_4_status: "none_found", recentDecisions: decisions }),
+      NOW
+    )
+    expect(r.sections.find((s) => s.title === "What this council has recently decided")).toBeUndefined()
+  })
+
+  // An unchecked council may well require an application, so the reader should
+  // see what that would look like.
+  it("is shown where the council's position is unknown", () => {
+    const r = buildHmoCheckReport(
+      input({ licensed_hmo: false, article_4_status: "unknown", recentDecisions: decisions }),
+      NOW
+    )
+    expect(r.sections.find((s) => s.title === "What this council has recently decided")).toBeDefined()
+  })
+
+  it("warns when a council refuses more than it permits", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", recentDecisions: decisions, councilApprovalRate: 0.3, councilDecisionCount: 30 }),
+      NOW
+    )
+    const rate = r.sections
+      .find((s) => s.title === "What this council has recently decided")!
+      .facts.find((f) => f.label.includes("Approval rate"))!
+    expect(rate.note).toContain("refuses more")
+  })
+
+  it("refuses to read a trend from a handful of decisions", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", recentDecisions: decisions, councilApprovalRate: 0.5, councilDecisionCount: 4 }),
+      NOW
+    )
+    const rate = r.sections
+      .find((s) => s.title === "What this council has recently decided")!
+      .facts.find((f) => f.label.includes("Approval rate"))!
+    expect(rate.note).toContain("Too few decisions")
+  })
+})

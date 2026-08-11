@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { buildHmoCheckReport } from "@/lib/report/hmo-check"
+import { buildHmoCheckReport, needsPlanningApplication, type PlanningDecision } from "@/lib/report/hmo-check"
+import { assessConversion } from "@/lib/properties/conversion"
+import { assessUseClass } from "@/lib/properties/use-class"
 import { curatedBySlug, assessCurated } from "@/lib/article4/curated"
 import { toSlug } from "@/lib/article4/registry"
 
@@ -78,13 +80,67 @@ export async function GET(request: Request) {
     const curatedState = curated ? assessCurated(curated) : null
     const liveDirection = curatedState?.states.find((s) => s.state === "in_force")?.direction
 
+    // Precedent is fetched only where an application would actually be needed.
+    // The gate is evaluated before the query so a permitted-development case
+    // costs no round trip and shows no hurdle that is not there.
+    const hmoInForce = curatedState?.inForce ?? property.article_4_status === "in_force"
+    const positionKnown = Boolean(curated) || property.article_4_status === "none_found"
+    const provisionalConversion = assessConversion({
+      useClass: assessUseClass(property).useClass,
+      hmoArticle4InForce: hmoInForce,
+      classMaArticle4InForce: false,
+      councilPositionKnown: positionKnown,
+      hasFloorPlan: Boolean(property.floor_plans?.length),
+      bedrooms: property.bedrooms,
+    })
+
+    let recentDecisions: PlanningDecision[] = []
+    let councilApprovalRate: number | null = null
+    let councilDecisionCount: number | null = null
+
+    if (councilSlug && needsPlanningApplication(provisionalConversion)) {
+      const { data: decisions } = await supabase
+        .from("hmo_planning_decisions")
+        .select("reference,address,description,app_state,decided_date,adds_supply")
+        .eq("council_slug", councilSlug)
+        // Applications that would add HMO supply are the comparable ones. A
+        // condition discharge on an existing HMO tells a buyer nothing.
+        .eq("adds_supply", true)
+        .not("decided_date", "is", null)
+        .order("decided_date", { ascending: false })
+        .limit(50)
+
+      const rows = decisions ?? []
+      recentDecisions = rows.slice(0, 5).map((d: Record<string, unknown>) => ({
+        reference: String(d.reference ?? ""),
+        address: (d.address as string) ?? null,
+        description: String(d.description ?? ""),
+        outcome: String(d.app_state ?? "Unknown"),
+        decidedDate: (d.decided_date as string) ?? null,
+        addsSupply: Boolean(d.adds_supply),
+      }))
+
+      const decided = rows.filter((d: Record<string, unknown>) =>
+        ["Permitted", "Rejected"].includes(String(d.app_state))
+      )
+      if (decided.length > 0) {
+        councilDecisionCount = decided.length
+        councilApprovalRate =
+          decided.filter((d: Record<string, unknown>) => d.app_state === "Permitted").length /
+          decided.length
+      }
+    }
+
     const report = buildHmoCheckReport({
       ...property,
       article_4_status: curatedState?.inForce ? "in_force" : property.article_4_status,
       councilVerifiedQuote: liveDirection?.quote ?? null,
       councilVerifiedUrl: liveDirection?.sourceUrl ?? null,
-      hmoArticle4InForce: curatedState?.inForce ?? property.article_4_status === "in_force",
-      councilPositionKnown: Boolean(curated) || property.article_4_status === "none_found",
+      hmoArticle4InForce: hmoInForce,
+      councilPositionKnown: positionKnown,
+      recentDecisions,
+      councilApprovalRate,
+      councilDecisionCount,
     })
 
     return NextResponse.json({ report }, { headers: { "Cache-Control": "private, max-age=300" } })
