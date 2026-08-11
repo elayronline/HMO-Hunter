@@ -10,7 +10,14 @@ export interface PropertyListing {
   price_pcm?: number
   purchase_price?: number
   listing_type: "rent" | "purchase"
-  property_type: "HMO" | "Flat" | "House" | "Studio"
+  /**
+   * Commercial types are carried so a conversion opportunity can be ingested at
+   * all. They are not homes and are never judged as such — categorise() reads
+   * them as commercial_conversion, and the assessment in
+   * lib/properties/conversion.ts judges the planning route rather than the
+   * property.
+   */
+  property_type: "HMO" | "Flat" | "House" | "Studio" | "Commercial" | "Office" | "Retail"
   bedrooms: number
   bathrooms: number
   description?: string

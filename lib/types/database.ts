@@ -15,7 +15,7 @@ export type Property = {
   price_pcm: number | null
   purchase_price: number | null
   estimated_rent_per_room: number | null
-  property_type: "HMO" | "Flat" | "House" | "Studio"
+  property_type: "HMO" | "Flat" | "House" | "Studio" | "Commercial" | "Office" | "Retail"
   hmo_status: "Unlicensed HMO" | "Licensed HMO" | "Potential HMO"
   tenure: "freehold" | "leasehold" | "unknown" | null
   licensed_hmo: boolean

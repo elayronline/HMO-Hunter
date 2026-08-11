@@ -332,3 +332,33 @@ describe("announced versus in force", () => {
     expect(caveats.some((c) => c.includes("lapsed"))).toBe(true)
   })
 })
+
+/**
+ * Commercial data sources. The platform may use them; a resold API response may
+ * not carry them. forRedistribution() is what enforces that, so the flags here
+ * are the whole control.
+ */
+describe("commercial source licensing", () => {
+  it("keeps CoStar and LoopNet out of a redistributable response", () => {
+    expect(isRedistributable("costar")).toBe(false)
+    expect(isRedistributable("loopnet")).toBe(false)
+  })
+
+  // The licence is genuinely ambiguous: data.gov.uk labels VOA "Other Licence"
+  // while linking OGL v3. Being wrong costs a licence breach; being cautious
+  // costs a floor area in a resold response.
+  it("treats VOA as not redistributable until its licence is confirmed", () => {
+    expect(isRedistributable("voa")).toBe(false)
+  })
+
+  it("allows the non-domestic EPC register, which is plainly OGL", () => {
+    expect(isRedistributable("epc-non-domestic")).toBe(true)
+  })
+
+  it("withholds a commercial-sourced value from a redistributed payload", () => {
+    const withheld = forRedistribution({
+      floorArea: sourced<number>({ value: 240, source: "costar", retrievedAt: "2026-08-11T00:00:00.000Z" }),
+    } as never) as { floorArea: { value: number | null; withheld?: boolean } }
+    expect(withheld.floorArea.value).toBeNull()
+  })
+})

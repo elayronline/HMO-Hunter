@@ -29,6 +29,10 @@ export type SourceId =
   | "manual-verification"
   | "searchland"
   | "kamma"
+  | "voa"
+  | "epc-non-domestic"
+  | "costar"
+  | "loopnet"
 
 interface SourcePolicy {
   label: string
@@ -88,6 +92,42 @@ export const SOURCES: Record<SourceId, SourcePolicy> = {
     authoritative: false,
     requiresQuote: false,
     note: "Commercial terms prohibit redistribution.",
+  },
+  voa: {
+    label: "Valuation Office Agency non-domestic rating",
+    licence: "unconfirmed",
+    // The data.gov.uk listing labels this "Other Licence" while linking OGL v3.
+    // Until that is resolved it is treated as not redistributable: the cost of
+    // being wrong is a licence breach, and the cost of being cautious is that a
+    // floor area does not appear in a resold response.
+    redistributable: false,
+    authoritative: true,
+    requiresQuote: false,
+    note: "Licence unconfirmed — data.gov.uk labels it 'Other Licence' but links OGL v3. Usable in the product; confirm before it reaches a resold response.",
+  },
+  "epc-non-domestic": {
+    label: "Non-domestic EPC register",
+    licence: "OGL-3.0",
+    redistributable: true,
+    authoritative: true,
+    requiresQuote: false,
+    note: "Floor area and building type for commercial stock. Requires a registered API key.",
+  },
+  costar: {
+    label: "CoStar",
+    licence: "commercial",
+    redistributable: false,
+    authoritative: false,
+    requiresQuote: false,
+    note: "Commercial terms prohibit redistribution. Note that CoStar's terms are broader than most: displaying their data to users may itself count as redistribution, so the contract governs, not this flag.",
+  },
+  loopnet: {
+    label: "LoopNet",
+    licence: "commercial",
+    redistributable: false,
+    authoritative: false,
+    requiresQuote: false,
+    note: "Commercial terms prohibit redistribution. Same caveat as CoStar, whose group owns it.",
   },
 }
 
