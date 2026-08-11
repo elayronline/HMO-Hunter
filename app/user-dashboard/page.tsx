@@ -1,188 +1,240 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { categorise, type PropertyCategory } from "@/lib/properties/category"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+/**
+ * The landing page after sign-in: what needs attention today.
+ *
+ * It deliberately does not repeat the map. Four counts that read the same every
+ * morning teach a returning user nothing, and the map already shows what exists.
+ * What this can show and nothing else can is change with a date on it, and stock
+ * that is running out.
+ *
+ * Ordering is by urgency, not by category: a restriction commencing in five days
+ * sits above a licence expiring in ninety, which sits above a coverage gap that
+ * has been true for months.
+ */
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import PropertyMap from "@/components/property-map"
-import { createClient } from "@/lib/supabase/client"
-import { HmoStatsCard } from "@/components/hmo-stats-card"
-import {
-  Building2,
-  MapPin,
-  ArrowLeft,
-  TrendingUp,
-  Home,
-  Shield
-} from "lucide-react"
+import { CalendarClock, KeyRound, AlertTriangle, Search, FileText, MapIcon, ArrowRight } from "lucide-react"
+import type { AttentionBoard } from "@/lib/dashboard/attention"
 
-export default function UserDashboard() {
-  const [properties, setProperties] = useState<any[]>([])
-  const [stats, setStats] = useState({
-    total: 0,
-    forSale: 0,
-    licensed: 0,
-    licenceEnding: 0,
-  })
+export default function UserDashboardPage() {
+  const router = useRouter()
+  const [board, setBoard] = useState<AttentionBoard | null>(null)
+  const [servedTotal, setServedTotal] = useState<number>(0)
+  const [loading, setLoading] = useState(true)
 
-  // Fetch properties and stats on mount
   useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient()
-
-      // Fetch properties for map
-      const { data: propData } = await supabase
-        .from("properties")
-        .select("id, postcode, latitude, longitude, address, purchase_price, property_type, listing_type, licensed_hmo")
-        .eq("is_stale", false)
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .limit(100)
-
-      if (propData) {
-        const mapProperties = propData.map((p: any) => ({
-          postcode: p.postcode,
-          lat: Number(p.latitude),
-          lng: Number(p.longitude),
-          address: p.address || p.postcode,
-          price: p.purchase_price || 0,
-        }))
-        setProperties(mapProperties)
-
-        // Calculate stats from fetched data
-        // Counted by opportunity, not tenure. "Rent-to-HMO" is gone; a licence
-        // coming to an end is the number worth watching, because it is the one
-        // that expires whether or not anyone looks at it.
-        const categories: PropertyCategory[] = propData.map((p: any) => categorise(p))
-        setStats({
-          total: propData.length,
-          forSale: categories.filter((c) => c.market === "for_sale").length,
-          licensed: categories.filter((c) => c.licence !== "unlicensed").length,
-          licenceEnding: categories.filter((c) => c.licence === "licence_ending").length,
-        })
-      }
-    }
-    fetchData()
+    fetch("/api/dashboard")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.board) {
+          setBoard(d.board)
+          setServedTotal(d.servedTotal ?? 0)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 md:px-6 py-3 md:py-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <Link href="/map">
-                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 px-2 md:px-3">
-                  <ArrowLeft className="w-4 h-4 md:mr-2" />
-                  <span className="hidden md:inline">Back to Home</span>
-                </Button>
-              </Link>
-              <div className="hidden md:block h-6 w-px bg-slate-200" />
-              <h1 className="text-sm md:text-lg font-semibold text-slate-900 truncate">Dashboard</h1>
-            </div>
+      <header className="bg-white border-b border-slate-200 px-4 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">What needs attention</h1>
+            <p className="text-sm text-slate-500">
+              {servedTotal > 0
+                ? `${servedTotal.toLocaleString()} properties tracked`
+                : "Your sourcing overview"}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.push("/hmo-check")}>
+              <FileText className="w-4 h-4 mr-2" />
+              Check an address
+            </Button>
+            <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => router.push("/map")}>
+              <MapIcon className="w-4 h-4 mr-2" />
+              Map
+            </Button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
-        {/* Header */}
-        <div>
-          <p className="text-slate-600">
-            Your property portfolio overview and market insights
-          </p>
-        </div>
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {loading && <p className="text-sm text-slate-500">Loading…</p>}
 
-        {/* HMO Portfolio Statistics */}
-        <HmoStatsCard className="mb-6" />
+        {board && (
+          <>
+            {/* Dated changes first. These arrive whether or not anyone looks,
+                and they are the thing a portal cannot tell you. */}
+            {board.datedChanges.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-3">
+                  <CalendarClock className="w-4 h-4" />
+                  Coming up
+                </h2>
+                <div className="space-y-3">
+                  {board.datedChanges.map((change, i) => (
+                    <Card
+                      key={i}
+                      className={`p-4 ${change.daysAway <= 14 ? "border-amber-300 bg-amber-50" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900">{change.headline}</p>
+                          <p className="text-sm text-slate-600 mt-0.5">{change.detail}</p>
+                          {change.sourceUrl && (
+                            <a
+                              href={change.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-teal-700 hover:underline mt-1 inline-block"
+                            >
+                              Council source
+                            </a>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-2xl font-bold text-slate-900">{change.daysAway}</p>
+                          <p className="text-xs text-slate-500">{change.daysAway === 1 ? "day" : "days"}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{change.date}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white border-slate-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">Total Properties</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-slate-600" />
-                <span className="text-3xl font-bold text-slate-900">{stats.total}</span>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Named addresses, not a count. Thirteen properties with days left
+                is actionable; "13" is a number to look at. */}
+            {board.expiringSoon.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
+                  <KeyRound className="w-4 h-4" />
+                  Licences running out
+                </h2>
+                <p className="text-sm text-slate-500 mb-3">
+                  A renewal deadline is the owner&rsquo;s deadline too.
+                </p>
+                <Card className="divide-y divide-slate-100">
+                  {board.expiringSoon.map((licence) => (
+                    <button
+                      key={licence.id}
+                      onClick={() => router.push(`/hmo-check?address=${encodeURIComponent(licence.address)}`)}
+                      className="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between gap-3"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-medium text-slate-900 truncate">{licence.address}</span>
+                        <span className="block text-xs text-slate-500">
+                          {[licence.postcode, licence.council].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span
+                          className={`block text-sm font-bold ${
+                            licence.daysRemaining <= 90 ? "text-amber-700" : "text-slate-700"
+                          }`}
+                        >
+                          {licence.daysRemaining} days
+                        </span>
+                        <span className="block text-xs text-slate-400">{licence.expiry}</span>
+                      </span>
+                    </button>
+                  ))}
+                </Card>
+              </section>
+            )}
 
-          <Card className="bg-white border-blue-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-blue-700">For sale</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Home className="w-5 h-5 text-blue-500" />
-                <span className="text-3xl font-bold text-blue-700">{stats.forSale}</span>
-              </div>
-            </CardContent>
-          </Card>
+            {board.expired.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  Licences already expired
+                </h2>
+                <p className="text-sm text-slate-500 mb-3">
+                  An operating HMO without a current licence is a problem the owner may not know they have.
+                </p>
+                <Card className="divide-y divide-slate-100">
+                  {board.expired.slice(0, 10).map((licence) => (
+                    <button
+                      key={licence.id}
+                      onClick={() => router.push(`/hmo-check?address=${encodeURIComponent(licence.address)}`)}
+                      className="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between gap-3"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-medium text-slate-900 truncate">{licence.address}</span>
+                        <span className="block text-xs text-slate-500">
+                          {[licence.postcode, licence.council].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block text-sm font-bold text-red-600">
+                          {Math.abs(licence.daysRemaining)} days ago
+                        </span>
+                        <span className="block text-xs text-slate-400">{licence.expiry}</span>
+                      </span>
+                    </button>
+                  ))}
+                </Card>
+              </section>
+            )}
 
-          <Card className="bg-white border-amber-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-amber-700">Licence ending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-500" />
-                <span className="text-3xl font-bold text-amber-700">{stats.licenceEnding}</span>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Shown to users, not hidden. Someone deciding how much weight to
+                put on a report deserves to know how much of the estate is
+                unverified — concealing it would make the product look more
+                certain than it is. */}
+            {board.coverage.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
+                  <Search className="w-4 h-4" />
+                  What we have not verified
+                </h2>
+                <p className="text-sm text-slate-500 mb-3">
+                  Gaps in our coverage, so you know how far to trust a report.
+                </p>
+                <Card className="p-4 space-y-3">
+                  {board.coverage.map((gap, i) => {
+                    const pct = gap.total > 0 ? Math.round((gap.count / gap.total) * 100) : 0
+                    return (
+                      <div key={i}>
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-sm font-medium text-slate-800">{gap.label}</span>
+                          <span className="text-sm text-slate-500 shrink-0">
+                            {gap.count.toLocaleString()} of {gap.total.toLocaleString()} ({pct}%)
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                          <div className="h-full bg-slate-400 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">{gap.note}</p>
+                      </div>
+                    )
+                  })}
+                </Card>
+              </section>
+            )}
 
-          <Card className="bg-white border-teal-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-teal-700">Licensed HMOs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-teal-500" />
-                <span className="text-3xl font-bold text-teal-700">{stats.licensed}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Property Map */}
-        {properties.length > 0 && (
-          <Card className="bg-white border-slate-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-teal-600" />
-                Property Locations
-              </CardTitle>
-              <CardDescription>Interactive map showing properties with location data</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PropertyMap properties={properties} />
-            </CardContent>
-          </Card>
+            {board.datedChanges.length === 0 &&
+              board.expiringSoon.length === 0 &&
+              board.expired.length === 0 && (
+                <Card className="p-8 text-center">
+                  <p className="font-medium text-slate-900">Nothing needs attention today</p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    No restrictions commencing and no licences running out in the next eight months.
+                  </p>
+                  <Button className="mt-4 bg-teal-600 hover:bg-teal-700" onClick={() => router.push("/map")}>
+                    Browse properties <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Card>
+              )}
+          </>
         )}
-
-        {/* Empty State */}
-        {properties.length === 0 && (
-          <Card className="border-dashed border-2 border-slate-300 bg-white">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Building2 className="w-16 h-16 text-slate-300 mb-4" />
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">No Properties Found</h3>
-              <p className="text-slate-500 text-center mb-6 max-w-md">
-                Properties will appear here once data is available. Browse the main map to explore listings.
-              </p>
-              <Link href="/map">
-                <Button className="bg-teal-600 hover:bg-teal-700">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Browse Properties
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      </main>
     </div>
   )
 }

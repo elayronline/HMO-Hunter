@@ -81,10 +81,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages to the app
+  // Signed-in users land on the dashboard rather than the map. The map answers
+  // "what exists", which is a question you go looking for; the dashboard answers
+  // "what needs attention today", which is the one worth being told unprompted.
   if (user && isPublicAuthRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/map"
+    url.pathname = "/user-dashboard"
     return NextResponse.redirect(url)
   }
 

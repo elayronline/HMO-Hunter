@@ -57,7 +57,7 @@ export default function LoginPage() {
       track("login_success")
       // Brief delay for session cookie to be set, then navigate
       await new Promise((resolve) => setTimeout(resolve, 150))
-      router.replace("/map")
+      router.replace("/user-dashboard")
     }
   }
 
