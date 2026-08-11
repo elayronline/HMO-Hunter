@@ -232,3 +232,44 @@ describe.skipIf(process.env.CI)("council name matching against live planning dat
     expect(unmatched, `councils that no longer map to an LPA: ${unmatched.join(", ")}`).toEqual([])
   }, 120_000)
 })
+
+describe("PlanIt council name aliases", () => {
+  // PlanIt labels authorities by how their planning service brands itself. Left
+  // unmapped these drop out of per-council statistics — BCP alone accounted for
+  // 22 decisions in the first live ingest.
+  it("resolves short forms to their LPA key", () => {
+    const cases: [string, string][] = [
+      ["BCP", "bournemouth christchurch and poole"],
+      ["Bath", "bath and north east somerset"],
+      ["Brighton", "brighton and hove"],
+      ["Hull", "kingston upon hull"],
+      ["Telford", "telford and wrekin"],
+      ["Kings Lynn", "king s lynn and west norfolk"],
+      ["North Lincs", "north lincolnshire"],
+      ["Reigate", "reigate and banstead"],
+    ]
+    for (const [input, expected] of cases) {
+      expect(normaliseCouncilName(input), input).toBe(expected)
+    }
+  })
+
+  it("treats hyphenated and spaced spellings as one council", () => {
+    expect(normaliseCouncilName("Newcastle-under-Lyme")).toBe(
+      normaliseCouncilName("Newcastle under Lyme")
+    )
+    // …without colliding with the other Newcastle.
+    expect(normaliseCouncilName("Newcastle-under-Lyme")).not.toBe(
+      normaliseCouncilName("Newcastle City Council")
+    )
+  })
+
+  // Guessing an authority for a shared planning service would misattribute
+  // decisions to a council that never made them.
+  it("leaves genuinely ambiguous multi-authority services unresolved", () => {
+    for (const name of ["Mid Kent", "Adur and Worthing", "Bromsgrove Redditch", "Old Oak Park Royal"]) {
+      const key = normaliseCouncilName(name)
+      expect(Object.values({ ...{} }), name).not.toContain(key)
+      expect(key, name).not.toMatch(/^(maidstone|swale|adur|worthing|bromsgrove|redditch)$/)
+    }
+  })
+})

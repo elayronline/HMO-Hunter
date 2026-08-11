@@ -21,9 +21,31 @@ export const ARTICLE4_SOURCE_PLANNING_DATA = "planning.data.gov.uk"
 const PLANNING_DATA_ENTITY = "https://www.planning.data.gov.uk/entity.json"
 const PLANNING_DATA_ORG = "https://www.planning.data.gov.uk/entity"
 
-/** Councils whose published name differs from their LPA district name. */
+/**
+ * Councils whose published name differs from their LPA district name.
+ *
+ * The short forms come from PlanIt, which labels planning authorities the way
+ * their planning service brands itself rather than by statutory name. Left
+ * unmapped these silently drop out of per-council statistics — BCP alone
+ * accounted for 22 decisions.
+ *
+ * Deliberately NOT mapped, because they cover more than one authority and a
+ * guess would misattribute decisions: "Mid Kent" (Maidstone, Swale and
+ * Tunbridge Wells share a service), "Adur and Worthing", "Bromsgrove Redditch",
+ * and "Old Oak Park Royal" (a development corporation, not an LPA district).
+ */
 const COUNCIL_ALIASES: Record<string, string> = {
   newcastle: "newcastle upon tyne",
+  bcp: "bournemouth christchurch and poole",
+  bath: "bath and north east somerset",
+  brighton: "brighton and hove",
+  hull: "kingston upon hull",
+  telford: "telford and wrekin",
+  "kings lynn": "king s lynn and west norfolk",
+  "north lincs": "north lincolnshire",
+  reigate: "reigate and banstead",
+  southend: "southend on sea",
+  blackburn: "blackburn with darwen",
 }
 
 export interface Article4Classification {
@@ -61,7 +83,10 @@ export function normaliseCouncilName(name: string): string {
   s = s.replace(/^city\s+of\s+/, "")
   s = s.replace(/\b(city|district|county|metropolitan|borough|royal|london)\b/g, "")
   s = s.replace(/\bcouncil\b/g, "")
-  s = s.replace(/[^a-z\- ]/g, " ")
+  // Hyphens become spaces so "Newcastle-under-Lyme" and "Newcastle under Lyme"
+  // resolve to one key. Slugs are rebuilt from this, so both still yield
+  // "newcastle-under-lyme".
+  s = s.replace(/[^a-z\- ]/g, " ").replace(/-/g, " ")
   s = s.split(/\s+/).filter(Boolean).join(" ")
 
   return COUNCIL_ALIASES[s] ?? s
