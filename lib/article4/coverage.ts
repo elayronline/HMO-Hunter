@@ -89,6 +89,17 @@ export function normaliseCouncilName(name: string): string {
   s = s.replace(/[^a-z\- ]/g, " ").replace(/-/g, " ")
   s = s.split(/\s+/).filter(Boolean).join(" ")
 
+  // Stripping the keywords can strand the conjunction that joined them: "St
+  // Albans City and District Council" becomes "st albans and", which matches no
+  // district and silently drops the council. It cost St Albans all 9 of its
+  // Class MA directions.
+  //
+  // Only a leading or trailing "and" is removed. The word is load-bearing in the
+  // middle of real names — Bath and North East Somerset, Brighton and Hove,
+  // Kensington and Chelsea, Barking and Dagenham — and no council name begins or
+  // ends with it.
+  s = s.replace(/^and\s+/, "").replace(/\s+and$/, "")
+
   return COUNCIL_ALIASES[s] ?? s
 }
 

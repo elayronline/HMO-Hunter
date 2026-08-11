@@ -273,3 +273,33 @@ describe("PlanIt council name aliases", () => {
     }
   })
 })
+
+/**
+ * Stripping "city", "district" and the rest can leave behind the conjunction
+ * that joined them. "St Albans City and District Council" became "st albans
+ * and", which matched no district, so the council quietly dropped out of the
+ * registry along with all 9 of its Class MA directions.
+ */
+describe("normaliseCouncilName does not strand a conjunction", () => {
+  it("resolves St Albans to its district name", () => {
+    expect(normaliseCouncilName("St Albans City and District Council")).toBe("st albans")
+    expect(normaliseCouncilName("St Albans City and District Council")).toBe(
+      normaliseCouncilName("St Albans")
+    )
+  })
+
+  // "and" carries meaning inside a name and must survive there. Removing it
+  // wholesale would collapse Bath and North East Somerset onto Bath.
+  it("keeps a conjunction that is part of the name", () => {
+    expect(normaliseCouncilName("Bath and North East Somerset Council")).toBe(
+      "bath and north east somerset"
+    )
+    expect(normaliseCouncilName("Brighton and Hove City Council")).toBe("brighton and hove")
+    expect(normaliseCouncilName("Royal Borough of Kensington and Chelsea")).toBe(
+      "kensington and chelsea"
+    )
+    expect(normaliseCouncilName("London Borough of Barking and Dagenham")).toBe(
+      "barking and dagenham"
+    )
+  })
+})
