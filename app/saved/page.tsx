@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { categorise, MARKET_LABELS, LICENCE_LABELS } from "@/lib/properties/category"
+import { categorise, rentIsEvidence, MARKET_LABELS, LICENCE_LABELS } from "@/lib/properties/category"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -185,8 +185,16 @@ export default function SavedPropertiesPage() {
                           </>
                         )
                       })()}
+                      {/* A let HMO has no asking price — it is not for sale.
+                          Its advertised rent is shown as evidence of what the
+                          property achieves, labelled so it can never be read as
+                          a price or as an offer to rent. */}
                       <span className="bg-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                        {property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "POA"}
+                        {property.purchase_price
+                          ? `£${property.purchase_price.toLocaleString()}`
+                          : rentIsEvidence(property)
+                            ? `Let at £${property.price_pcm!.toLocaleString()} pcm`
+                            : "POA"}
                       </span>
                     </div>
                   </div>

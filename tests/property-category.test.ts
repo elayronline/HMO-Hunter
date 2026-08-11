@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest"
 import {
   categorise,
   isServed,
+  rentIsEvidence,
+  MARKET_LABELS,
   LICENCE_ENDING_WINDOW_MONTHS,
   type CategorisableProperty,
 } from "@/lib/properties/category"
@@ -111,5 +113,65 @@ describe("what the platform serves", () => {
   // The 1,407 Zoopla listings with no licence, no owner and no sale price.
   it("does not serve a rental listing with nothing tying it to an HMO", () => {
     expect(isServed(property({ listing_type: "rent", licensed_hmo: false, purchase_price: null }))).toBe(false)
+  })
+})
+
+/**
+ * A rental listing is not inventory here. Where it is an existing HMO it is
+ * evidence — the property is operating, the owner is active, and the advertised
+ * rent is a real figure for the rooms. Where it is not an HMO it is nothing.
+ */
+describe("an existing HMO the owner is letting", () => {
+  const letHmo = property({
+    listing_type: "rent",
+    purchase_price: null,
+    price_pcm: 2400,
+    source_name: "Zoopla",
+    licensed_hmo: true,
+    hmo_licence_expiry: "2028-03-01",
+  })
+
+  it("is a live advertisement, not a cold outreach case", () => {
+    expect(categorise(letHmo, NOW).market).toBe("let_listed")
+  })
+
+  it("is served, and keeps its licence state", () => {
+    expect(isServed(letHmo)).toBe(true)
+    expect(categorise(letHmo, NOW).licence).toBe("licensed")
+  })
+
+  it("shows its rent as evidence", () => {
+    expect(rentIsEvidence(letHmo, NOW)).toBe(true)
+  })
+
+  // The label must describe what the owner is doing, never offer the property
+  // to the reader — this is a buyer's platform.
+  it("is labelled as an existing HMO rather than as something to rent", () => {
+    const label = MARKET_LABELS[categorise(letHmo, NOW).market]
+    expect(label).toContain("Existing HMO")
+    expect(label.toLowerCase()).not.toContain("to let")
+    expect(label.toLowerCase()).not.toContain("for rent")
+  })
+
+  it("still applies when the licence is coming to an end", () => {
+    const ending = { ...letHmo, hmo_licence_expiry: "2026-10-01" }
+    const c = categorise(ending, NOW)
+    expect(c.market).toBe("let_listed")
+    expect(c.licence).toBe("licence_ending")
+  })
+
+  // Register records are stored as "rent" too, but nobody advertised them.
+  it("does not call a register record a live advertisement", () => {
+    const register = { ...letHmo, source_name: "PropertyData HMO" }
+    expect(categorise(register, NOW).market).toBe("off_market")
+    expect(rentIsEvidence(register, NOW)).toBe(false)
+  })
+
+  it("does not show a rent for a property with no HMO behind it", () => {
+    const plainRental = property({
+      listing_type: "rent", purchase_price: null, price_pcm: 1200,
+      source_name: "Zoopla", licensed_hmo: false,
+    })
+    expect(isServed(plainRental)).toBe(false)
   })
 })

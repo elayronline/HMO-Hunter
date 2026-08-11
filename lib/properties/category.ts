@@ -25,7 +25,17 @@ export const LICENCE_ENDING_WINDOW_MONTHS = 6
 export type MarketStatus =
   /** Listed for purchase, with a price. */
   | "for_sale"
-  /** A known HMO that is not currently for sale — the outreach case. */
+  /**
+   * An existing HMO the owner currently has advertised to let.
+   *
+   * This is not inventory — the platform does not offer it to rent, and it must
+   * never be presented as something to take a tenancy on. It is evidence: the
+   * property is an operating HMO, the owner is active and reachable, and the
+   * advertised rent is a real figure for what the rooms achieve. That makes it
+   * a property of interest to a buyer, which a plain rental listing is not.
+   */
+  | "let_listed"
+  /** A known HMO with no live advertisement — the cold outreach case. */
   | "off_market"
 
 export type LicenceState =
@@ -55,9 +65,28 @@ export interface PropertyCategory {
 export interface CategorisableProperty {
   listing_type?: string | null
   purchase_price?: number | null
+  price_pcm?: number | null
+  source_name?: string | null
   licensed_hmo?: boolean | null
   hmo_licence_expiry?: string | null
   licence_status?: string | null
+}
+
+/**
+ * Sources that publish live advertisements. A row from one of these with a
+ * rental listing type really is on the market to let today.
+ *
+ * The register sources — PropertyData HMO, Searchland — also store rows as
+ * "rent", but those are licence records rather than advertisements, and
+ * describing them as "on the market to let" would assert something nobody
+ * published. Anything unrecognised falls through to off_market for the same
+ * reason: the weaker claim is the safe one.
+ */
+const LISTING_PORTALS = new Set(["zoopla", "rightmove", "onthemarket"])
+
+function isLiveAdvertisement(property: CategorisableProperty): boolean {
+  const source = property.source_name?.trim().toLowerCase()
+  return source ? LISTING_PORTALS.has(source) : false
 }
 
 function daysBetween(from: Date, isoDate: string): number | null {
@@ -70,7 +99,12 @@ export function categorise(
   property: CategorisableProperty,
   now: Date = new Date()
 ): PropertyCategory {
-  const market: MarketStatus = property.listing_type === "purchase" ? "for_sale" : "off_market"
+  const market: MarketStatus =
+    property.listing_type === "purchase"
+      ? "for_sale"
+      : isLiveAdvertisement(property)
+        ? "let_listed"
+        : "off_market"
 
   const expiry = property.hmo_licence_expiry ?? null
   const daysToExpiry = expiry ? daysBetween(now, expiry) : null
@@ -120,9 +154,25 @@ export function isServed(property: CategorisableProperty): boolean {
   return Boolean(property.licensed_hmo) || property.licence_status === "expired"
 }
 
+/**
+ * Whether the advertised rent may be shown, and what it means.
+ *
+ * On a let_listed HMO the rent is achieved income on an operating property —
+ * worth showing a buyer, as evidence. It is never the property's price, and no
+ * view should offer it as one; the price of one of these is whatever the owner
+ * would accept, which is the point of making contact.
+ */
+export function rentIsEvidence(property: CategorisableProperty, now: Date = new Date()): boolean {
+  return categorise(property, now).market === "let_listed" && property.price_pcm != null
+}
+
 /** Human-readable labels, so the UI and any export agree on wording. */
 export const MARKET_LABELS: Record<MarketStatus, string> = {
   for_sale: "For sale",
+  // Deliberately describes the owner's action, not an offer to the reader. "To
+  // let" would read as an invitation to rent it; this is a buyer's signal that
+  // the HMO is operating and the owner is active.
+  let_listed: "Existing HMO · owner letting",
   off_market: "Off market",
 }
 
