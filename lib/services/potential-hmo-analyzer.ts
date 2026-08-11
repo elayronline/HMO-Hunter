@@ -17,6 +17,8 @@ export interface HMOAnalysisResult {
   hmoSuitabilityScore: number
   dealScore: number
   dealScoreBreakdown: DealScoreBreakdown
+  contactabilityBreakdown: ContactabilityBreakdown
+  contactabilityScore: number
   potentialOccupants: number
   lettableRooms: number
   requiresMandatoryLicensing: boolean
@@ -39,6 +41,7 @@ export interface HMOAnalysisResult {
   hasContactInfo: boolean
 }
 
+/** Deal quality. Every component describes the property — see lib/types/database.ts. */
 export interface DealScoreBreakdown {
   floorAreaEfficiency: number      // 0-15 points
   epcRatingScore: number           // 0-15 points
@@ -46,7 +49,14 @@ export interface DealScoreBreakdown {
   lettableRoomsScore: number       // 0-15 points
   complianceScore: number          // 0-10 points
   yieldScore: number               // 0-15 points
-  contactDataScore: number         // 0-20 points (title owner + licence holder info)
+  yieldBasis: "measured" | "regional_estimate"
+}
+
+/** How reachable the owner is. Not a property quality, so not in the score. */
+export interface ContactabilityBreakdown {
+  titleOwner: number               // 0-10
+  licenceHolder: number            // 0-5
+  contactDetails: number           // 0-5
 }
 
 // Minimum space standards (UK HMO regulations)
@@ -160,12 +170,23 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
     epcAnalysis,
     requiresMandatoryLicensing,
     estimatedYield,
-    hasTitleOwnerInfo,
-    hasLicenceHolderInfo,
-    hasContactInfo
+    // The rent behind the yield is a city average, not this building's rent.
+    property.estimated_rent_per_room != null && property.estimated_rent_per_room > 0
+      ? "measured"
+      : "regional_estimate"
   )
 
-  const dealScore = Object.values(dealScoreBreakdown).reduce((a, b) => a + b, 0)
+  // How reachable the owner is, kept out of the deal score. It says nothing
+  // about the property and was worth 20 of its 100 points.
+  const contactabilityBreakdown = {
+    titleOwner: hasTitleOwnerInfo ? 10 : 0,
+    licenceHolder: hasLicenceHolderInfo ? 5 : 0,
+    contactDetails: hasContactInfo ? 5 : 0,
+  }
+
+  const dealScore = Object.values(dealScoreBreakdown)
+    .filter((v): v is number => typeof v === "number")
+    .reduce((a, b) => a + b, 0)
   const hmoSuitabilityScore = isPotentialHMO ? Math.min(100, Math.round(dealScore)) : 0
 
   // Determine classification
@@ -198,6 +219,8 @@ export function analyzePropertyForHMO(property: Property): HMOAnalysisResult {
     hmoSuitabilityScore,
     dealScore,
     dealScoreBreakdown,
+    contactabilityBreakdown,
+    contactabilityScore: Object.values(contactabilityBreakdown).reduce((a, b) => a + b, 0),
     potentialOccupants,
     lettableRooms,
     requiresMandatoryLicensing,
@@ -316,9 +339,7 @@ function calculateDealScoreBreakdown(
   epcAnalysis: ReturnType<typeof analyzeEPC>,
   requiresMandatoryLicensing: boolean,
   estimatedYield: number,
-  hasTitleOwnerInfo: boolean,
-  hasLicenceHolderInfo: boolean,
-  hasContactInfo: boolean
+  yieldBasis: "measured" | "regional_estimate"
 ): DealScoreBreakdown {
   // Floor area efficiency (0-15)
   let floorAreaEfficiency = 0
@@ -342,9 +363,15 @@ function calculateDealScoreBreakdown(
   else lettableRoomsScore = 3
 
   // Compliance score (0-10) - simpler = better
+  // article_4_status, not the deprecated article_4_area boolean. The boolean is
+  // false both for "checked, nothing there" and "never checked", so scoring on
+  // it gave a property in an unexamined council the same 10 points as one
+  // verified clear. `unknown` now costs part of the difference, because an
+  // unchecked planning position is a risk rather than an absence of one.
   let complianceScore = 10
   if (property.conservation_area) complianceScore -= 3
-  if (property.article_4_area) complianceScore -= 7 // Should already be excluded, but just in case
+  if (property.article_4_status === "in_force") complianceScore -= 7
+  else if (property.article_4_status !== "none_found") complianceScore -= 3
   if (epcAnalysis.improvementPotential === "high") complianceScore -= 2
   complianceScore = Math.max(0, complianceScore)
 
@@ -357,25 +384,6 @@ function calculateDealScoreBreakdown(
   else if (estimatedYield >= 4) yieldScore = 4
   else yieldScore = 2
 
-  // Contact/Owner data score (0-20) - CRITICAL for "Ready to Go"
-  // This is the key differentiator for top-ranked properties
-  let contactDataScore = 0
-
-  // Title owner information (0-10)
-  if (hasTitleOwnerInfo) {
-    contactDataScore += 10
-  }
-
-  // Licence holder information (0-5)
-  if (hasLicenceHolderInfo) {
-    contactDataScore += 5
-  }
-
-  // Contact details (email/phone/address) (0-5)
-  if (hasContactInfo) {
-    contactDataScore += 5
-  }
-
   return {
     floorAreaEfficiency,
     epcRatingScore,
@@ -383,7 +391,7 @@ function calculateDealScoreBreakdown(
     lettableRoomsScore,
     complianceScore,
     yieldScore,
-    contactDataScore,
+    yieldBasis,
   }
 }
 

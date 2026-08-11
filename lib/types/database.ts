@@ -233,6 +233,16 @@ export type PlanningConstraint = {
   reference?: string
 }
 
+/**
+ * How good the deal is. Every component describes the property.
+ *
+ * contactDataScore used to sit here and carried 20 of the 100 points, which
+ * meant a property scored higher because we happened to hold the owner's email
+ * address. That measures our data coverage, not the deal, and it ranked
+ * well-enriched properties above better ones. It is now reported separately as
+ * contactability, which is a real and useful thing to know — just not a
+ * statement about the building.
+ */
 export type DealScoreBreakdown = {
   floorAreaEfficiency: number      // 0-15 points
   epcRatingScore: number           // 0-15 points
@@ -240,7 +250,19 @@ export type DealScoreBreakdown = {
   lettableRoomsScore: number       // 0-15 points
   complianceScore: number          // 0-10 points
   yieldScore: number               // 0-15 points
-  contactDataScore: number         // 0-20 points (title owner + licence + contact)
+  /**
+   * Whether the yield behind yieldScore rests on a measured rent or a city
+   * average. The estimate is a regional figure applied to a specific building,
+   * so a score built on it is a guide and must not be shown as a property fact.
+   */
+  yieldBasis: "measured" | "regional_estimate"
+}
+
+/** How reachable the owner is. Separate from whether the deal is any good. */
+export type ContactabilityBreakdown = {
+  titleOwner: number               // 0-10
+  licenceHolder: number            // 0-5
+  contactDetails: number           // 0-5
 }
 
 export type PropertyFilters = {
