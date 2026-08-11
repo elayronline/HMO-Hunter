@@ -133,7 +133,6 @@ export default function HMOHunterPage() {
   const [floorAreaBandFilter, setFloorAreaBandFilter] = useState<"under_90" | "90_120" | "120_plus" | null>(null)
   const [yieldBandFilter, setYieldBandFilter] = useState<"low" | "medium" | "high" | null>(null)
   const [epcBandFilter, setEpcBandFilter] = useState<"good" | "needs_upgrade" | null>(null)
-  const [minDealScore, setMinDealScore] = useState<number>(0)
 
   // Phase 6 - TA Sourcing filters
   const [minBedrooms, setMinBedrooms] = useState<number>(0)
@@ -431,7 +430,6 @@ export default function HMOHunterPage() {
           licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
           showPotentialHMOs,
           hmoClassification: hmoClassificationFilter,
-          minDealScore: minDealScore > 0 ? minDealScore : undefined,
           floorAreaBand: floorAreaBandFilter,
           yieldBand: yieldBandFilter,
           epcBand: epcBandFilter,
@@ -494,7 +492,6 @@ export default function HMOHunterPage() {
     licenceTypeFilter,
     showPotentialHMOs,
     hmoClassificationFilter,
-    minDealScore,
     floorAreaBandFilter,
     yieldBandFilter,
     epcBandFilter,
@@ -524,7 +521,6 @@ export default function HMOHunterPage() {
         licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
         showPotentialHMOs,
         hmoClassification: hmoClassificationFilter,
-        minDealScore: minDealScore > 0 ? minDealScore : undefined,
         floorAreaBand: floorAreaBandFilter,
         yieldBand: yieldBandFilter,
         epcBand: epcBandFilter,
@@ -562,7 +558,6 @@ export default function HMOHunterPage() {
     setFloorAreaBandFilter(null)
     setYieldBandFilter(null)
     setEpcBandFilter(null)
-    setMinDealScore(0)
     setActiveSegment("all")
     setLicenceExpiryEnabled(false)
     setLicenceExpiryMonthRange([1, 12])
@@ -994,7 +989,6 @@ export default function HMOHunterPage() {
               floorAreaBandFilter,
               yieldBandFilter,
               epcBandFilter,
-              minDealScore,
               // Phase 6 - TA Sourcing
               minBedrooms,
               minBathrooms,
@@ -1016,7 +1010,6 @@ export default function HMOHunterPage() {
               setFloorAreaBandFilter(filters.floorAreaBandFilter as any)
               setYieldBandFilter(filters.yieldBandFilter as any)
               setEpcBandFilter(filters.epcBandFilter as any)
-              setMinDealScore(filters.minDealScore)
               // Phase 6 - TA Sourcing
               if (filters.minBedrooms !== undefined) setMinBedrooms(filters.minBedrooms)
               if (filters.minBathrooms !== undefined) setMinBathrooms(filters.minBathrooms)
@@ -1486,25 +1479,6 @@ export default function HMOHunterPage() {
                             <SelectItem value="needs_upgrade">Needs Upgrade (E/F/G)</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-
-                      {/* Min Deal Score */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                          Min Deal Score: {minDealScore > 0 ? minDealScore : "Any"}
-                        </label>
-                        <Slider
-                          value={[minDealScore]}
-                          onValueChange={([value]) => setMinDealScore(value)}
-                          min={0}
-                          max={100}
-                          step={5}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-slate-400 mt-1">
-                          <span>0</span>
-                          <span>100</span>
-                        </div>
                       </div>
                     </div>
                   )}

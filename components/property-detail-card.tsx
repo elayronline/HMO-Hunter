@@ -214,17 +214,6 @@ export function PropertyDetailCard({
               {property.listing_type === "purchase" ? "asking" : "/mo"}
             </span>
           </div>
-          {property.deal_score && (
-            <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded text-sm font-bold",
-              property.deal_score >= 70 ? "bg-emerald-100 text-emerald-700" :
-              property.deal_score >= 50 ? "bg-amber-100 text-amber-700" :
-              "bg-red-100 text-red-700"
-            )}>
-              <Zap className="w-3.5 h-3.5" />
-              {property.deal_score}
-            </div>
-          )}
         </div>
 
 

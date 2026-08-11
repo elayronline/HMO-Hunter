@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, TrendingUp, Wrench, Home, Ruler, Bath, Utensils
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import type { Property, DealScoreBreakdown } from "@/lib/types/database"
+import type { Property } from "@/lib/types/database"
 
 interface PotentialHMODetailPanelProps {
   property: Property
@@ -68,8 +68,6 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
 
   const config = classificationConfig[property.hmo_classification]
   const Icon = config.icon
-
-  const breakdown = property.deal_score_breakdown as DealScoreBreakdown | null
 
   // Non-premium users see locked state
   if (!isPremium) {
@@ -150,7 +148,6 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
           <div className="text-left">
             <div className={`font-semibold ${config.color}`}>{config.label}</div>
             <div className="text-xs text-slate-600">
-              Deal Score: {property.deal_score}/100
             </div>
           </div>
         </div>
@@ -173,28 +170,6 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
 
       {isOpen && (
         <div className="px-4 pb-4 space-y-4 border-t border-white/50">
-          {/* Deal Score Breakdown */}
-          {breakdown && (
-            <div className="pt-4">
-              <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Deal Score Breakdown
-              </h4>
-              <div className="space-y-2">
-                <ScoreBar label="Floor Area Efficiency" score={breakdown.floorAreaEfficiency} maxScore={20} />
-                <ScoreBar label="EPC Rating" score={breakdown.epcRatingScore} maxScore={15} />
-                <ScoreBar label="Licensing Upside" score={breakdown.licensingUpside} maxScore={15} />
-                <ScoreBar label="Lettable Rooms" score={breakdown.lettableRoomsScore} maxScore={15} />
-                <ScoreBar label="Compliance" score={breakdown.complianceScore} maxScore={15} />
-                <ScoreBar label="Yield Potential" score={breakdown.yieldScore} maxScore={20} />
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-700">Total Deal Score</span>
-                <span className="text-lg font-bold text-teal-600">{property.deal_score}/100</span>
-              </div>
-            </div>
-          )}
-
           {/* Space & Layout */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg p-3">

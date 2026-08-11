@@ -36,7 +36,6 @@ export interface SearchFilters {
   floorAreaBandFilter: string | null
   yieldBandFilter: string | null
   epcBandFilter: string | null
-  minDealScore: number
   // Phase 6 - TA Sourcing filters
   minBedrooms: number
   minBathrooms: number

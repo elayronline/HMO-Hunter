@@ -330,11 +330,6 @@ export function PipelineBoard({}: PipelineBoardProps) {
                         {deal.property?.bedrooms && (
                           <span>{deal.property.bedrooms} bed</span>
                         )}
-                        {deal.property?.deal_score && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            Score: {deal.property.deal_score}
-                          </Badge>
-                        )}
                         {deal.property?.epc_rating && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0">
                             EPC {deal.property.epc_rating}

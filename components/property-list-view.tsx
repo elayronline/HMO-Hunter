@@ -6,7 +6,7 @@ import { BedDouble, Bath, MapPin, TrendingUp, ShieldCheck, Clock, AlertTriangle,
 import { PropertyImage } from "@/components/property-image"
 import type { Property } from "@/lib/types/database"
 
-type SortKey = "price_asc" | "price_desc" | "yield_desc" | "bedrooms_desc" | "deal_score_desc" | "newest"
+type SortKey = "price_asc" | "price_desc" | "yield_desc" | "bedrooms_desc" | "newest"
 
 const PAGE_SIZE = 48
 
@@ -52,8 +52,6 @@ function getSortValue(property: Property, key: SortKey): number {
       return -(property.rental_yield ?? 0)
     case "bedrooms_desc":
       return -(property.bedrooms ?? 0)
-    case "deal_score_desc":
-      return -(property.deal_score ?? 0)
     case "newest":
       return property.created_at ? -new Date(property.created_at).getTime() : 0
     default:
@@ -62,7 +60,6 @@ function getSortValue(property: Property, key: SortKey): number {
 }
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "deal_score_desc", label: "Best Deal Score" },
   { value: "price_asc", label: "Price: Low to High" },
   { value: "price_desc", label: "Price: High to Low" },
   { value: "yield_desc", label: "Highest Yield" },
@@ -76,7 +73,7 @@ export const PropertyListView = memo(function PropertyListView({
   loading,
   savedPropertyIds,
 }: PropertyListViewProps) {
-  const [sortKey, setSortKey] = useState<SortKey>("deal_score_desc")
+  const [sortKey, setSortKey] = useState<SortKey>("yield_desc")
   const [page, setPage] = useState(1)
 
   // Reset to page 1 when properties change
@@ -220,15 +217,6 @@ export const PropertyListView = memo(function PropertyListView({
 
                 {/* Metrics row */}
                 <div className="mt-2.5 flex items-center gap-3">
-                  {property.deal_score != null && (
-                    <span className={`flex items-center gap-1 text-xs font-semibold ${
-                      property.deal_score >= 70 ? "text-green-600" :
-                      property.deal_score >= 40 ? "text-amber-600" : "text-red-500"
-                    }`}>
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      {property.deal_score}/100
-                    </span>
-                  )}
                   {property.rental_yield != null && (
                     <span className="text-xs text-teal-700 font-medium">
                       {property.rental_yield.toFixed(1)}% yield

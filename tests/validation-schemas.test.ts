@@ -242,12 +242,10 @@ describe("propertyFiltersSchema", () => {
   it("should coerce string numbers", () => {
     const result = propertyFiltersSchema.safeParse({
       minPrice: "100000",
-      minDealScore: "75",
     })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.minPrice).toBe(100000)
-      expect(result.data.minDealScore).toBe(75)
     }
   })
 
@@ -263,13 +261,6 @@ describe("propertyFiltersSchema", () => {
       yieldBand: "high",
     })
     expect(result.success).toBe(true)
-  })
-
-  it("should reject deal score over 100", () => {
-    const result = propertyFiltersSchema.safeParse({
-      minDealScore: 150,
-    })
-    expect(result.success).toBe(false)
   })
 
   it("should reject negative min price", () => {

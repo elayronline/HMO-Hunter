@@ -131,7 +131,6 @@ export const propertyFiltersSchema = z.object({
   licenceTypeFilter: z.string().optional(),
   showPotentialHMOs: z.coerce.boolean().optional(),
   hmoClassification: z.enum(["ready_to_go", "value_add"]).optional(),
-  minDealScore: z.coerce.number().int().min(0).max(100).optional(),
   floorAreaBand: z.enum(["under_90", "90_120", "120_plus"]).optional(),
   yieldBand: z.enum(["low", "medium", "high"]).optional(),
   epcBand: z.enum(["good", "needs_upgrade"]).optional(),

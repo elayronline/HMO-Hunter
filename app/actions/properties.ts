@@ -192,10 +192,6 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       }
 
       // Min Deal Score filter - only applies to potential HMOs but doesn't exclude licensed
-      if (validatedFilters.minDealScore && validatedFilters.minDealScore > 0) {
-        // Show properties that either meet the deal score OR are licensed HMOs
-        query = query.or(`deal_score.gte.${validatedFilters.minDealScore},licensed_hmo.eq.true`)
-      }
 
       // Floor Area Band filter
       if (validatedFilters.floorAreaBand) {
