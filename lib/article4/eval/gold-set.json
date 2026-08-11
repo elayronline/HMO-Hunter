@@ -826,43 +826,43 @@
       "slug": "manchester",
       "name": "Manchester",
       "gssCode": "E08000003",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "City-wide",
         "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://www.manchester.gov.uk/info/500207/planning_and_regeneration/4847/article_4_direction_changing_the_use_of_your_property",
+        "quote": "In Manchester you need planning permission to let a house out to more than two unrelated people, if the house is currently not used as a House in Multiple Occupation. This because the Council has used a legal process called an Article 4 Direction which means that development, which in other places would not usually need planning permission, does in Manchester."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T19:45:00.000Z",
+      "notes": "Manchester City Council's own page, read through the Internet Archive because manchester.gov.uk returns 403 to every direct fetch method tried. The words are the council's; the archive is only the delivery route, so this is not the pipeline's own source. No commencement date is stated on the page."
     },
     {
       "slug": "middlesbrough",
       "name": "Middlesbrough",
       "gssCode": "E06000002",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": null
+        "forceState": "in_force",
+        "extent": "Entire borough, excluding the mayoral development area of the Middlesbrough Development Corporation",
+        "commencedOn": "2025-02-08"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.middlesbrough.gov.uk/media/sqllakvb/article-4-hmos-notice-of-confirmation-may-2024.pdf",
+        "quote": "SCHEDULE 2 Land compromising the entire area of the Borough of Middlesbrough shown edged red on the attached map but excluding the area designated as the Mayoral development area for the Middlesbrough Development Corporation shown hatched blue on the attached map. THIS DIRECTION is made under article 4(1) of the Order and in accordance with Schedule 3 of the Order and shall come into force, if confirmed, on 8 February 2025."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T19:45:00.000Z",
+      "notes": "Quoted from the sealed direction itself — the primary document, not a summary of it. Middlesbrough's HTML pages return 403 but files under /media/ do not, so the notice PDF was fetched directly and its text extracted (letter spacing from PDF kerning normalised; wording otherwise unaltered, including the council's own 'compromising' for 'comprising'). Another made-versus-in-force gap: made non-immediately on 5 February 2024, confirmed May 2024, in force 8 February 2025."
     },
     {
       "slug": "milton-keynes",
