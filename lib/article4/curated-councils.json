@@ -1,0 +1,447 @@
+{
+  "version": 1,
+  "source": "council-verified",
+  "councils": [
+    {
+      "slug": "bath-and-north-east-somerset",
+      "name": "Bath and North East Somerset",
+      "gssCode": "E06000022",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City of Bath only — not district-wide",
+          "extent": "City of Bath only — not district-wide",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.bathnes.gov.uk/policy-and-documents-library/article-4-directions",
+          "quote": "This page explains why we use these restrictions, commonly called Article 4 Directions, and supplies the documents describing our local Article 4 Directions. [list includes] Houses in Multiple Occupation (HMOs) in Bath"
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "birmingham",
+      "name": "Birmingham",
+      "gssCode": "E08000025",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide — entire city council area",
+          "extent": "City-wide — entire city council area",
+          "commencedOn": "2020-06-08",
+          "endedOn": null,
+          "sourceUrl": "https://www.birmingham.gov.uk/info/20054/local_plan_documents/1933/city-wide_article_4_direction_relating_to_houses_in_multiple_occupation_hmos/5",
+          "quote": "From Monday 8 June 2020 an Article 4 Direction applies across the entire city council area which removes permitted development rights for the conversion of C3 dwellings to C4 small HMOs."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "brighton-and-hove",
+      "name": "Brighton and Hove",
+      "gssCode": "E06000043",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide (excludes the South Downs National Park area, a separate planning authority)",
+          "extent": "City-wide (excludes the South Downs National Park area, a separate planning authority)",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.brighton-hove.gov.uk/planning/planning-applications/planning-permission-houses-multiple-occupation",
+          "quote": "The Article 4 Direction means that you need planning permission for houses everywhere within the city to change from 'a dwelling house' (Use Class C3) to a 'House in Multiple Occupation' (Use Class C4)."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "bristol",
+      "name": "Bristol, City of",
+      "gssCode": "E06000023",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Lawrence Hill, Ashley, Cabot, Cotham and Clifton East (2011); Clifton West and Redland (2012); Avonmouth Village (2020). New areas in Brislington, Frome Vale, Purdown, Southmead and Horfield, St George and Westbury Park take effect 1 January 2027.",
+          "extent": "Lawrence Hill, Ashley, Cabot, Cotham and Clifton East (2011); Clifton West and Redland (2012); Avonmouth Village (2020). New areas in Brislington, Frome Vale, Purdown, Southmead and Horfield, St George and Westbury Park take effect 1 January 2027.",
+          "commencedOn": "2011-12-11",
+          "endedOn": null,
+          "sourceUrl": "https://www.bristol.gov.uk/residents/planning-and-building-regulations/planning-applications/check-if-you-need-planning-permission/restrictions-on-permitted-development-article-4-directions",
+          "quote": "A permitted development right within these areas has been removed from 11 December 2011. You need a planning application for a change of use between a dwelling house (Use Class C3) and a small House in Multiple Occupation (Use Class C4)."
+        },
+        {
+          "name": "New HMO Article 4 directions — Brislington, Frome Vale, Purdown, Southmead and Horfield, St George, Westbury Park",
+          "extent": "Parts of Brislington, Frome Vale, Purdown, Southmead and Horfield, St George and Westbury Park",
+          "commencedOn": "2027-01-01",
+          "endedOn": null,
+          "sourceUrl": "https://www.bristol.gov.uk/residents/planning-and-building-regulations/planning-applications/check-if-you-need-planning-permission/restrictions-on-permitted-development-article-4-directions",
+          "quote": "New restrictions on permitted development (known as Article 4 Directions) have been confirmed for parts of Brislington, Frome Vale, Purdown, Southmead and Horfield, St George, and Westbury Park. From 1 January 2027, you'll need planning permission for a change of use from a dwelling house (use Class C3) to a small house in multiple occupation (use Class C4) in these areas."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "charnwood",
+      "name": "Charnwood",
+      "gssCode": "E07000130",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Loughborough only — not borough-wide",
+          "extent": "Loughborough only — not borough-wide",
+          "commencedOn": "2012-02-12",
+          "endedOn": null,
+          "sourceUrl": "https://www.charnwood.gov.uk/pages/hmo",
+          "quote": "However, in 2011 we removed rights across Loughborough for the change of use from a family dwelling to an HMO. This planning control, which is called an Article 4 Direction, means that any change of use from a family dwelling in Loughborough to an HMO after February 12, 2012, will always require planning permission."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "coventry",
+      "name": "Coventry",
+      "gssCode": "E08000026",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Eleven wards — Cheylesmore, Earlsdon, Foleshill, Lower Stoke, Radford, St Michael's, Sherbourne, Wainbody, Whoberley, Westwood and Upper Stoke",
+          "extent": "Eleven wards — Cheylesmore, Earlsdon, Foleshill, Lower Stoke, Radford, St Michael's, Sherbourne, Wainbody, Whoberley, Westwood and Upper Stoke",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.coventry.gov.uk/housing-enforcement/hmo-licensing/4",
+          "quote": "To move from C3 to C4 will require planning permission in certain wards of Coventry. The Wards are: Cheylesmore, Earlsdon, Foleshill, Lower Stoke, Radford, St. Michael's, Sherbourne, Wainbody, Whoberley, Westwood and Upper Stoke."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "durham",
+      "name": "County Durham",
+      "gssCode": "E06000047",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Defined areas — Durham City; Framwellgate Moor, Newton Hall and Pity Me; Mount Oswald, Carrville and Belmont. A countywide direction commences 17 August 2026.",
+          "extent": "Defined areas — Durham City; Framwellgate Moor, Newton Hall and Pity Me; Mount Oswald, Carrville and Belmont. A countywide direction commences 17 August 2026.",
+          "commencedOn": "2016-09-17",
+          "endedOn": null,
+          "sourceUrl": "https://www.durham.gov.uk/article/2499/Multiple-occupancy-homes",
+          "quote": "An Article 4 Direction has been confirmed for a defined area of Durham City for HMOs. This means you will need planning permission to convert a family home into an HMO. It came into force on 17 September 2016."
+        },
+        {
+          "name": "Countywide HMO Article 4 direction",
+          "extent": "Whole of County Durham",
+          "commencedOn": "2026-08-17",
+          "endedOn": null,
+          "sourceUrl": "https://www.durham.gov.uk/article/34149/News-New-Article-4-measures-confirmed-to-control-HMOs",
+          "quote": "All comments received as part of the consultation have been carefully considered and the Article 4 has now been confirmed, meaning that the new measures will come into place from Monday 17 August 2026."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "kingston-upon-hull",
+      "name": "Kingston upon Hull, City of",
+      "gssCode": "E06000010",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Specific areas only — the 2013 area plus additional areas added in 2019, including Anlaby Road through to Hessle Road (Newington and St Andrews)",
+          "extent": "Specific areas only — the 2013 area plus additional areas added in 2019, including Anlaby Road through to Hessle Road (Newington and St Andrews)",
+          "commencedOn": "2013-10-09",
+          "endedOn": null,
+          "sourceUrl": "https://www.hull.gov.uk/planning-applications/article-4-directions/5",
+          "quote": "On 9 October 2013, a direction was made under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995, as amended. The direction removes permitted development consisting of a change of use of a building to a use falling within Class C4 (houses in multiple occupation)... Planning permission will therefore be required for change of use from Class C3 to Class C4. The Article 4 direction applies to a specific area"
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "lancaster",
+      "name": "Lancaster",
+      "gssCode": "E07000121",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Lancaster wards of Bulk, Castle, John O'Gaunt, Marsh, Scotforth East, Scotforth West, Skerton East, Skerton West, and the village of Galgate",
+          "extent": "Lancaster wards of Bulk, Castle, John O'Gaunt, Marsh, Scotforth East, Scotforth West, Skerton East, Skerton West, and the village of Galgate",
+          "commencedOn": "2021-11-10",
+          "endedOn": null,
+          "sourceUrl": "https://www.lancaster.gov.uk/planning/planning-advice/designations-and-constraints?chapter=5",
+          "quote": "Article 4 Direction to Control Houses in Multiple Occupation (3-6 Occupants) (came into force on 10 November 2021)"
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "leeds",
+      "name": "Leeds",
+      "gssCode": "E08000035",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Named wards only — Adel and Wharfedale, Armley, Beeston Hill and Holbeck, Bramley and Stanningley, Burmantofts and Richmond Hill, Chapel Allerton, City and Hunslet, Gipton and Harehills, Headingley, Horsforth, Hyde Park and Woodhouse, Kirkstall, Moortown and others",
+          "extent": "Named wards only — Adel and Wharfedale, Armley, Beeston Hill and Holbeck, Bramley and Stanningley, Burmantofts and Richmond Hill, Chapel Allerton, City and Hunslet, Gipton and Harehills, Headingley, Horsforth, Hyde Park and Woodhouse, Kirkstall, Moortown and others",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.leeds.gov.uk/planning/planning-policy/supplementary-planning-documents-and-guidance/houses-in-multiple-occupation-article-4-direction",
+          "quote": "We have an Article 4 Direction (PDF 583 KB) in place to prevent communities from becoming imbalanced. The Article 4 direction removes permitted development rights within the following areas:"
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "leicester",
+      "name": "Leicester",
+      "gssCode": "E06000016",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Designated Article 4 areas of the city, extended since 2013",
+          "extent": "Designated Article 4 areas of the city, extended since 2013",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.leicester.gov.uk/planning-environment-and-building-control/planning-applications/check-if-you-need-planning-permission/houses-multiple-occupation-hmos-planning-permission-and-article-4-directions",
+          "quote": "You usually do not need to apply for planning permission to convert a family house into a small house in multiple occupation (HMO) for up to 6 people. This is known as a permitted development right. However, if your property is in an area covered by an Article 4 Direction you will need to apply for planning permission. We usually refuse applications for new HMOs in Article 4 areas of Leicester."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "lincoln",
+      "name": "Lincoln",
+      "gssCode": "E07000138",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Whole of the City of Lincoln council area",
+          "extent": "Whole of the City of Lincoln council area",
+          "commencedOn": "2016-03-01",
+          "endedOn": null,
+          "sourceUrl": "https://www.lincoln.gov.uk/houses-multiple-occupation/hmo-article-4-formal-process",
+          "quote": "On 1st March 2016 the City of Lincoln Council introduced an Article 4 Direction within the City of Lincoln which means that you need planning permission to convert a family dwelling to a House in Multiple Occupation (HMO). ... Planning permission will therefore be required for change of use from Class C3 to C4 from 1st March 2016."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "manchester",
+      "name": "Manchester",
+      "gssCode": "E08000003",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide",
+          "extent": "City-wide",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://web.archive.org/web/2026/https://www.manchester.gov.uk/info/500207/planning_and_regeneration/4847/article_4_direction_changing_the_use_of_your_property",
+          "quote": "In Manchester you need planning permission to let a house out to more than two unrelated people, if the house is currently not used as a House in Multiple Occupation. This because the Council has used a legal process called an Article 4 Direction which means that development, which in other places would not usually need planning permission, does in Manchester."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T19:45:00.000Z"
+    },
+    {
+      "slug": "middlesbrough",
+      "name": "Middlesbrough",
+      "gssCode": "E06000002",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Entire borough, excluding the mayoral development area of the Middlesbrough Development Corporation",
+          "extent": "Entire borough, excluding the mayoral development area of the Middlesbrough Development Corporation",
+          "commencedOn": "2025-02-08",
+          "endedOn": null,
+          "sourceUrl": "https://www.middlesbrough.gov.uk/media/sqllakvb/article-4-hmos-notice-of-confirmation-may-2024.pdf",
+          "quote": "SCHEDULE 2 Land compromising the entire area of the Borough of Middlesbrough shown edged red on the attached map but excluding the area designated as the Mayoral development area for the Middlesbrough Development Corporation shown hatched blue on the attached map. THIS DIRECTION is made under article 4(1) of the Order and in accordance with Schedule 3 of the Order and shall come into force, if confirmed, on 8 February 2025."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T19:45:00.000Z"
+    },
+    {
+      "slug": "newcastle-upon-tyne",
+      "name": "Newcastle upon Tyne",
+      "gssCode": "E08000021",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Certain parts of the city — three separate directions",
+          "extent": "Certain parts of the city — three separate directions",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.newcastle.gov.uk/services/planning-building-and-development/planning-guidance/houses-multiple-occupation-hmos",
+          "quote": "However, Newcastle City Council has since introduced several Article 4 Directions which remove those permitted development rights. This means that in certain parts of the Newcastle, planning permission is required to change use from Class C3 (dwellinghouses) to Class C4 (HMO)."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "nottingham",
+      "name": "Nottingham",
+      "gssCode": "E06000018",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide — applies across the Nottingham area",
+          "extent": "City-wide — applies across the Nottingham area",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.nottinghamcity.gov.uk/hmopermitteddevelopment",
+          "quote": "Article 4 Direction means that you need to obtain planning permission to convert a family dwelling to an HMO with between 3 and 6 unrelated people sharing in the Nottingham area."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "oxford",
+      "name": "Oxford",
+      "gssCode": "E07000178",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Whole Oxford City Council area",
+          "extent": "Whole Oxford City Council area",
+          "commencedOn": "2012-02-25",
+          "endedOn": null,
+          "sourceUrl": "https://www.oxford.gov.uk/planning-policy/planning-control-houses-multiple-occupation",
+          "quote": "An Article 4 Direction came into force on 25 February 2012 that introduced local planning controls for HMOs in the whole Oxford City Council area."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "plymouth",
+      "name": "Plymouth",
+      "gssCode": "E06000026",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Named neighbourhoods only",
+          "extent": "Named neighbourhoods only",
+          "commencedOn": "2012-09-14",
+          "endedOn": null,
+          "sourceUrl": "https://www.plymouth.gov.uk/planning-permission-and-houses-multiple-occupation-hmo",
+          "quote": "This means you'll have to apply for planning permission if you want to change a house (C3) to a small HMO (C4) in the following neighbourhoods: ... The changes don't apply to houses that were already being used as a HMO before the change came into force on 14 September 2012."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "portsmouth",
+      "name": "Portsmouth",
+      "gssCode": "E06000044",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide",
+          "extent": "City-wide",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.portsmouth.gov.uk/services/development-and-planning/planning-policy/supplementary-planning-documents/planning-houses-in-multiple-occupation/hmo-planning-permission-and-licensing-requirements/",
+          "quote": "In Portsmouth a specific direction has been introduced, an 'Article 4 Direction. This means planning permission is required for all new HMOs. In most other parts of the country a homeowner can change a family dwelling into an HMO without planning permission. This is not the case in Portsmouth."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "preston",
+      "name": "Preston",
+      "gssCode": "E07000123",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — made 29 January 2026, non-immediate",
+          "extent": null,
+          "commencedOn": "2027-02-15",
+          "endedOn": null,
+          "sourceUrl": "https://www.preston.gov.uk/article/12132/Article-4-Direction-on-HMOs",
+          "quote": "The Article 4 Direction relating to HMOs, made on Thursday 29 January 2026, will introduce greater planning control over the creation of HMOs by removing permitted development rights to convert a dwellinghouse (Use Class C3) into a House in Multiple Occupation (HMO) (Use Class C4) within designated parts of Preston's urban area. ... As a non-immediate Article 4 Direction, the Direction would not come into effect until Monday, 15 February 2027, should the direction be confirmed by the Council."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "reading",
+      "name": "Reading",
+      "gssCode": "E06000038",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Parts of Park, Redlands and Katesgrove wards, plus all properties fronting Jesse Terrace in Abbey ward",
+          "extent": "Parts of Park, Redlands and Katesgrove wards, plus all properties fronting Jesse Terrace in Abbey ward",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.reading.gov.uk/planning-and-building-control/article-4-directions/",
+          "quote": "Article 4 Direction is in place covering parts of Park, Redlands and Katesgrove Wards, which removes normal rights to convert a house (C3 use) into a small house in multiple occupation (C4 use). This means you will need planning permission to convert a house (C3) to a small house in multiple occupation (C4) within the area shown on the Article 4 map."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "sheffield",
+      "name": "Sheffield",
+      "gssCode": "E08000019",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Designated Article 4 area only — not city-wide",
+          "extent": "Designated Article 4 area only — not city-wide",
+          "commencedOn": "2011-12-10",
+          "endedOn": null,
+          "sourceUrl": "https://www.sheffield.gov.uk/planning-development/planning-permission-hmo",
+          "quote": "We made an Article 4 direction involving Houses in Multiple Occupation (HMOs) in 2011. A statutory objection period ran from 9 December 2010 to 7 January 2011. The Article 4 Direction was confirmed and came into force on 10 December 2011."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "warwick",
+      "name": "Warwick",
+      "gssCode": "E07000222",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Whole of Leamington Spa — not district-wide",
+          "extent": "Whole of Leamington Spa — not district-wide",
+          "commencedOn": "2012-04-01",
+          "endedOn": null,
+          "sourceUrl": "https://www.warwickdc.gov.uk/info/20794/supplementary_planning_documents_and_other_guidance/272/hmo_article_4_direction",
+          "quote": "The HMO Article 4 Direction (2MB, PDF) came into effect on 1st April 2012. The effect of the Direction is that a planning application is required to be made to Warwick District Council for the change of use of a building from a dwelling house (Planning Use Class C3) to a small HMO (Planning Use Class C4) in Leamington Spa. ... The Direction applies to the whole of Leamington Spa. Outside of these areas, a planning application for the change of use of a building from Use Class C3 to Use Class C4 is not required."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "wolverhampton",
+      "name": "Wolverhampton",
+      "gssCode": "E08000031",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — City-wide",
+          "extent": "City-wide",
+          "commencedOn": "2017-09-14",
+          "endedOn": null,
+          "sourceUrl": "https://www.wolverhampton.gov.uk/planning/planning-policies/small-houses-multiple-occupation-article-4-direction",
+          "quote": "On 13 September 2016 City of Wolverhampton Council made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) (England) Order 2015 (as amended). On 13 September 2017 City of Wolverhampton Council confirmed this Direction and the Direction came into force on 14 September 2017."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "york",
+      "name": "York",
+      "gssCode": "E06000014",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Main urban area of York",
+          "extent": "Main urban area of York",
+          "commencedOn": null,
+          "endedOn": null,
+          "sourceUrl": "https://www.york.gov.uk/Article4DirectionHMO",
+          "quote": "There is an 'Article 4 direction' in place for Houses in Multiple Occupation (HMO) in York. The Article 4 Direction in relation to Houses in Multiple Occupation (HMO) removes 'permitted development rights' for this type of specified types of development and requires a planning application to be submitted to change a property from a dwelling house into an HMO."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T18:45:00.000Z"
+    }
+  ]
+}

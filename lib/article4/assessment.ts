@@ -137,10 +137,15 @@ export function buildCaveats(council: CouncilRecord, jurisdiction: Jurisdiction)
   }
 
   if (council.coverageLevel === "directions_only") {
+    // A curated council contributes no rows to the feed's direction count, so
+    // counting them would announce "publishes 0 directions" about a council we
+    // have just confirmed operates one.
     caveats.push(
-      `${council.name} publishes ${council.directionCount} HMO Article 4 direction${
-        council.directionCount === 1 ? "" : "s"
-      } but no boundary data. Properties here cannot be checked against a map — treat the area as restricted until you confirm the extent with the council.`
+      council.directionCount === 0
+        ? `${council.name} operates an HMO Article 4 direction confirmed from the council's own published information, but publishes no boundary data. Properties here cannot be checked against a map — treat the area as restricted until you confirm the extent with the council.`
+        : `${council.name} publishes ${council.directionCount} HMO Article 4 direction${
+            council.directionCount === 1 ? "" : "s"
+          } but no boundary data. Properties here cannot be checked against a map — treat the area as restricted until you confirm the extent with the council.`
     )
   }
 

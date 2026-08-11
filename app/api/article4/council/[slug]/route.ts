@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { buildCouncilAssessment } from "@/lib/article4/assessment"
 import { forRedistribution } from "@/lib/article4/provenance"
 import { forceStateOn, type CouncilRecord, type CoverageLevel } from "@/lib/article4/registry"
+import { applyCuratedOverlay, curatedBySlug, assessCurated } from "@/lib/article4/curated"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -106,13 +107,39 @@ export async function GET(
       .eq("council_slug", slug)
       .order("commenced_on", { ascending: true })
 
-    const assessment = buildCouncilAssessment(toCouncilRecord(row, directions ?? []))
-    const payload = internal ? assessment : forRedistribution(assessment)
+    // Curated knowledge is folded in before the assessment is composed, so a
+    // council the national feed has never heard of still reports its Article 4.
+    // Additive only: this cannot turn a feed positive into a negative.
+    const record = applyCuratedOverlay(toCouncilRecord(row, directions ?? []))
+    const assessment = buildCouncilAssessment(record)
+
+    // Serve the council's own words alongside the verdict. A user challenged on
+    // this should be able to read the sentence it rests on, not just be told.
+    const curated = curatedBySlug(slug)
+    const withCitations = curated
+      ? {
+          ...assessment,
+          councilVerified: {
+            verifiedBy: curated.verifiedBy,
+            verifiedAt: curated.verifiedAt,
+            directions: assessCurated(curated).states.map(({ direction, state }) => ({
+              name: direction.name,
+              extent: direction.extent,
+              commencedOn: direction.commencedOn,
+              forceState: state,
+              sourceUrl: direction.sourceUrl,
+              quote: direction.quote,
+            })),
+          },
+        }
+      : assessment
+
+    const payload = internal ? withCitations : forRedistribution(withCitations)
 
     return NextResponse.json(payload, {
       headers: {
         "Cache-Control": "public, max-age=3600",
-        "X-Data-Source": row.source ?? "planning.data.gov.uk",
+        "X-Data-Source": record.source ?? "planning.data.gov.uk",
       },
     })
   } catch (error) {
