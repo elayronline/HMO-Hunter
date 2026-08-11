@@ -373,12 +373,21 @@
       "gssCode": "E07000010",
       "directions": [
         {
-          "name": "HMO Article 4 direction — Central Wisbech — Wisbech Riverside and Wisbech South wards. A non-immediate direction covers wider Wisbech (Wisbech North; Wisbech Walsoken and Waterless; Leverington and Wisbech Rural).",
+          "name": "Immediate HMO Article 4 direction — central Wisbech (Wisbech Riverside and Wisbech South)",
           "extent": "Central Wisbech — Wisbech Riverside and Wisbech South wards. A non-immediate direction covers wider Wisbech (Wisbech North; Wisbech Walsoken and Waterless; Leverington and Wisbech Rural).",
           "commencedOn": "2025-02-24",
           "endedOn": null,
           "sourceUrl": "https://web.archive.org/web/2026/https://www.fenland.gov.uk/article/18372/Article-4-Direction-Small-Houses-in-Multiple-Occupation-HMOs-in-Wisbech",
           "quote": "On 24 February 2025, Full Council approved an Immediate Article 4 Direction for central Wisbech (comprising of the following wards Wisbech Riverside and Wisbech South) and a Non-Immediate Article 4 Direction for wider Wisbech ... Following public consultation on 20 August 2025 the Immediate Article 4 Direction for central Wisbech was confirmed. The Non-Immediate Article 4 Direction for wider Wisbech is due to be confirmed in February 2026."
+        },
+        {
+          "name": "Non-immediate HMO Article 4 direction — outer Wisbech",
+          "extent": "Outer Wisbech — Wisbech North, Wisbech Walsoken and Waterlees, and Leverington and Wisbech Rural",
+          "commencedOn": null,
+          "endedOn": null,
+          "confirmedOn": "2026-02-16",
+          "sourceUrl": "https://moderngov.fenland.gov.uk/ieDecisionDetails.aspx?Id=1099",
+          "quote": "To confirm the Non-Immediate Article 4 Direction for outer Wisbech (Wisbech North, Wisbech Walsoken and Waterlees, and Leverington and Wisbech Rural), which removes permitted development rights allowing the change of use from a dwellinghouse (Use Class C3) to a small house in multiple occupation (HMO) (Use Class C4), and vice versa, without the need for planning permission."
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",

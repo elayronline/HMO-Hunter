@@ -495,7 +495,7 @@
       "expected": {
         "hasHmoArticle4": true,
         "forceState": "in_force",
-        "extent": "Central Wisbech — Wisbech Riverside and Wisbech South wards. A non-immediate direction covers wider Wisbech (Wisbech North; Wisbech Walsoken and Waterless; Leverington and Wisbech Rural).",
+        "extent": "Central Wisbech (Wisbech Riverside, Wisbech South) since 24 February 2025, plus outer Wisbech (Wisbech North; Wisbech Walsoken and Waterlees; Leverington and Wisbech Rural) confirmed 16 February 2026",
         "commencedOn": "2025-02-24"
       },
       "evidence": {
@@ -505,7 +505,7 @@
       },
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z",
-      "notes": "Both kinds in one council: immediate for the centre, non-immediate for the surrounding wards. The archived page predates February 2026, so the wider-Wisbech direction's current status is unconfirmed and is not claimed here."
+      "notes": "Both kinds in one council: immediate for the centre, non-immediate for the surrounding wards. Re-checked on 2026-08-11 via the council committee system, because fenland.gov.uk returns 403 to direct requests and the Internet Archive holds only a pre-February-2026 snapshot: the outer Wisbech direction WAS CONFIRMED on 16 February 2026, eight days inside the twelve-month window a non-immediate direction has. The decision record states the alternative considered was \"not confirming the Non-Immediate Article 4 Direction and allowing it to lapse\". The exact commencement date is not stated in any source that could be read, so it is left null — which forceStateOn treats as in force, the correct answer today."
     },
     {
       "slug": "great-yarmouth",
