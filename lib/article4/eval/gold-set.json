@@ -7,64 +7,64 @@
       "slug": "barking-and-dagenham",
       "name": "Barking and Dagenham",
       "gssCode": "E09000002",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2012-05-14"
+        "forceState": "in_force",
+        "extent": "Not stated on the council's Article 4 page",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
+        "independentSource": true,
         "sourceUrl": "https://www.lbbd.gov.uk/planning-building-control-and-local-land-charges/planning-guidance-and-policies/article-4",
-        "quote": null
+        "quote": "Article 4 directions remove permitted development rights within a certain area. You'll need to seek planning permission to carry out building work in these areas: houses in multiple occupation (HMOs) ... Houses in Multiple Occupation Notice of Making Article 4 Direction May 2011"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "The council lists an HMO Article 4 among its directions and links the May 2011 notice of making. Extent and in-force date are not stated on the page, so both left null. Two further non-immediate directions were approved by Cabinet on 11 November 2025 and 'will be introduced in November 2026'."
     },
     {
       "slug": "barnet",
       "name": "Barnet",
       "gssCode": "E09000003",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Borough-wide — anywhere in Barnet",
         "commencedOn": "2016-05-29"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://open.barnet.gov.uk/download/2ylny/jyz",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://www.barnet.gov.uk/planning-and-building-control/planning-policies-and-local-plan/small-houses-multiple-occupation-hmo",
+        "quote": "From 29 May 2016 planning permission is required anywhere in Barnet (Use Class C4) where between 3 and 6 unrelated people share basic amenities such as a kitchen or bathroom."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Read via the Internet Archive because barnet.gov.uk serves a bot-detection page to direct requests. Commencement matches the seeded date. Made non-immediately and confirmed at Planning Committee on 23 May 2015, a year before it bound anyone."
     },
     {
       "slug": "basingstoke-and-deane",
       "name": "Basingstoke and Deane",
       "gssCode": "E07000084",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2011-06-16"
+        "forceState": "in_force",
+        "extent": "Basingstoke town and Chineham, plus the villages of Old Basing, Oakley and Sherborne St John, including West End",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.basingstoke.gov.uk/content/page/26656/Article%204%20Direction%2013%20June%202011.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.basingstoke.gov.uk/HMO-planning-control",
+        "quote": "The article four direction, when in enforce, will mean that planning permission will be needed for conversion to a HMO in Basingstoke town and Chineham and the surrounding villages of Old Basing, Oakley and Sherborne St John, including West End."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "The council's page still carries its 2011 future-tense wording ('when in enforce'), so it confirms extent but not the in-force date; date left null rather than taken from the feed."
     },
     {
       "slug": "bath-and-north-east-somerset",
@@ -112,43 +112,43 @@
       "slug": "blackpool",
       "name": "Blackpool",
       "gssCode": "E06000009",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Whole of the Blackpool borough",
         "commencedOn": "2022-10-03"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.blackpool.gov.uk/Residents/Planning-environment-and-community/Planning/Article-4-directions/HMO/Article-4-Direction-HMO.aspx",
+        "quote": "This Article 4 Direction removes the permitted development rights that allow dwelling houses (a C3 planning use) to convert into small houses in multiple occupancy (HMOs, a C4 planning use) without the need for planning permission. The Direction applies across the whole of the Blackpool borough. The Order was sealed on 1 October 2021 and confirmed on 23 February 2022. The Direction came into force on 3 October 2022."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Three distinct dates a year apart — sealed, confirmed, in force. Commencement matches the seeded date."
     },
     {
       "slug": "brent",
       "name": "Brent",
       "gssCode": "E09000005",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Borough-wide, excluding site allocations within the Church End Growth Area and the other seven Growth Areas",
         "commencedOn": "2022-11-01"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.brent.gov.uk/-/media/files/resident-documents/planning-and-bc-documents/confirmation-order-004-_redacted.pdf?rev=da00503d608a4ee5bbed3a991aa76f4f",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.brent.gov.uk/planning-and-building-control/planning-policy-and-guidance/article-4-directions",
+        "quote": "The council confirmed an Article 4 direction to require planning permission for change of use from Residential (use Class C3) to Houses in Multiple Occupation (use Class C4) on 3 February 2022. It came into effect on 1 November 2022."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Confirmed and in-force dates nine months apart. Commencement matches the seeded date."
     },
     {
       "slug": "brighton-and-hove",
@@ -196,85 +196,85 @@
       "slug": "burnley",
       "name": "Burnley",
       "gssCode": "E07000117",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Named wards — Bank Hall, Brunshaw, Daneshouse with Stoneyholme, Gannow, Gawthorpe, Queensgate and others",
         "commencedOn": "2024-10-14"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://burnley.gov.uk/wp-content/uploads/2024/06/Burnley-Council-HMO-Article-4-Direction-Confirmed-June-2024.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://burnley.gov.uk/planning/planning-permission/do-i-need-planning-permission/article4/article-4-direction-houses-in-multiple-occupation/",
+        "quote": "Following confirmation in April 2024 the Article 4 Direction came into effect on the 14th October 2024. The 'non-immediate' Article 4 Direction removes permitted development rights for the change of use from Use Class C3 (dwellinghouses) to C4 (Houses of Multiple Occupation (HMO)) in the following wards within the borough."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "The council names it a 'non-immediate' direction explicitly: made 13 October 2023, confirmed 19 June 2024, in force 14 October 2024. Commencement matches the seeded date."
     },
     {
       "slug": "bury",
       "name": "Bury",
       "gssCode": "E08000002",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Entire Borough of Bury",
         "commencedOn": "2026-07-16"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.bury.gov.uk/asset-library/article-4-direction-and-plan-dated-10.07.26.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.bury.gov.uk/planning-building-control/planning-permission/article-4-directions",
+        "quote": "The Council has introduced an Article 4 Direction that removes the permitted development rights for the material change of use from a dwellinghouse (Use Class C3) to a small House in Multiple Occupation (Use Class C4). This means that planning permission is now required to create any new Houses in Multiple Occupation (HMOs) within the Borough. ... The Direction applies to the entire Borough of Bury and came into effect on 16 July 2026."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Rare immediate direction — effect first, consultation after: 'Although the Article 4 Direction takes effect immediately, the Council is required to carry out public consultation before deciding whether to confirm.' Worth re-checking, because an immediate direction lapses if not confirmed within six months. Commencement matches the seeded date."
     },
     {
       "slug": "cambridge",
       "name": "Cambridge",
       "gssCode": "E07000008",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "known-missing",
       "expected": {
-        "hasHmoArticle4": true,
-        "forceState": "unknown",
+        "hasHmoArticle4": false,
+        "forceState": "proposed",
         "extent": null,
         "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.cambridge.gov.uk/media/frxliorv/6e-motion-improving-houses-in-multiple-occupation-hmo-in-cambridge.docx",
+        "quote": "To ask officers to prepare a report on the case for and feasibility of one or more Article 4 directions within the city boundaries, which would remove Permitted Development rights for smaller HMOs (currently Use Class C4) and instead require planning permission for all new builds and for change of use for existing housing stock to be used as HMOs for more than two people and to report back to a suitable member meeting by the summer of 2025."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Believed to operate an HMO Article 4 but absent from the national feed. CONFIRM on the council site; this is the case the eval set exists to measure."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "SEED WAS WRONG. The council is still assessing whether an Article 4 is feasible, so nothing exists — earlier than 'proposed' in truth, but proposed is the closest state available. Quoted from the council's own motion document; cambridge.gov.uk renders its pages via JavaScript so the HTML could not be read, but files under /media/ are served directly."
     },
     {
       "slug": "canterbury",
       "name": "Canterbury",
       "gssCode": "E07000106",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2016-02-25"
+        "forceState": "in_force",
+        "extent": "Designated HMO Article 4 direction areas — the council directs users to check whether a property falls in one",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.canterbury.gov.uk/housing/houses-multiple-occupation-hmo/change-use-property-hmo",
+        "quote": "If you want to change the use of a property to an HMO then you should check to see if the property is an HMO Article 4 direction area. If it is, then you need planning permission to change the use of a house from a 'C3 dwelling house' to a 'C4 HMO' where between three and six unrelated people share a kitchen and or bathroom."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "A thinner quote than most: it confirms HMO Article 4 areas exist and what they require, but names no extent or date. Both left null rather than filled from the feed."
     },
     {
       "slug": "charnwood",
@@ -301,22 +301,22 @@
       "slug": "cheltenham",
       "name": "Cheltenham",
       "gssCode": "E07000078",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2019-10-08"
+        "forceState": "in_force",
+        "extent": "St Paul's ward only — the single Article 4 direction in the borough",
+        "commencedOn": "2020-06-11"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.cheltenham.gov.uk/planning-and-building/planning-permission/find-out-if-you-need-planning-permission/article-4-directions/",
+        "quote": "In Cheltenham there is currently only one Article 4 direction. This Article 4 direction withdraws permitted development rights to change the use of a building from a Class C3 use (dwelling house) to a Class C4 use (house in multiple occupation). This Article 4 direction only applies in the geographical area edged in red on the direction itself."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY: the council states the direction came into force on 11 June 2020, while the feed seeded 2019-10-08 — the date Cabinet confirmed it. The feed's start-date is not reliably the commencement date."
     },
     {
       "slug": "coventry",
@@ -343,64 +343,64 @@
       "slug": "crawley",
       "name": "Crawley",
       "gssCode": "E07000226",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Ten named locations",
         "commencedOn": "2022-06-15"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://crawley.gov.uk/sites/default/files/2022-06/Article%204%20Notice%20Aintree%20and%20Epsom%20Road.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://crawley.gov.uk/council-information/news-and-events/latest-news/2022/planning-permission-now-needed-houses-multiple",
+        "quote": "The Article 4 Directions were approved by the council's Cabinet in February 2021. They were 'non-immediate', meaning that a 12-month notification period and a consultation had to be carried out before they could take effect. These have now been completed and the Directions came into force on Wednesday (15 June)."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Sixteen months between approval and effect. Commencement matches the seeded date. Crawley is the council cited in registry.ts as the reason directions-only coverage cannot gate a negative."
     },
     {
       "slug": "dartford",
       "name": "Dartford",
       "gssCode": "E07000107",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Urban area north of the A2, in force since 8 December 2025. The area south of the A2 follows on 9 December 2026.",
         "commencedOn": "2025-12-08"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.dartford.gov.uk/downloads/file/2829/hmo-north",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.dartford.gov.uk/policy-1/new-planning-rules-houses-multiple-occupation-dartford/4",
+        "quote": "If your property was occupied as a small HMO (six occupants or less) after December 8, 2025 where it is north of the A2 (see link above), it will require planning permission for the change of use. ... If your property is occupied as a small HMO (6 occupants or less) after December 9, 2026 where it is south of the A2 (see link above) it will require planning permission for the change of use."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Split borough: one half restricted today, the other from 9 December 2026. A property south of the A2 is unrestricted now and caught in four months — exactly the case a boolean cannot express. Commencement matches the seeded date for the northern direction."
     },
     {
       "slug": "doncaster",
       "name": "Doncaster",
       "gssCode": "E08000017",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Town, Town Fields, Wheatley, Hexthorpe, Balby, Wheatley Hills, Intake and Belle Vue",
         "commencedOn": "2019-10-14"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.doncaster.gov.uk/services/planning/houses-in-multiple-occupation-article-4-direction",
+        "quote": "The council has made an Article 4 Direction relating to houses in multiple occupation (HMO), this came into force 14 October 2019. ... The Article 4 Direction (HMO) applies to land within the areas of Town, Town Fields, Wheatley, Hexthorpe, Balby, Wheatley Hills, Intake and Belle Vue shown edged red on the map below."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Made 9 August 2018, in force 14 October 2019. Commencement matches the seeded date."
     },
     {
       "slug": "durham",
@@ -463,175 +463,175 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "notes": "NOT VERIFIED. Council states a borough-wide HMO Article 4 confirmed October 2013, but every route to a quotable council source failed: enfield.gov.uk HMO pages return nothing extractable, the direction PDFs return 403, new.enfield.gov.uk has no matching page, and the archived Article 4 page describes only a published dataset — which is Open Digital Planning output and therefore too close to the pipeline's own source to count."
     },
     {
       "slug": "exeter",
       "name": "Exeter",
       "gssCode": "E07000041",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2011-10-31"
+        "forceState": "in_force",
+        "extent": "Part of Exeter — the 2010 direction area, concentrated around the university",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://exeter.gov.uk/media/5g0ba52s/a4d13-article-4-direction-hmo.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://exeter.gov.uk/planning-services/current-planning-policy/supplementary-planning-documents-and-planning-statements/hmo-spd-and-article-4-direction/",
+        "quote": "In 2010 we established an \"Article 4 Direction\" over part of Exeter to restrict the \"permitted development rights\" of homeowners to change their properties from dwellings (Use Class C3 of the Town and Country Planning (Use Classes) Order 1987 (as amended)) to Houses in Multiple Occupation (HMOs) (Use Class C4). This means that, within the area covered by the Article 4 Direction, planning permission is required to change a house to an HMO."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Read via the Internet Archive; exeter.gov.uk pages return no extractable text directly. A replacement was confirmed on 28 March 2024 with 'non-immediate effect', so the area may widen — the council does not state the new commencement date on this page. Only the year is given for the 2010 direction, so commencedOn is left null."
     },
     {
       "slug": "fenland",
       "name": "Fenland",
       "gssCode": "E07000010",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2025-02-26"
+        "forceState": "in_force",
+        "extent": "Central Wisbech — Wisbech Riverside and Wisbech South wards. A non-immediate direction covers wider Wisbech (Wisbech North; Wisbech Walsoken and Waterless; Leverington and Wisbech Rural).",
+        "commencedOn": "2025-02-24"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.fenland.gov.uk/article/18372/Article-4-Direction-Small-Houses-in-Multiple-Occupation-HMOs-in-Wisbech",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://www.fenland.gov.uk/article/18372/Article-4-Direction-Small-Houses-in-Multiple-Occupation-HMOs-in-Wisbech",
+        "quote": "On 24 February 2025, Full Council approved an Immediate Article 4 Direction for central Wisbech (comprising of the following wards Wisbech Riverside and Wisbech South) and a Non-Immediate Article 4 Direction for wider Wisbech ... Following public consultation on 20 August 2025 the Immediate Article 4 Direction for central Wisbech was confirmed. The Non-Immediate Article 4 Direction for wider Wisbech is due to be confirmed in February 2026."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Both kinds in one council: immediate for the centre, non-immediate for the surrounding wards. The archived page predates February 2026, so the wider-Wisbech direction's current status is unconfirmed and is not claimed here."
     },
     {
       "slug": "great-yarmouth",
       "name": "Great Yarmouth",
       "gssCode": "E07000145",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Whole of the Borough, except the Broads Authority executive area",
         "commencedOn": "2012-09-24"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://www.great-yarmouth.gov.uk/article/8191/Article-4-direction-houses-in-multiple-occupation",
+        "quote": "The direction removes permitted development rights for development consisting of a change of the use of a building to a use falling within Class C4 (houses in multiple occupation) from a use falling within Class C3 (dwellinghouses). Planning permission is therefore required for a change of use of this nature. The direction came into force on 24 September 2012 and applies to the whole of the Borough, with the exception of the Broads Authority executive area."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Commencement matches the seeded date. The Broads Authority is a separate planning authority, so the carve-out is jurisdictional rather than discretionary."
     },
     {
       "slug": "halton",
       "name": "Halton",
       "gssCode": "E06000006",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Certain parts of the borough — the council states there is not enough evidence for borough-wide coverage",
         "commencedOn": "2025-09-24"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www3.halton.gov.uk/Documents/planning/article4/Sealed%20Article%204%20Direction%20with%20Maps.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www3.halton.gov.uk/Pages/business/EnvironmentalHealth/PrivateHousing.aspx",
+        "quote": "From Wednesday 24th September 2025 an article 4 direction will apply to certain parts of the borough. This declaration removes permitted development rights and means planning permission will now be required to convert any dwelling house to a HMO in those areas."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Commencement matches the seeded date."
     },
     {
       "slug": "harlow",
       "name": "Harlow",
       "gssCode": "E07000073",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2013-07-01"
+        "forceState": "in_force",
+        "extent": "Entire town",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.harlow.gov.uk/sites/default/files/documents/Morley%20Grove%20Article%204%20direction%20%28numbers%201%20to%2056%29.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.harlow.gov.uk/planning-and-building-control/planning-permission/article-4-directions",
+        "quote": "Some areas of Harlow are covered by Article 4 directions. If your property is in one of these areas, you'll need planning permission for works that would normally be covered by permitted development rights. ... There are Article 4 directions in Harlow affecting: HMO conversions across the entire town"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Extent is explicit, date is not stated on the page, so commencedOn is left null."
     },
     {
       "slug": "hillingdon",
       "name": "Hillingdon",
       "gssCode": "E09000017",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2013-03-24"
+        "forceState": "in_force",
+        "extent": "All parts of the borough since late 2025; previously only the wards of Brunel and Uxbridge South",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.hillingdon.gov.uk/media/3039/order-and-map/pdf/edArticle_4_Order_and_ward_map_1.pdf?m=1597832897160",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://pre.hillingdon.gov.uk/planning-policy/article-4-directions/2",
+        "quote": "It is now necessary to obtain planning permission to convert a dwelling (Use Class C3) to an HMO with 3 or more unrelated people sharing (Use Class C4) in all parts of the borough. Previously, this was only required in the wards of Brunel and Uxbridge South. ... The council decided to implement this Article 4 direction at the Full Council Meeting on 27 November 2025."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY: the feed seeded 2013-03-24, which is the old two-ward direction; the borough-wide one was decided on 27 November 2025. The council gives a decision date but no commencement date, so commencedOn is left null."
     },
     {
       "slug": "hounslow",
       "name": "Hounslow",
       "gssCode": "E09000018",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2023-09-04"
+        "forceState": "in_force",
+        "extent": "Borough-wide",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.hounslow.gov.uk/downloads/file/13696/article-4-direction-and-corresponding-map",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.hounslow.gov.uk/planning-policy/article-4-directions",
+        "quote": "A4D.2 Dwellinghouses (C3) to small HMOs (C4) - borough-wide Article 4 Direction"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Listed among the borough's current directions. The dated wording elsewhere on the page belongs to the Class MA/ZA direction, not this one, so no commencement date is claimed."
     },
     {
       "slug": "ipswich",
       "name": "Ipswich",
       "gssCode": "E07000202",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Parts of 12 wards — Alexandra, Bixley, Bridge, Castle Hill, Gainsborough, Gipping, Holywells, Priory Heath, Rushmere, St John's, St Margaret's, Westgate",
         "commencedOn": "2024-06-01"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.ipswich.gov.uk/sites/ipswich/files/m-files/confirmed_ipswich_borough_council_hmo_article_4_direction_dated_24_november_2023_0.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.ipswich.gov.uk/Article-4-HMO-Post-Confirmation-Notification",
+        "quote": "The confirmed Article 4 Direction, removes existing permitted development rights for material changes of use from dwelling houses (C3 use class) to small houses of multiple occupation (C4 use class) ... The Article 4 Direction, although now confirmed by Full Council, is a non-immediate direction, and it will therefore come into force on the 1 June 2024."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "The council spells the mechanism out: confirmed 24 November 2023, non-immediate, in force 1 June 2024. Commencement matches the seeded date."
     },
     {
       "slug": "kingston-upon-hull",
@@ -658,22 +658,22 @@
       "slug": "kingston-upon-thames",
       "name": "Kingston upon Thames",
       "gssCode": "E09000021",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
-        "hasHmoArticle4": true,
-        "forceState": "unknown",
+        "hasHmoArticle4": false,
+        "forceState": "none",
         "extent": null,
-        "commencedOn": "2022-08-01"
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.kingston.gov.uk/planning-and-building-control/planning-policy/article-4-directions",
+        "quote": "Find current Article 4 Directions in the borough, which restrict the scope of permitted development rights. [list:] Article 4 Direction for Seething Wells Filter Beds ... Article 4 Direction for commercial, business and service use to residential use ... Article 4 Direction for North Lodge and South Lodge"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "SEED WAS WRONG, AND IT EXPOSED A PIPELINE BUG. Kingston's complete list of directions contains no HMO entry — the three are a filter bed, a commercial-to-residential direction and two lodges. The feed classified Kingston as an HMO council because four 'Richmond Road' areas of the commercial-to-residential direction matched the bare `hmo` alternative inside 'Ric(hmo)nd'. Fixed in HMO_PATTERN with a leading word boundary; before that fix this entry would have scored as the pipeline's first false positive."
     },
     {
       "slug": "lancaster",
@@ -742,22 +742,22 @@
       "slug": "lewisham",
       "name": "Lewisham",
       "gssCode": "E09000023",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": null
+        "forceState": "in_force",
+        "extent": "Whole borough via two directions — southern wards (Bellingham, Downham, Grove Park, Whitefoot) since 7 March 2020, the remainder since 19 January 2024",
+        "commencedOn": "2020-03-07"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords/hmo/article-4-direction-on-small-hmos",
+        "quote": "There are two Article 4 Directions covering the whole borough. The first direction covers Lewisham's Southern Wards (old ward boundaries) and has been in force since 7 March 2020. The second direction covers the remainder of the borough and came into force on 19 January 2024."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Borough-wide only since January 2024; a property outside the southern wards was unrestricted before then."
     },
     {
       "slug": "lincoln",
@@ -784,22 +784,22 @@
       "slug": "liverpool",
       "name": "Liverpool",
       "gssCode": "E08000012",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "1991-06-04"
+        "forceState": "in_force",
+        "extent": "Eleven wards",
+        "commencedOn": "2021-06-17"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://liverpool.gov.uk/planning-and-building-control/planning-permission/planning-permission-for-hmos/",
+        "quote": "If your property is located within an Article 4 area and you want to convert it into a house in multiple occupation (HMO) for three or more people, you now need planning permission. The change in law is in response to an Article 4 directive. Premises in use as HMOs for three or more people in these Wards before 17th June 2021 are not affected by this change."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY, a large one: the feed seeded 1991-06-04, three decades before the HMO direction the council describes. The 1991 record is a different, older direction. Liverpool also contributed two of the spurious 'hmo' substring matches — Richmond Park and Rochmount."
     },
     {
       "slug": "luton",
@@ -868,22 +868,22 @@
       "slug": "milton-keynes",
       "name": "Milton Keynes",
       "gssCode": "E06000042",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2011-06-28"
+        "forceState": "in_force",
+        "extent": "Whole Borough — an urban-area direction from 30 December 2010, extended to the whole borough including Hanslope Park, Olney, Sherington and Danesborough on 23 December 2011",
+        "commencedOn": "2011-12-23"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.milton-keynes.gov.uk/sites/default/files/2026-07/Article%204%20Direction%20Non-Immediate%20-%20Redacted.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.milton-keynes.gov.uk/planning-and-building/planning-policy/houses-multiple-occupation-hmo-planning-policy",
+        "quote": "Milton Keynes has introduced two Article 4 Directions withdrawing the permitted development right for a change of use to a Use Class C4 HMO. This means planning permission is required when converting a dwelling house (C3), or non-residential property, to a Use Class (C4) HMO in the following areas: the urban area (whole of the Borough excluding the wards of Hanslope Park, Olney, Sherington and Danesborough). This Article 4 Direction was introduced on 30 December 2010. the whole Borough ... This Article 4 Direction was introduced on 23 December 2011."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY: the feed seeded 2011-06-28, which matches neither of the two dates the council gives."
     },
     {
       "slug": "newcastle-under-lyme",
@@ -904,7 +904,7 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "notes": "NOT VERIFIED. Ambiguous rather than blocked. The council's directions page says change-of-use rights 'have been removed in one area in the borough' without naming which, and its news page describes a borough-wide HMO direction as still being investigated. Neither supports a verdict."
     },
     {
       "slug": "newcastle-upon-tyne",
@@ -952,43 +952,43 @@
       "slug": "north-somerset",
       "name": "North Somerset",
       "gssCode": "E06000024",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
-        "hasHmoArticle4": true,
-        "forceState": "unknown",
+        "hasHmoArticle4": false,
+        "forceState": "none",
         "extent": null,
-        "commencedOn": "1983-07-14"
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "http://www.n-somerset.gov.uk/my-services/planning-building-control/planning/planning-advice/application-advise/article-four-directions/",
+        "quote": "An Article 4 Direction is a special planning regulation that gives additional planning control in a particular location (like a conservation area). It removes the permitted development rights for works like extensions, porches, replacement windows and doors, or painting the exterior of a building. Article 4 Directions apply in the following three cases: under article 4(1) - to listed buildings only; under article 4(1) - to other buildings; under article 4(2) - to dwelling houses in conservation areas"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "SEED WAS WRONG, AND FOR THE SAME REASON AS KINGSTON. North Somerset's directions are conservation controls over extensions, porches, windows and painting — none about use class. It was seeded machine-positive because of a record named 'Land at the Junction of Beach Road and Richmond Street, Weston-super-Mare', which matched the bare `hmo` inside 'Ric(hmo)nd'. The feed's date of 1983-07-14 is consistent with an old conservation direction."
     },
     {
       "slug": "north-warwickshire",
       "name": "North Warwickshire",
       "gssCode": "E07000218",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Whole of the Borough of North Warwickshire",
         "commencedOn": "2026-03-02"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.northwarks.gov.uk/downloads/file/2901/hmo-article-4",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.northwarks.gov.uk/private-rented-housing/houses-multiple-occupation/2",
+        "quote": "An Article 4 Direction came into effect on 2 March 2026 meaning all new HMO's, regardless of size will require planning permission."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Listed on the council's directions page as 'Small HMO Article 4 Direction - Borough Wide (ART4/2026/001)'. Commencement matches the seeded date."
     },
     {
       "slug": "norwich",
@@ -1183,43 +1183,43 @@
       "slug": "rossendale",
       "name": "Rossendale",
       "gssCode": "E07000125",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Whole of Rossendale",
         "commencedOn": "2025-09-19"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.rossendale.gov.uk/planning-building-control/planning/6",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.rossendale.gov.uk/news/article/10764/supplementary-planning-guidance-to-support-article-4-direction-on-hmos",
+        "quote": "Rossendale Borough Council will publish Supplementary Planning Guidance (SPG) to support the recently introduced Immediate Article 4 Direction relating to small Houses in Multiple Occupation (HMOs). ... following the introduction of the Article 4 Direction which means that planning permission is now required for any new HMO conversions that would previously have been permitted development."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "An immediate direction, effective from 19 September 2025 — commencement matches the seeded date. Immediate directions lapse if not confirmed within six months, so this is worth re-checking."
     },
     {
       "slug": "rother",
       "name": "Rother",
       "gssCode": "E07000064",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2011-02-04"
+        "forceState": "in_force",
+        "extent": "Bexhill",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://rdcpublic.blob.core.windows.net/website-uploads/2025/07/A4D68_MapNotice.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.rother.gov.uk/planning-and-building-control/do-i-need-planning-permission/planning-information/article-4-directions/documents-and-data/",
+        "quote": "A4D68 – Rother District Council (Houses in Multiple Occupation, Bexhill, East Sussex) Article 4 Direction, 2011"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Listed by reference among the district's directions. Only the year is given, so commencedOn is left null; the feed's 2011-02-04 is consistent with it."
     },
     {
       "slug": "ryedale",
@@ -1240,49 +1240,49 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+      "notes": "NOT VERIFIED. Ryedale District Council was abolished in 2023 and North Yorkshire Council publishes no consolidated Article 4 list for the former district, so absence cannot be demonstrated."
     },
     {
       "slug": "salford",
       "name": "Salford",
       "gssCode": "E08000006",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Almost city-wide — everywhere except the wards of Boothstown and Ellenbrook, Cadishead and Lower Irlam, and Higher Irlam and Peel Green",
         "commencedOn": "2018-11-25"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.salford.gov.uk/media/391571/article-4-direction.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.salford.gov.uk/planning-building-and-regeneration/planning-applications/get-planning-advice/do-i-need-planning-permission/article-4-direction/",
+        "quote": "However, as a result of two separate article 4 directions, from 17 November 2024 the only areas of the city where the change of use of dwellinghouses to small HMOs remains permitted development are the wards of Boothstown and Ellenbrook, Cadishead and Lower Irlam, and Higher Irlam and Peel Green. ... An article 4 direction relating to small HMOs came into force in parts of Salford on 25 November 2018."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Two directions: parts of the city from 25 November 2018, extended to nearly all of it from 17 November 2024. commencedOn records the earlier one, matching the seeded date."
     },
     {
       "slug": "sefton",
       "name": "Sefton",
       "gssCode": "E08000014",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2017-09-20"
+        "forceState": "in_force",
+        "extent": "Borough-wide — parts of Bootle, Litherland, Seaforth, Waterloo and Southport since 2018, with an immediate direction covering all remaining areas",
+        "commencedOn": "2018-09-20"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.sefton.gov.uk/media/vikfk02x/odparticle4directions.csv",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.sefton.gov.uk/planning-building-control/planning-policy-including-local-plan-and-neighbourhood-planning/article-4-directions/article-4-direction-for-houses-in-multiple-occupation/",
+        "quote": "On 20th September 2017 the Council issued a 'non-immediate' Article 4 direction for HMOs in parts of Bootle, Litherland, Seaforth, Waterloo and Southport. ... The Article 4 Direction was confirmed by Cabinet on 21 June 2018. The Article 4 will be effective from 20 September 2018. ... The Council have implemented an Immediate Article 4 Direction in all remaining areas of Sefton"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY: the feed seeded 2017-09-20, the date the direction was issued; it took effect exactly a year later, on 20 September 2018."
     },
     {
       "slug": "sheffield",
@@ -1324,49 +1324,49 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+      "notes": "NOT VERIFIED. No complete list of directions is published; the planning guidance only mentions Article 4 areas in passing."
     },
     {
       "slug": "southampton",
       "name": "Southampton",
       "gssCode": "E06000045",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2012-03-23"
+        "forceState": "in_force",
+        "extent": "City-wide",
+        "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.southampton.gov.uk/media/leddnlac/article_4_tcm63-360879.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026/https://www.southampton.gov.uk/planning/planning-policy/supplementary-planning/planning-hmo/",
+        "quote": "An Article 4 direction was made in March 2012 which removed permitted development rights to change a family home (C3) into a small HMO (C4)."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Read via the Internet Archive; southampton.gov.uk returns no extractable text and its direction PDF is a scanned image. The page gives only the month, so commencedOn is left null. Extent is city-wide by implication from the SPD threshold text ('a more even distribution across the city') rather than an explicit statement."
     },
     {
       "slug": "southwark",
       "name": "Southwark",
       "gssCode": "E09000028",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Two streets only — Henshaw Street SE17 and Bywater Place SE16",
         "commencedOn": null
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.southwark.gov.uk/planning-and-building-control/planning-policy-and-transport-policy/article-4-directions?chapter=3",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.southwark.gov.uk/planning-environment-and-building-control/planning/planning-policy-and-guidance/article-4/houses",
+        "quote": "You must apply for planning permission if you want to change a house (class C3) to a house in multiple occupation (HMO) for 4 to 6 people (class C4) or from a class C4 back to a class C3. This rule applies to properties in Henshaw Street, SE17."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Worth flagging for the product: a council-level 'yes' for Southwark is close to misleading, since the directions cover two individual streets rather than any broad area. This is exactly why curated councils are held at directions_only and never promoted to boundary coverage."
     },
     {
       "slug": "stevenage",
@@ -1387,7 +1387,7 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "notes": "NOT VERIFIED. The council's Article 4 page links only datasets; the HMO direction notice is a scanned image with no text layer, and the supporting PDF extracts too poorly to quote. Secondary sources say made 19 September 2016, confirmed 24 May 2017, in force 20 September 2017 across all wards — not quoted here because it could not be read from the council's own document."
     },
     {
       "slug": "stoke-on-trent",
@@ -1435,22 +1435,22 @@
       "slug": "tendring",
       "name": "Tendring",
       "gssCode": "E07000076",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2021-12-24"
+        "forceState": "in_force",
+        "extent": "Whole of the Tendring District",
+        "commencedOn": "2013-05-31"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://legacy.tendringdc.gov.uk/sites/default/files/documents/planning/planning%20policy/DistrictHIMOArticle431May2013%20%282%29.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.tendringdc.gov.uk/sub-content-pages/article-4-direction-relating-to-houses-in-multiple-occupation",
+        "quote": "On 8th December 2011, we made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995, as amended. ... We confirmed the Direction on 31st May 2013 and it came into force on that day. Planning permission is therefore now required for change of use from Class C3 to Class C4. The Article 4 Direction applies to the whole of the Tendring District."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "DATE DISCREPANCY, a large one: the feed seeded 2021-12-24, eight years after the council says the direction came into force."
     },
     {
       "slug": "torridge",
@@ -1471,28 +1471,28 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+      "notes": "NOT VERIFIED. No published directions list found."
     },
     {
       "slug": "tower-hamlets",
       "name": "Tower Hamlets",
       "gssCode": "E09000030",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Borough-wide",
         "commencedOn": "2021-01-01"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.towerhamlets.gov.uk/Documents/Planning-and-building-control/Strategic-Planning/HMOsArticle4Direction.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.towerhamlets.gov.uk/lgnl/planning_and_building_control/planning_policy_guidance/Article_4_Directions.aspx",
+        "quote": "The council has confirmed an Article 4 direction. It removes the right to convert residential dwellings (C3) to small HMOs (C4). This was approved by the Mayor in Cabinet on 29 January 2020 and came into force on 1 January 2021."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "Seeded from planning.data.gov.uk — the SAME source the pipeline reads. Confirm against the council's own site and set independentSource before this counts."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T20:30:00.000Z",
+      "notes": "Approved and in force almost a year apart. Commencement matches the seeded date."
     },
     {
       "slug": "warwick",
@@ -1534,7 +1534,7 @@
       },
       "verifiedBy": null,
       "verifiedAt": null,
-      "notes": "Believed to have no HMO Article 4. Confirm — a wrong negative here hides over-claiming."
+      "notes": "NOT VERIFIED. No published directions list found."
     },
     {
       "slug": "wolverhampton",
