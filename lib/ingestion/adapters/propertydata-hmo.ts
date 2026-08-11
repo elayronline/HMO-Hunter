@@ -163,6 +163,12 @@ export class PropertyDataHMOAdapter extends SourceAdapter {
             city: this.getCityFromPostcode(propertyPostcode),
             latitude: lat,
             longitude: lng,
+            // A licence register record, not a rental listing. There is no
+            // "off market" value in listing_type, so this stays "rent" and is
+            // read as off_market by categorise() — the licence data is what
+            // marks it as an HMO worth approaching. This mislabel is why
+            // filtering on listing_type alone would have dropped 227 register
+            // records that were never rentals.
             price_pcm: undefined,
             listing_type: "rent",
             property_type: "HMO",

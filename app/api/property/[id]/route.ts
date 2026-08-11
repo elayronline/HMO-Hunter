@@ -100,10 +100,16 @@ export async function GET(
       }
     }
 
+    // A direct link to a rental listing must 404 rather than render, otherwise
+    // something the platform no longer sources stays reachable by id. Same rule
+    // as isServed(): for sale, or an HMO with licence evidence.
+    // .single() turns the empty result into PGRST116, already handled below as
+    // "Property not found".
     const { data: property, error } = await supabaseAdmin
       .from("properties")
       .select(selectFields)
       .eq("id", id)
+      .or("listing_type.eq.purchase,licensed_hmo.eq.true,licence_status.eq.expired")
       .single()
 
     if (error) {

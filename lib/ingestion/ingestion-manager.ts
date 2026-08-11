@@ -113,6 +113,22 @@ export class IngestionManager {
             validatedPricePcm = undefined
           }
 
+          // Rental listings with no HMO evidence are not opportunities and are
+          // not stored. This is the one place that guarantees it, whatever an
+          // adapter sends: the read layer already hides them, but ingesting
+          // them anyway would keep paying enrichment costs on rows nobody can
+          // see. Licence evidence is what makes a non-sale listing worth
+          // keeping — an existing HMO with an owner to approach — which is the
+          // same rule as isServed() in lib/properties/category.ts.
+          const hasHmoEvidence =
+            Boolean(listing.licence_id) ||
+            (listing.licence_status != null && listing.licence_status !== "none")
+
+          if (validatedListingType !== "purchase" && !hasHmoEvidence) {
+            result.skipped++
+            continue
+          }
+
           const propertyData = {
             title: listing.title,
             address: listing.address,

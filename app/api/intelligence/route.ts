@@ -61,6 +61,8 @@ export async function POST(request: Request) {
       .from("properties")
       .select("*")
       .eq("is_stale", false)
+      // Served properties only — these aggregates drive what buyers are shown.
+      .or("listing_type.eq.purchase,licensed_hmo.eq.true,licence_status.eq.expired")
 
     if (propertyIds && propertyIds.length > 0) {
       query = query.in("id", propertyIds)

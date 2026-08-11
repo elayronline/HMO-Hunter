@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { categorise, type PropertyCategory } from "@/lib/properties/category"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,9 +21,9 @@ export default function UserDashboard() {
   const [properties, setProperties] = useState<any[]>([])
   const [stats, setStats] = useState({
     total: 0,
-    purchase: 0,
-    rent: 0,
-    licensed: 0
+    forSale: 0,
+    licensed: 0,
+    licenceEnding: 0,
   })
 
   // Fetch properties and stats on mount
@@ -50,11 +51,15 @@ export default function UserDashboard() {
         setProperties(mapProperties)
 
         // Calculate stats from fetched data
+        // Counted by opportunity, not tenure. "Rent-to-HMO" is gone; a licence
+        // coming to an end is the number worth watching, because it is the one
+        // that expires whether or not anyone looks at it.
+        const categories: PropertyCategory[] = propData.map((p: any) => categorise(p))
         setStats({
           total: propData.length,
-          purchase: propData.filter((p: any) => p.listing_type === "purchase").length,
-          rent: propData.filter((p: any) => p.listing_type === "rent").length,
-          licensed: propData.filter((p: any) => p.licensed_hmo).length
+          forSale: categories.filter((c) => c.market === "for_sale").length,
+          licensed: categories.filter((c) => c.licence !== "unlicensed").length,
+          licenceEnding: categories.filter((c) => c.licence === "licence_ending").length,
         })
       }
     }
@@ -108,24 +113,24 @@ export default function UserDashboard() {
 
           <Card className="bg-white border-blue-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-blue-700">Purchase</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-700">For sale</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 <Home className="w-5 h-5 text-blue-500" />
-                <span className="text-3xl font-bold text-blue-700">{stats.purchase}</span>
+                <span className="text-3xl font-bold text-blue-700">{stats.forSale}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-purple-200">
+          <Card className="bg-white border-amber-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-purple-700">Rent-to-HMO</CardTitle>
+              <CardTitle className="text-sm font-medium text-amber-700">Licence ending</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-purple-500" />
-                <span className="text-3xl font-bold text-purple-700">{stats.rent}</span>
+                <TrendingUp className="w-5 h-5 text-amber-500" />
+                <span className="text-3xl font-bold text-amber-700">{stats.licenceEnding}</span>
               </div>
             </CardContent>
           </Card>

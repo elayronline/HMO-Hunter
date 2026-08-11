@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { categorise, MARKET_LABELS, LICENCE_LABELS } from "@/lib/properties/category"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -157,16 +158,35 @@ export default function SavedPropertiesPage() {
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
                     <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                      <span className={`text-white text-xs font-bold px-2 py-1 rounded-full ${
-                        property.listing_type === "rent" ? "bg-purple-600" : "bg-blue-600"
-                      }`}>
-                        {property.listing_type === "rent" ? "R2HMO" : "BUY"}
-                      </span>
+                      {/* Market status and licence state, not tenure. The badge
+                          used to read BUY or R2HMO; an off-market licensed HMO
+                          is neither, and it is the one worth approaching. */}
+                      {(() => {
+                        const category = categorise(property)
+                        return (
+                          <>
+                            <span className={`text-white text-xs font-bold px-2 py-1 rounded-full ${
+                              category.market === "for_sale" ? "bg-blue-600" : "bg-slate-600"
+                            }`}>
+                              {MARKET_LABELS[category.market]}
+                            </span>
+                            {category.licence !== "unlicensed" && (
+                              <span className={`text-white text-xs font-bold px-2 py-1 rounded-full ${
+                                category.licence === "licence_ending" ? "bg-amber-600"
+                                  : category.licence === "licence_expired" ? "bg-red-600"
+                                  : "bg-emerald-700"
+                              }`}>
+                                {LICENCE_LABELS[category.licence]}
+                                {category.licence === "licence_ending" && category.daysToExpiry !== null
+                                  ? ` · ${category.daysToExpiry}d`
+                                  : ""}
+                              </span>
+                            )}
+                          </>
+                        )
+                      })()}
                       <span className="bg-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                        {property.listing_type === "purchase"
-                          ? (property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "POA")
-                          : (property.price_pcm ? `£${property.price_pcm.toLocaleString()}/mo` : "POA")
-                        }
+                        {property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "POA"}
                       </span>
                     </div>
                   </div>

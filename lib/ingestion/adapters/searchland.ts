@@ -297,6 +297,8 @@ export class SearchlandAdapter extends SourceAdapter {
       city,
       latitude: record.lat,
       longitude: record.lng,
+      // A licensed HMO from the register, not a rental listing — see the note
+      // in propertydata-hmo.ts. Read as off_market by categorise().
       listing_type: "rent",
       property_type: "HMO",
       bedrooms: sleepingRooms || 5,

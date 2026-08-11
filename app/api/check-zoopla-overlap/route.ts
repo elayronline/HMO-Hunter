@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       // Search Zoopla for this property
       const listings = await zoopla.fetch({
         postcode: property.postcode,
-        listingType: "rent",
+        listingType: "sale",
         radius: 0.25,
         pageSize: 50,
       })

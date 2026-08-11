@@ -25,6 +25,12 @@ export class ZooplaAdapter extends SourceAdapter {
   async fetch(options?: {
     postcode?: string
     area?: string
+    /**
+     * Defaults to "sale". Rentals can still be requested explicitly, because
+     * image and floor-plan enrichment finds an off-market HMO's photos on its
+     * letting listing. Sourcing must never pass "rent": rental rows are barred
+     * from storage by the ingestion manager, not by this adapter.
+     */
     listingType?: "rent" | "sale"
     minBedrooms?: number
     maxBedrooms?: number
@@ -41,7 +47,8 @@ export class ZooplaAdapter extends SourceAdapter {
     const {
       postcode,
       area,
-      listingType = "rent",
+      // Was "rent", which is what put 1,632 rental listings in the table.
+      listingType = "sale",
       minBedrooms,
       maxBedrooms,
       minPrice,
@@ -110,7 +117,10 @@ export class ZooplaAdapter extends SourceAdapter {
           const propertyPostcode = this.normalizePostcode(listing.outcode + " " + (listing.incode || ""))
           const city = listing.county || listing.post_town || this.getCityFromPostcode(propertyPostcode)
 
-          // Determine listing type - check API field first, fallback to URL pattern
+          // Zoopla has been seen to return rentals against a sale query, so the
+          // response is classified rather than trusted. Rentals are still
+          // mapped — enrichment callers want them — and it is the ingestion
+          // manager that refuses to store one as a property.
           const isRental = listing.listing_status === "rent" ||
             listing.listing_status === "to_rent" ||
             (listing.details_url && listing.details_url.toLowerCase().includes("/to-rent/"))
@@ -206,15 +216,15 @@ export class ZooplaAdapter extends SourceAdapter {
   /**
    * Fetch listings by area name (e.g., "Manchester", "Birmingham")
    */
-  async fetchByArea(area: string, listingType: "rent" | "sale" = "rent"): Promise<PropertyListing[]> {
-    return this.fetch({ area, listingType })
+  async fetchByArea(area: string): Promise<PropertyListing[]> {
+    return this.fetch({ area })
   }
 
   /**
    * Fetch listings by postcode with radius
    */
-  async fetchByPostcode(postcode: string, radius: number = 1, listingType: "rent" | "sale" = "rent"): Promise<PropertyListing[]> {
-    return this.fetch({ postcode, radius, listingType })
+  async fetchByPostcode(postcode: string, radius: number = 1): Promise<PropertyListing[]> {
+    return this.fetch({ postcode, radius })
   }
 
   /**

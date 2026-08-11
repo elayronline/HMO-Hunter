@@ -60,35 +60,27 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // HMO Hunter: Only show Licensed HMOs, Potential HMOs, or Expired Licence HMOs - filter out standard listings
     query = query.or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
 
-    // Only apply listing type filter if licence expiry filter is NOT active
-    // When filtering by expiry dates, we want all matching properties regardless of listing type
-    if (validatedFilters.listingType && !licenceExpiryFilterActive) {
-      // Show properties matching listing type
-      // For expired licences, only include if they have the appropriate price field
-      if (validatedFilters.listingType === "purchase") {
-        // Include purchase listings OR expired licences that have a purchase price
-        query = query.or("listing_type.eq.purchase,and(licence_status.eq.expired,purchase_price.not.is.null)")
-      } else {
-        // Include rent listings OR expired licences that have rent price
-        query = query.or("listing_type.eq.rent,and(licence_status.eq.expired,price_pcm.not.is.null)")
-      }
-    }
+    // The platform sources properties to buy. That is anything for sale, plus
+    // any HMO worth approaching an owner about — but never a rental listing
+    // with nothing tying it to an HMO asset.
+    //
+    // Licence evidence is the dividing line, not tenure. A licensed HMO that
+    // happens to be advertised to let is still an existing HMO with an owner
+    // and a licence; a two-bed flat to let is not. Filtering on
+    // listing_type alone would have dropped 227 register records that were
+    // never rentals, and with them most of the licence-expiry dataset.
+    //
+    // Kept in step with isServed() in lib/properties/category.ts, which is the
+    // same rule expressed for a single row.
+    query = query.or("listing_type.eq.purchase,licensed_hmo.eq.true,licence_status.eq.expired")
 
-    // Only apply price filters if licence expiry filter is NOT active
-    // When filtering by expiry dates, price is not the primary criteria
+    // Price therefore always means purchase price. There is no rent branch left
+    // to pick, so the licence-expiry carve-out is the only condition.
     if (validatedFilters.minPrice && !licenceExpiryFilterActive) {
-      if (validatedFilters.listingType === "purchase") {
-        query = query.gte("purchase_price", validatedFilters.minPrice)
-      } else {
-        query = query.gte("price_pcm", validatedFilters.minPrice)
-      }
+      query = query.gte("purchase_price", validatedFilters.minPrice)
     }
     if (validatedFilters.maxPrice && !licenceExpiryFilterActive) {
-      if (validatedFilters.listingType === "purchase") {
-        query = query.lte("purchase_price", validatedFilters.maxPrice)
-      } else {
-        query = query.lte("price_pcm", validatedFilters.maxPrice)
-      }
+      query = query.lte("purchase_price", validatedFilters.maxPrice)
     }
 
     // Apply filters

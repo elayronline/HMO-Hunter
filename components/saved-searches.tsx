@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import { toast } from "@/hooks/use-toast"
 
 export interface SearchFilters {
-  listingType: "rent" | "purchase"
   priceRange: number[]
   propertyTypes: string[]
   selectedLocation: any

@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     .from("properties")
     .select("id, address, postcode, city, owner_name, owner_contact_email, licence_holder_name, licence_holder_email, bedrooms, epc_rating, licence_status, hmo_licence_expiry")
     .in("id", property_ids)
+    .or("listing_type.eq.purchase,licensed_hmo.eq.true,licence_status.eq.expired")
 
   if (!properties || properties.length === 0) {
     return NextResponse.json({ error: "No valid properties found" }, { status: 400 })

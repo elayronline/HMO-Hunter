@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
         address,
         postcode,
         purchase_price,
-        price_pcm,
         listing_type,
         bedrooms,
         primary_image
@@ -120,12 +119,13 @@ export async function POST(request: NextRequest) {
     if (alert_type === "price_drop" && property_id) {
       const { data: property } = await supabase
         .from("properties")
-        .select("purchase_price, price_pcm")
+        .select("purchase_price")
         .eq("id", property_id)
+        .eq("listing_type", "purchase")
         .single()
 
       if (property) {
-        const currentPrice = property.purchase_price || property.price_pcm
+        const currentPrice = property.purchase_price
 
         await supabase
           .from("watched_properties")
