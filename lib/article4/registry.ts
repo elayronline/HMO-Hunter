@@ -44,6 +44,8 @@ export interface Article4DirectionRecord {
   reference: string
   commencedOn: string | null
   endedOn: string | null
+  /** Derived from the dates above — see `forceStateOn`. Never assume `in_force`. */
+  forceState: ForceState
   documentUrl: string | null
   description: string | null
 }
@@ -71,8 +73,24 @@ export interface CouncilRecord {
   /** Normalised join key shared across datasets. */
   matchKey: string
   organisationEntity: number | null
-  /** True when this council publishes any HMO Article 4 record. Display only. */
+  /**
+   * True when this council publishes any HMO Article 4 record at all, in force
+   * or not. Display only — never use this to assert a live restriction, or a
+   * direction that commences next year reads as one that binds today. Use
+   * `hasHmoArticle4InForce` for that.
+   */
   publishesHmoArticle4: boolean
+  /** True only when something published here actually restricts today. */
+  hasHmoArticle4InForce: boolean
+  /**
+   * Made but not yet commenced. Not a restriction today, but a near-certain one
+   * on that date — the buyer-facing point of this whole field.
+   */
+  directionsNotYetInForce: number
+  /** Earliest future commencement date among those, for the dated warning. */
+  nextCommencementDate: string | null
+  /** Retired directions, kept so a lapsed restriction is not read as current. */
+  directionsExpired: number
   /** Only "boundaries" may gate `none_found`. */
   coverageLevel: CoverageLevel
   areaCount: number
@@ -113,6 +131,37 @@ export function dateRange(dates: (string | null | undefined)[]): {
 } {
   const valid = dates.filter((d): d is string => Boolean(d)).sort()
   return { earliest: valid[0] ?? null, latest: valid[valid.length - 1] ?? null }
+}
+
+/**
+ * Whether a direction actually restricts anything on a given date.
+ *
+ * The feed carries `start-date` and `end-date` but says nothing about force —
+ * that has to be derived, and until it was, a direction merely *made* counted
+ * the same as one in force. That is the dominant error in this domain, not an
+ * edge case: Preston made a direction on 29 January 2026 that does not commence
+ * until 15 February 2027, and Stoke-on-Trent's city-wide direction is still only
+ * proposed. Both would have been reported as live restrictions.
+ *
+ * Both boundaries fail closed, consistent with the rest of this module:
+ *
+ *  - A missing `start-date` is treated as in force. Long-standing directions
+ *    routinely omit it, and assuming "not yet" there would silently drop real
+ *    restrictions.
+ *  - `end-date` retires a direction only once it is strictly in the past, so a
+ *    direction ending today still restricts today.
+ */
+export type ForceState = "in_force" | "made_not_in_force" | "expired"
+
+export function forceStateOn(
+  commencedOn: string | null | undefined,
+  endedOn: string | null | undefined,
+  asOf: Date
+): ForceState {
+  const today = asOf.toISOString().slice(0, 10)
+  if (endedOn && endedOn < today) return "expired"
+  if (commencedOn && commencedOn > today) return "made_not_in_force"
+  return "in_force"
 }
 
 async function getJson(url: string, timeoutMs = 60_000): Promise<any | null> {
@@ -226,9 +275,22 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
       reference: d.reference ?? "",
       commencedOn: d["start-date"] || null,
       endedOn: d["end-date"] || null,
+      forceState: forceStateOn(d["start-date"] || null, d["end-date"] || null, now),
       documentUrl: d["document-url"] || d["documentation-url"] || null,
       description: d.description || d.notes || null,
     }))
+
+    // Force state is what makes a restriction real. Areas carry the same dates
+    // as directions and are filtered the same way, so an area whose direction
+    // has not commenced cannot put a property inside a live restriction.
+    const areasInForce = councilAreas.filter(
+      (a) => forceStateOn(a["start-date"] || null, a["end-date"] || null, now) === "in_force"
+    )
+    const directionsInForce = mapped.filter((d) => d.forceState === "in_force")
+    const pending = mapped.filter((d) => d.forceState === "made_not_in_force")
+    const pendingAreas = councilAreas.filter(
+      (a) => forceStateOn(a["start-date"] || null, a["end-date"] || null, now) === "made_not_in_force"
+    )
 
     const { earliest, latest } = dateRange([
       ...councilAreas.map((a) => a["start-date"]),
@@ -247,6 +309,13 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
       organisationEntity:
         councilAreas[0]?.["organisation-entity"] ?? councilDirections[0]?.["organisation-entity"] ?? null,
       publishesHmoArticle4: councilAreas.length > 0 || mapped.length > 0,
+      hasHmoArticle4InForce: areasInForce.length > 0 || directionsInForce.length > 0,
+      directionsNotYetInForce: pending.length,
+      nextCommencementDate: dateRange([
+        ...pending.map((d) => d.commencedOn),
+        ...pendingAreas.map((a) => a["start-date"]),
+      ]).earliest,
+      directionsExpired: mapped.filter((d) => d.forceState === "expired").length,
       coverageLevel,
       areaCount: councilAreas.length,
       areaCountWithGeometry: areasWithGeometry,

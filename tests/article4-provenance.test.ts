@@ -23,6 +23,10 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     matchKey: "example",
     organisationEntity: 1,
     publishesHmoArticle4: false,
+    hasHmoArticle4InForce: false,
+    directionsNotYetInForce: 0,
+    nextCommencementDate: null,
+    directionsExpired: 0,
     coverageLevel: "none",
     areaCount: 0,
     areaCountWithGeometry: 0,
@@ -34,6 +38,12 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     source: "planning.data.gov.uk",
     retrievedAt: "2026-08-10T00:00:00.000Z",
     ...over,
+    // A council that publishes a direction is treated as having it in force
+    // unless a test says otherwise, so cases written before force state was
+    // modelled still mean what they meant. Anything testing the announced /
+    // in-force distinction passes the flag explicitly.
+    hasHmoArticle4InForce:
+      over.hasHmoArticle4InForce ?? over.publishesHmoArticle4 ?? false,
   }
 }
 
@@ -247,5 +257,76 @@ describe("buildCouncilAssessment", () => {
       "england"
     )
     expect(caveats.join(" ")).toMatch(/commencement dates and source documents may be incomplete/i)
+  })
+})
+
+// A direction that binds nobody today must never read as one that does. The
+// buyer-facing failure is symmetric and both directions are costly: reporting a
+// future direction as live tells someone they need permission they do not need;
+// hiding it entirely lets them complete a purchase weeks before it starts.
+describe("announced versus in force", () => {
+  it("does not assert an Article 4 for a direction that has not commenced", () => {
+    const assessment = buildCouncilAssessment(
+      council({
+        name: "Preston",
+        coverageLevel: "directions_only",
+        publishesHmoArticle4: true,
+        hasHmoArticle4InForce: false,
+        directionsNotYetInForce: 1,
+        nextCommencementDate: "2027-02-15",
+        directionCount: 1,
+      })
+    )
+
+    expect(assessment.hmoArticle4.value).toBeNull()
+    expect(assessment.nextCommencement.value).toBe("2027-02-15")
+  })
+
+  it("warns with the commencement date so the reader can act on it", () => {
+    const caveats = buildCaveats(
+      council({
+        name: "Preston",
+        publishesHmoArticle4: true,
+        hasHmoArticle4InForce: false,
+        directionsNotYetInForce: 1,
+        nextCommencementDate: "2027-02-15",
+        coverageLevel: "directions_only",
+      }),
+      "england"
+    )
+
+    const warning = caveats.find((c) => c.includes("not yet in force"))
+    expect(warning).toBeDefined()
+    expect(warning).toContain("2027-02-15")
+    expect(warning).toContain("No permission is required on that basis today")
+  })
+
+  it("still asserts an Article 4 where one is actually in force", () => {
+    const assessment = buildCouncilAssessment(
+      council({
+        name: "Sheffield",
+        coverageLevel: "boundaries",
+        publishesHmoArticle4: true,
+        hasHmoArticle4InForce: true,
+        areaCountWithGeometry: 1,
+      })
+    )
+
+    expect(assessment.hmoArticle4.value).toBe(true)
+  })
+
+  it("flags a lapsed direction rather than presenting it as current", () => {
+    const caveats = buildCaveats(
+      council({
+        name: "Example",
+        publishesHmoArticle4: true,
+        hasHmoArticle4InForce: false,
+        directionsExpired: 2,
+        coverageLevel: "directions_only",
+      }),
+      "england"
+    )
+
+    expect(caveats.some((c) => c.includes("lapsed"))).toBe(true)
   })
 })

@@ -21,6 +21,21 @@
 
 export type GoldStatus = "verified" | "unverified"
 
+/**
+ * What the council has actually done, which a boolean cannot express.
+ *
+ * Verification found this to be the main way ground truth goes wrong: three of
+ * the first ten councils checked had a direction that was made or announced but
+ * bound nobody, and all three had been recorded as having one. `in_force` is the
+ * only state that makes `hasHmoArticle4` true.
+ */
+export type ForceState =
+  | "in_force"
+  | "made_not_in_force"
+  | "proposed"
+  | "none"
+  | "unknown"
+
 export interface GoldEntry {
   slug: string
   name: string
@@ -28,7 +43,10 @@ export interface GoldEntry {
   status: GoldStatus
   seededAs?: string
   expected: {
+    /** True only when a direction restricts today. See `forceState`. */
     hasHmoArticle4: boolean | null
+    /** Required on verified entries — a bare true/false hides "made, not yet live". */
+    forceState: ForceState
     extent: string | null
     commencedOn: string | null
   }
@@ -75,6 +93,8 @@ export interface EvalReport {
   totalEntries: number
   pendingVerification: number
   excludedAsCircular: number
+  /** Verified but contradictory — a "yes" that is not in force, or no force state. */
+  excludedAsInconsistent: number
 
   truePositives: number
   falsePositives: number
@@ -131,6 +151,7 @@ export function scoreGoldSet(
 
   let pending = 0
   let circular = 0
+  let inconsistent = 0
 
   for (const entry of gold.councils) {
     if (entry.status !== "verified") {
@@ -141,6 +162,35 @@ export function scoreGoldSet(
       circular++
       continue
     }
+    // A "yes" that is not in force is the error this field exists to catch. It
+    // is excluded rather than coerced, because either the boolean or the force
+    // state is wrong and guessing which would bake the mistake into the score.
+    const claimsLive = entry.expected.hasHmoArticle4 === true
+    if (claimsLive && entry.expected.forceState !== "in_force") {
+      inconsistent++
+      results.push({
+        slug: entry.slug,
+        name: entry.name,
+        expected: null,
+        predicted: predict(entry.slug),
+        outcome: "unscorable",
+        reason: `recorded as having an Article 4 but force state is "${entry.expected.forceState}" — a direction that is not in force restricts nothing`,
+      })
+      continue
+    }
+    if (entry.expected.forceState === "unknown") {
+      inconsistent++
+      results.push({
+        slug: entry.slug,
+        name: entry.name,
+        expected: null,
+        predicted: predict(entry.slug),
+        outcome: "unscorable",
+        reason: "verified without recording whether the direction is in force",
+      })
+      continue
+    }
+
     if (entry.expected.hasHmoArticle4 === null) {
       results.push({
         slug: entry.slug,
@@ -193,11 +243,18 @@ export function scoreGoldSet(
     warnings.push(`${pending} entries still awaiting human verification.`)
   }
 
+  if (inconsistent > 0) {
+    warnings.push(
+      `${inconsistent} verified entries excluded as internally inconsistent: they claim an Article 4 that is not in force, or omit its force state. Fix the entries rather than the figure.`
+    )
+  }
+
   return {
     scored,
     totalEntries: gold.councils.length,
     pendingVerification: pending,
     excludedAsCircular: circular,
+    excludedAsInconsistent: inconsistent,
     truePositives,
     falsePositives,
     misses,

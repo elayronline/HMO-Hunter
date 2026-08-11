@@ -13,13 +13,18 @@ import { buildCouncilRegistry } from "@/lib/article4/registry"
 
 const goldSet = goldSetJson as unknown as GoldSet
 
+/** A gold set containing exactly the entries a test cares about. */
+function set(councils: GoldEntry[]): GoldSet {
+  return { version: 1, councils }
+}
+
 function entry(over: Partial<GoldEntry> = {}): GoldEntry {
   return {
     slug: "example",
     name: "Example",
     gssCode: "E00000001",
     status: "verified",
-    expected: { hasHmoArticle4: true, extent: null, commencedOn: null },
+    expected: { hasHmoArticle4: true, forceState: "in_force" as const, extent: null, commencedOn: null },
     evidence: { independentSource: true, sourceUrl: "https://example.gov.uk", quote: null },
     verifiedBy: "tester",
     verifiedAt: "2026-08-10T00:00:00.000Z",
@@ -61,7 +66,7 @@ describe("isScorable", () => {
   })
 
   it("requires a recorded expectation", () => {
-    expect(isScorable(entry({ expected: { hasHmoArticle4: null, extent: null, commencedOn: null } }))).toBe(
+    expect(isScorable(entry({ expected: { hasHmoArticle4: null, forceState: "unknown" as const, extent: null, commencedOn: null } }))).toBe(
       false
     )
   })
@@ -77,9 +82,9 @@ describe("scoreGoldSet", () => {
   it("computes precision, recall and miss rate", () => {
     const report = scoreGoldSet(
       gold([
-        entry({ slug: "a", expected: { hasHmoArticle4: true, extent: null, commencedOn: null } }),
-        entry({ slug: "b", expected: { hasHmoArticle4: true, extent: null, commencedOn: null } }),
-        entry({ slug: "c", expected: { hasHmoArticle4: false, extent: null, commencedOn: null } }),
+        entry({ slug: "a", expected: { hasHmoArticle4: true, forceState: "in_force" as const, extent: null, commencedOn: null } }),
+        entry({ slug: "b", expected: { hasHmoArticle4: true, forceState: "in_force" as const, extent: null, commencedOn: null } }),
+        entry({ slug: "c", expected: { hasHmoArticle4: false, forceState: "none" as const, extent: null, commencedOn: null } }),
       ]),
       (slug) => (slug === "a" ? "yes" : "unknown")
     )
@@ -200,4 +205,53 @@ describe.skipIf(process.env.CI)("baseline against live registry", () => {
       expect(report.warnings.length).toBeGreaterThan(0)
     }
   }, 180_000)
+})
+
+// The gold set is the measuring stick, so a contradictory entry is worse than a
+// missing one: it silently moves the headline figure. An entry claiming a live
+// Article 4 whose force state says otherwise is excluded and named, never
+// coerced into a verdict.
+describe("announced versus in force in the gold set", () => {
+  it("excludes an entry that claims an Article 4 which is not in force", () => {
+    const report = scoreGoldSet(
+      set([
+        entry({ slug: "preston", expected: { hasHmoArticle4: true, forceState: "made_not_in_force", extent: null, commencedOn: "2027-02-15" } }),
+      ]),
+      () => "unknown"
+    )
+
+    expect(report.scored).toBe(0)
+    expect(report.excludedAsInconsistent).toBe(1)
+    expect(report.results[0].outcome).toBe("unscorable")
+    expect(report.results[0].reason).toMatch(/not in force restricts nothing/)
+    expect(report.warnings.some((w) => w.includes("internally inconsistent"))).toBe(true)
+  })
+
+  it("excludes a verified entry that never recorded a force state", () => {
+    const report = scoreGoldSet(
+      set([
+        entry({ slug: "somewhere", expected: { hasHmoArticle4: false, forceState: "unknown", extent: null, commencedOn: null } }),
+      ]),
+      () => "unknown"
+    )
+
+    expect(report.scored).toBe(0)
+    expect(report.excludedAsInconsistent).toBe(1)
+  })
+
+  // A council that made a direction which has not commenced genuinely has no
+  // restriction today, so it is a real negative and must still be scorable —
+  // this is what proves the pipeline is not over-claiming.
+  it("scores a not-yet-in-force council as a confirmed negative", () => {
+    const report = scoreGoldSet(
+      set([
+        entry({ slug: "preston", expected: { hasHmoArticle4: false, forceState: "made_not_in_force", extent: null, commencedOn: "2027-02-15" } }),
+      ]),
+      () => "unknown"
+    )
+
+    expect(report.scored).toBe(1)
+    expect(report.excludedAsInconsistent).toBe(0)
+    expect(report.correctAbstentions).toBe(1)
+  })
 })

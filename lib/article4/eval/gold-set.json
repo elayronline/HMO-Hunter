@@ -11,6 +11,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-05-14"
       },
@@ -31,6 +32,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2016-05-29"
       },
@@ -51,6 +53,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-06-16"
       },
@@ -71,6 +74,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -91,6 +95,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2014-08-31"
       },
@@ -111,6 +116,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2022-10-03"
       },
@@ -131,6 +137,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2022-11-01"
       },
@@ -151,6 +158,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -171,6 +179,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-12-11"
       },
@@ -191,6 +200,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2024-10-14"
       },
@@ -211,6 +221,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2026-07-16"
       },
@@ -231,6 +242,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -251,6 +263,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2016-02-25"
       },
@@ -271,6 +284,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -291,6 +305,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2019-10-08"
       },
@@ -311,6 +326,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2022-09-08"
       },
@@ -331,6 +347,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2022-06-15"
       },
@@ -351,6 +368,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2025-12-08"
       },
@@ -371,6 +389,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2019-10-14"
       },
@@ -391,6 +410,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -411,6 +431,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -431,6 +452,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -451,6 +473,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-10-31"
       },
@@ -471,6 +494,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2025-02-26"
       },
@@ -491,6 +515,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-09-24"
       },
@@ -511,6 +536,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2025-09-24"
       },
@@ -531,6 +557,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2013-07-01"
       },
@@ -551,6 +578,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2013-03-24"
       },
@@ -571,6 +599,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2023-09-04"
       },
@@ -591,6 +620,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2024-06-01"
       },
@@ -611,6 +641,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -631,6 +662,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2022-08-01"
       },
@@ -651,6 +683,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -671,6 +704,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -691,6 +725,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2013-08-08"
       },
@@ -711,6 +746,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -731,6 +767,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -751,6 +788,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "1991-06-04"
       },
@@ -771,6 +809,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -791,6 +830,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -811,6 +851,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -831,6 +872,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-06-28"
       },
@@ -851,6 +893,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2015-12-22"
       },
@@ -871,6 +914,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-11-25"
       },
@@ -891,6 +935,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -911,6 +956,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "1983-07-14"
       },
@@ -931,6 +977,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2026-03-02"
       },
@@ -951,6 +998,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -971,6 +1019,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -991,6 +1040,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1011,6 +1061,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-02-25"
       },
@@ -1031,6 +1082,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1051,6 +1103,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-09-14"
       },
@@ -1071,6 +1124,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1091,6 +1145,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1111,6 +1166,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1131,6 +1187,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2025-09-19"
       },
@@ -1151,6 +1208,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2011-02-04"
       },
@@ -1171,6 +1229,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1191,6 +1250,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2018-11-25"
       },
@@ -1211,6 +1271,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2017-09-20"
       },
@@ -1231,6 +1292,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1251,6 +1313,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1271,6 +1334,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-03-23"
       },
@@ -1291,6 +1355,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1311,6 +1376,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2017-01-01"
       },
@@ -1331,6 +1397,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1351,6 +1418,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1371,6 +1439,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2021-12-24"
       },
@@ -1391,6 +1460,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1411,6 +1481,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2021-01-01"
       },
@@ -1431,6 +1502,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1451,6 +1523,7 @@
       "seededAs": "likely-negative",
       "expected": {
         "hasHmoArticle4": null,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1471,6 +1544,7 @@
       "seededAs": "known-missing",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": null
       },
@@ -1491,6 +1565,7 @@
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
+        "forceState": "unknown",
         "extent": null,
         "commencedOn": "2012-04-20"
       },

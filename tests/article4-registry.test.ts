@@ -3,6 +3,7 @@ import {
   toSlug,
   isHmoRelated,
   dateRange,
+  forceStateOn,
   coveredKeysFromRegistry,
   directionOnlyKeysFromRegistry,
   buildCouncilRegistry,
@@ -18,6 +19,10 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     matchKey: "example",
     organisationEntity: 1,
     publishesHmoArticle4: false,
+    hasHmoArticle4InForce: false,
+    directionsNotYetInForce: 0,
+    nextCommencementDate: null,
+    directionsExpired: 0,
     coverageLevel: "none",
     areaCount: 0,
     areaCountWithGeometry: 0,
@@ -29,6 +34,12 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     source: "planning.data.gov.uk",
     retrievedAt: "2026-08-10T00:00:00.000Z",
     ...over,
+    // A council that publishes a direction is treated as having it in force
+    // unless a test says otherwise, so cases written before force state was
+    // modelled still mean what they meant. Anything testing the announced /
+    // in-force distinction passes the flag explicitly.
+    hasHmoArticle4InForce:
+      over.hasHmoArticle4InForce ?? over.publishesHmoArticle4 ?? false,
   }
 }
 
@@ -157,4 +168,39 @@ describe.skipIf(process.env.CI)("buildCouncilRegistry against live planning data
     const withDocs = withDirections.filter((c) => c.documentUrls.length > 0)
     expect(withDocs.length / withDirections.length).toBeGreaterThan(0.7)
   }, 180_000)
+})
+
+// Announced is not in force. Verifying the gold set against council websites on
+// 2026-08-11 found this to be the dominant real-world error: of the first ten
+// councils checked, Preston had a direction made 29 January 2026 that does not
+// commence until 15 February 2027, and Stoke-on-Trent's was only proposed. Both
+// were recorded as live restrictions. Before `forceStateOn` the registry read
+// start-date and end-date from the feed and then never consulted either.
+describe("forceStateOn", () => {
+  const today = new Date("2026-08-11T09:00:00.000Z")
+
+  it("a direction that has commenced and not ended is in force", () => {
+    expect(forceStateOn("2011-12-10", null, today)).toBe("in_force")
+  })
+
+  it("a direction commencing in the future is made, not in force", () => {
+    expect(forceStateOn("2027-02-15", null, today)).toBe("made_not_in_force")
+  })
+
+  it("a direction whose end date has passed is expired", () => {
+    expect(forceStateOn("2011-12-10", "2020-01-01", today)).toBe("expired")
+  })
+
+  it("treats an undated direction as in force, because omitting the start date is common and dropping it would lose a real restriction", () => {
+    expect(forceStateOn(null, null, today)).toBe("in_force")
+  })
+
+  it("still restricts on its commencement day and on its end day", () => {
+    expect(forceStateOn("2026-08-11", null, today)).toBe("in_force")
+    expect(forceStateOn("2011-12-10", "2026-08-11", today)).toBe("in_force")
+  })
+
+  it("expires the day after the end date, not before", () => {
+    expect(forceStateOn("2011-12-10", "2026-08-10", today)).toBe("expired")
+  })
 })

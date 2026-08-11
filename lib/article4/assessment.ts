@@ -12,7 +12,7 @@
  * no benefit.
  */
 
-import type { CouncilRecord, CoverageLevel } from "./registry"
+import type { CouncilRecord, CoverageLevel, ForceState } from "./registry"
 import { sourced, type Sourced } from "./provenance"
 
 /** Which statutory regime applies, from the ONS GSS code prefix. */
@@ -77,6 +77,8 @@ export interface DirectionSummary {
   name: string
   reference: string | null
   commencedOn: string | null
+  /** Carried through so a consumer cannot mistake a future direction for a live one. */
+  forceState: ForceState
   documentUrl: string | null
 }
 
@@ -85,7 +87,10 @@ export interface CouncilAssessment {
   name: string
   gssCode: string | null
   jurisdiction: Jurisdiction
+  /** True only when a direction is in force today — see `forceStateOn`. */
   hmoArticle4: Sourced<boolean>
+  /** Earliest date a made-but-not-yet-commenced direction starts binding. */
+  nextCommencement: Sourced<string>
   coverageLevel: Sourced<CoverageLevel>
   earliestCommencement: Sourced<string>
   latestCommencement: Sourced<string>
@@ -105,6 +110,31 @@ export interface CouncilAssessment {
  */
 export function buildCaveats(council: CouncilRecord, jurisdiction: Jurisdiction): string[] {
   const caveats: string[] = []
+
+  // Stated first: a restriction that starts on a known date changes what a
+  // buyer should do now, and it is the fact most easily mistaken for "no
+  // restriction here" — or, before this was separated out, for a live one.
+  if (council.directionsNotYetInForce > 0) {
+    caveats.push(
+      council.nextCommencementDate
+        ? `${council.name} has ${council.directionsNotYetInForce} HMO Article 4 direction${
+            council.directionsNotYetInForce === 1 ? "" : "s"
+          } made but not yet in force. No permission is required on that basis today; the earliest commences ${
+            council.nextCommencementDate
+          }. A purchase completing after that date is subject to it.`
+        : `${council.name} has ${council.directionsNotYetInForce} HMO Article 4 direction${
+            council.directionsNotYetInForce === 1 ? "" : "s"
+          } made but not yet in force, with no commencement date published. Confirm timing with the council.`
+    )
+  }
+
+  if (council.directionsExpired > 0 && !council.hasHmoArticle4InForce) {
+    caveats.push(
+      `The HMO Article 4 direction${council.directionsExpired === 1 ? "" : "s"} published for ${
+        council.name
+      } ${council.directionsExpired === 1 ? "has" : "have"} lapsed. Councils often replace one direction with another, so confirm nothing newer applies before relying on this.`
+    )
+  }
 
   if (council.coverageLevel === "directions_only") {
     caveats.push(
@@ -146,8 +176,14 @@ export function buildCouncilAssessment(council: CouncilRecord): CouncilAssessmen
   // Absence of a record is not a negative, so `false` is only asserted where the
   // council actually publishes testable boundaries. Everywhere else this is null
   // with confidence `unknown`.
+  //
+  // `true` requires a direction in force, not merely published. A direction that
+  // commences next year restricts nothing today; reporting it as live would tell
+  // a buyer they need permission they do not yet need. Those councils fall to
+  // null — not a negative either — and are surfaced through `nextCommencement`
+  // and a dated caveat instead.
   const hmoValue =
-    council.coverageLevel === "none" ? null : council.publishesHmoArticle4 ? true : null
+    council.coverageLevel === "none" ? null : council.hasHmoArticle4InForce ? true : null
 
   return {
     slug: council.slug,
@@ -155,6 +191,7 @@ export function buildCouncilAssessment(council: CouncilRecord): CouncilAssessmen
     gssCode: council.gssCode || null,
     jurisdiction,
     hmoArticle4: sourced<boolean>({ ...base, value: hmoValue }),
+    nextCommencement: sourced<string>({ ...base, value: council.nextCommencementDate }),
     coverageLevel: sourced<CoverageLevel>({ ...base, value: council.coverageLevel }),
     earliestCommencement: sourced<string>({ ...base, value: council.earliestCommencement }),
     latestCommencement: sourced<string>({ ...base, value: council.latestCommencement }),
@@ -164,6 +201,7 @@ export function buildCouncilAssessment(council: CouncilRecord): CouncilAssessmen
       name: d.name,
       reference: d.reference || null,
       commencedOn: d.commencedOn,
+      forceState: d.forceState,
       documentUrl: d.documentUrl,
     })),
     // Only assert England's thresholds for English authorities.
