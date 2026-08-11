@@ -448,22 +448,22 @@
       "slug": "enfield",
       "name": "Enfield",
       "gssCode": "E09000010",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": null
+        "forceState": "in_force",
+        "extent": "Not readable from the direction document — its SECOND SCHEDULE is an image. The council describes it as borough-wide.",
+        "commencedOn": "2013-10-22"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": null,
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://web.archive.org/web/2026id_/https://www.enfield.gov.uk/__data/assets/pdf_file/0020/6275/planning-applications-information-london_borough_of_enfield_article_4_direction_hmo_order__4_.pdf",
+        "quote": "London Borough of Enfield TOWN AND COUNTRY PLANNING ACT 1990 ... Direction relating to houses in multiple occupation (HMOs) London Borough of Enfield Direction (Art 4/) made under Article 4(1), referring to development described by Schedule 2, Part 3, Class I(b) of the Order ... 3. This Direction shall come into force on (1 year after seal date) Dated the 22nd October 2012"
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "NOT VERIFIED. Council states a borough-wide HMO Article 4 confirmed October 2013, but every route to a quotable council source failed: enfield.gov.uk HMO pages return nothing extractable, the direction PDFs return 403, new.enfield.gov.uk has no matching page, and the archived Article 4 page describes only a published dataset — which is Open Digital Planning output and therefore too close to the pipeline's own source to count."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z",
+      "notes": "Quoted from the sealed direction itself, retrieved through the Internet Archive because enfield.gov.uk returns 403 to direct requests and its governance system serves a cookie interstitial. commencedOn is the seal date plus the one year the document specifies, giving 22 October 2013 — consistent with the council describing the direction as confirmed in October 2013. The area schedule is an image and could not be read, so extent is not asserted here."
     },
     {
       "slug": "exeter",
@@ -889,22 +889,22 @@
       "slug": "newcastle-under-lyme",
       "name": "Newcastle-under-Lyme",
       "gssCode": "E07000195",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
+        "forceState": "in_force",
+        "extent": "Sidmouth Avenue, Gower Street, Granville Avenue, Northcote Place and part of King Street, within the Newcastle-under-Lyme strategic centre",
         "commencedOn": "2015-12-22"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.newcastle-staffs.gov.uk/downloads/file/2126/article-4-directions-that-affect-changes-of-use",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://moderngov.newcastle-staffs.gov.uk/documents/s42936/Appendix%201%20Local%20Plan.pdf",
+        "quote": "An Article 4 direction was made in December 2015 under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995 which restricts permitted development rights in certain areas to change of use from a residential house (Use Class C3) to a small HMO (Use Class C4) for the area of Sidmouth Avenue, Gower Street, Granville Avenue, Northcote Place and King Street within Newcastle-under-Lyme strategic centre."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "NOT VERIFIED. Ambiguous rather than blocked. The council's directions page says change-of-use rights 'have been removed in one area in the borough' without naming which, and its news page describes a borough-wide HMO direction as still being investigated. Neither supports a verdict."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z",
+      "notes": "Previously unverified because the council website named no extent and its own directions page links a scanned image. Resolved through the committee system: an immediate direction came into force on 22 December 2015 and \"expires at the end of a 6 month period beginning with the date on which it came into force (i.e. by 21st June 2016) unless it is confirmed\", with the 15 March 2016 report recommending confirmation and recording no objections. That it was confirmed is corroborated by the current Local Plan quoted here, which carries the direction as live policy under Policy HOU7. Commencement matches the seeded date. The borough-wide direction reported in council news is a separate proposal, still only under investigation. Quote spacing reconstructed from a PDF that encodes no space glyphs."
     },
     {
       "slug": "newcastle-upon-tyne",
@@ -1372,22 +1372,22 @@
       "slug": "stevenage",
       "name": "Stevenage",
       "gssCode": "E07000243",
-      "status": "unverified",
+      "status": "verified",
       "seededAs": "machine-positive",
       "expected": {
         "hasHmoArticle4": true,
-        "forceState": "unknown",
-        "extent": null,
-        "commencedOn": "2017-01-01"
+        "forceState": "in_force",
+        "extent": "Not stated in the council documents that could be read; secondary sources describe it as all wards",
+        "commencedOn": "2017-09-20"
       },
       "evidence": {
-        "independentSource": false,
-        "sourceUrl": "https://www.stevenage.gov.uk/documents/planning-policy/article-4-directions/article-4-direction-houses-in-multiple-occupation-hmos.pdf",
-        "quote": null
+        "independentSource": true,
+        "sourceUrl": "https://www.stevenage.gov.uk/documents/planning/development-management/houses-of-multiple-occupancy.pdf",
+        "quote": "The Article 4 direction relating to HMOs relates to development comprising the change of use from a use falling within Class C3 (dwellinghouses) of the Town and County Planning (Use Classes) Order 1987, as amended; to a use falling within Class C4 (houses in multiple occupation) of that Order; and removes permitted development rights for this type of development. Planning permission will, therefore, be required for any changes of use from Class C3 to C4 from 20 September 2017."
       },
-      "verifiedBy": null,
-      "verifiedAt": null,
-      "notes": "NOT VERIFIED. The council's Article 4 page links only datasets; the HMO direction notice is a scanned image with no text layer, and the supporting PDF extracts too poorly to quote. Secondary sources say made 19 September 2016, confirmed 24 May 2017, in force 20 September 2017 across all wards — not quoted here because it could not be read from the council's own document."
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z",
+      "notes": "DATE DISCREPANCY: the feed seeded 2017-01-01; the council states the direction bites from 20 September 2017. Made on 19 September 2016, a year and a day earlier. Previously unverified because the notice of direction is a scanned image — resolved by stripping spaces from the FAQ PDF, whose text encodes no space glyphs, which is why earlier keyword searches found nothing. Quote spacing reconstructed on that basis."
     },
     {
       "slug": "stoke-on-trent",

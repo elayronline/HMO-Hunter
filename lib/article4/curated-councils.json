@@ -351,6 +351,23 @@
       "verifiedAt": "2026-08-11T18:45:00.000Z"
     },
     {
+      "slug": "enfield",
+      "name": "Enfield",
+      "gssCode": "E09000010",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Not readable from the direction document — its SECOND SCHEDULE is an image. The council describes it as borough-wide.",
+          "extent": "Not readable from the direction document — its SECOND SCHEDULE is an image. The council describes it as borough-wide.",
+          "commencedOn": "2013-10-22",
+          "endedOn": null,
+          "sourceUrl": "https://web.archive.org/web/2026id_/https://www.enfield.gov.uk/__data/assets/pdf_file/0020/6275/planning-applications-information-london_borough_of_enfield_article_4_direction_hmo_order__4_.pdf",
+          "quote": "London Borough of Enfield TOWN AND COUNTRY PLANNING ACT 1990 ... Direction relating to houses in multiple occupation (HMOs) London Borough of Enfield Direction (Art 4/) made under Article 4(1), referring to development described by Schedule 2, Part 3, Class I(b) of the Order ... 3. This Direction shall come into force on (1 year after seal date) Dated the 22nd October 2012"
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z"
+    },
+    {
       "slug": "exeter",
       "name": "Exeter",
       "gssCode": "E07000041",
@@ -666,6 +683,23 @@
       "verifiedAt": "2026-08-11T20:30:00.000Z"
     },
     {
+      "slug": "newcastle-under-lyme",
+      "name": "Newcastle-under-Lyme",
+      "gssCode": "E07000195",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Sidmouth Avenue, Gower Street, Granville Avenue, Northcote Place and part of King Street, within the Newcastle-under-Lyme strategic centre",
+          "extent": "Sidmouth Avenue, Gower Street, Granville Avenue, Northcote Place and part of King Street, within the Newcastle-under-Lyme strategic centre",
+          "commencedOn": "2015-12-22",
+          "endedOn": null,
+          "sourceUrl": "https://moderngov.newcastle-staffs.gov.uk/documents/s42936/Appendix%201%20Local%20Plan.pdf",
+          "quote": "An Article 4 direction was made in December 2015 under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995 which restricts permitted development rights in certain areas to change of use from a residential house (Use Class C3) to a small HMO (Use Class C4) for the area of Sidmouth Avenue, Gower Street, Granville Avenue, Northcote Place and King Street within Newcastle-under-Lyme strategic centre."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z"
+    },
+    {
       "slug": "newcastle-upon-tyne",
       "name": "Newcastle upon Tyne",
       "gssCode": "E08000021",
@@ -920,6 +954,23 @@
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z"
+    },
+    {
+      "slug": "stevenage",
+      "name": "Stevenage",
+      "gssCode": "E07000243",
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Not stated in the council documents that could be read; secondary sources describe it as all wards",
+          "extent": "Not stated in the council documents that could be read; secondary sources describe it as all wards",
+          "commencedOn": "2017-09-20",
+          "endedOn": null,
+          "sourceUrl": "https://www.stevenage.gov.uk/documents/planning/development-management/houses-of-multiple-occupancy.pdf",
+          "quote": "The Article 4 direction relating to HMOs relates to development comprising the change of use from a use falling within Class C3 (dwellinghouses) of the Town and County Planning (Use Classes) Order 1987, as amended; to a use falling within Class C4 (houses in multiple occupation) of that Order; and removes permitted development rights for this type of development. Planning permission will, therefore, be required for any changes of use from Class C3 to C4 from 20 September 2017."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-11T21:15:00.000Z"
     },
     {
       "slug": "tendring",
