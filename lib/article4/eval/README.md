@@ -32,6 +32,7 @@ specifically to the development of HMOs"). Both had been recorded as live.
 | `in_force` | Commenced, not ended | `true` |
 | `made_not_in_force` | Made, commences on a future date | `false` — and record that date in `commencedOn` |
 | `proposed` | Announced or out to consultation; may never happen | `false` |
+| `expired` | Ran and lapsed — Peterborough's trial direction ran 1 Jan 2024 to 1 Jan 2026 | `false` |
 | `none` | No direction at all | `false` |
 | `unknown` | Not established — entry is excluded from scoring | — |
 

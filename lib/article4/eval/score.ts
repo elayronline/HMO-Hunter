@@ -33,6 +33,8 @@ export type ForceState =
   | "in_force"
   | "made_not_in_force"
   | "proposed"
+  /** Ran and lapsed. Peterborough's trial direction expired on 1 January 2026. */
+  | "expired"
   | "none"
   | "unknown"
 

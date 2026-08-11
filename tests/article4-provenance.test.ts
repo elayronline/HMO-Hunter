@@ -23,7 +23,6 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     matchKey: "example",
     organisationEntity: 1,
     publishesHmoArticle4: false,
-    hasHmoArticle4InForce: false,
     directionsNotYetInForce: 0,
     nextCommencementDate: null,
     directionsExpired: 0,
