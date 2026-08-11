@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { exportRequestSchema } from "@/lib/validation/schemas"
-import { getLhaWeeklyRate, getLhaMonthlyRate } from "@/lib/data/lha-rates"
-import { assessTASuitability } from "@/lib/services/ta-suitability"
 
 // POST - Export properties to CSV
 export async function POST(request: NextRequest) {
@@ -149,8 +147,6 @@ export async function POST(request: NextRequest) {
       'Gross Yield (%)',
       'LHA Weekly Rate',
       'LHA Monthly Rate',
-      'TA Suitability',
-      'TA Score',
       'Source URL'
     ]
 
@@ -176,9 +172,6 @@ export async function POST(request: NextRequest) {
       escapeCsvValue(p.licence_holder_name),
       p.deal_score,
       p.gross_yield ? p.gross_yield.toFixed(2) : '',
-      getLhaWeeklyRate(p.city, p.bedrooms)?.toFixed(2) || '',
-      getLhaMonthlyRate(p.city, p.bedrooms) || '',
-      ...(() => { const r = assessTASuitability(p as any); return [r.suitability, r.score] as const; })(),
       escapeCsvValue(p.source_url)
     ])
 

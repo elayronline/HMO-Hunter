@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import "@testing-library/jest-dom/vitest"
 import { render, screen, fireEvent, act } from "@testing-library/react"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
-import type { UserType } from "@/components/role-selection-modal"
 
 // Mock Supabase client
 vi.mock("@/lib/supabase/client", () => ({
@@ -13,19 +12,17 @@ vi.mock("@/lib/supabase/client", () => ({
   })),
 }))
 
-const ALL_ROLES: UserType[] = ["investor", "council_ta", "operator", "agent"]
 
 // ============================================================================
 // Basic Rendering Per Role
 // ============================================================================
 describe("Basic Rendering Per Role", () => {
-  ALL_ROLES.forEach((role) => {
-    it(`should render the welcome step for ${role}`, () => {
+  ;[null].forEach(() => {
+    it("should render the welcome step", () => {
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
         />
       )
       expect(screen.getByText("Welcome to HMO Hunter")).toBeInTheDocument()
@@ -33,26 +30,25 @@ describe("Basic Rendering Per Role", () => {
     })
   })
 
-  it("should render fallback steps when userRole is null", () => {
+  it("renders the walkthrough with no role concept", () => {
     render(
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={vi.fn()}
-        userRole={null}
       />
     )
     expect(screen.getByText("Welcome to HMO Hunter")).toBeInTheDocument()
-    expect(screen.getByText(/Step 1 of 6/)).toBeInTheDocument()
+    expect(screen.getByText(/Step 1 of 7/)).toBeInTheDocument()
   })
 
-  it("should render fallback steps when userRole is undefined", () => {
+  it("renders the same walkthrough every time", () => {
     render(
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={vi.fn()}
       />
     )
-    expect(screen.getByText(/Step 1 of 6/)).toBeInTheDocument()
+    expect(screen.getByText(/Step 1 of 7/)).toBeInTheDocument()
   })
 
   it("should not render when isOpen is false", () => {
@@ -60,7 +56,6 @@ describe("Basic Rendering Per Role", () => {
       <OnboardingWalkthrough
         isOpen={false}
         onComplete={vi.fn()}
-        userRole="investor"
       />
     )
     expect(screen.queryByText("Welcome to HMO Hunter")).not.toBeInTheDocument()
@@ -77,7 +72,6 @@ describe("Rapid Navigation", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={onComplete}
-        userRole="investor"
       />
     )
 
@@ -98,7 +92,6 @@ describe("Rapid Navigation", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={vi.fn()}
-        userRole="agent"
       />
     )
     expect(screen.queryByText("Back")).not.toBeInTheDocument()
@@ -109,7 +102,6 @@ describe("Rapid Navigation", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={vi.fn()}
-        userRole="operator"
       />
     )
 
@@ -130,14 +122,13 @@ describe("Rapid Navigation", () => {
     expect(screen.getByText(/Step/)).toBeInTheDocument()
   })
 
-  it("should navigate through all steps to completion for each role", async () => {
-    for (const role of ALL_ROLES) {
+  it("navigates through all steps to completion", async () => {
+    {
       const onComplete = vi.fn()
       const { unmount } = render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={onComplete}
-          userRole={role}
         />
       )
 
@@ -159,14 +150,13 @@ describe("Rapid Navigation", () => {
 // ============================================================================
 // Keyboard Navigation Per Role
 // ============================================================================
-describe("Keyboard Navigation Per Role", () => {
-  ALL_ROLES.forEach((role) => {
-    it(`should navigate forward with ArrowRight for ${role}`, async () => {
+describe("Keyboard Navigation", () => {
+  ;[null].forEach(() => {
+    it("should navigate forward with ArrowRight", async () => {
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
         />
       )
 
@@ -176,12 +166,11 @@ describe("Keyboard Navigation Per Role", () => {
       expect(screen.getByText(/Step 2 of/)).toBeInTheDocument()
     })
 
-    it(`should navigate forward with Enter for ${role}`, async () => {
+    it("should navigate forward with Enter for", async () => {
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
         />
       )
 
@@ -191,12 +180,11 @@ describe("Keyboard Navigation Per Role", () => {
       expect(screen.getByText(/Step 2 of/)).toBeInTheDocument()
     })
 
-    it(`should navigate backward with ArrowLeft for ${role}`, async () => {
+    it("should navigate backward with ArrowLeft for", async () => {
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
         />
       )
 
@@ -209,13 +197,12 @@ describe("Keyboard Navigation Per Role", () => {
       expect(screen.getByText(/Step 1 of/)).toBeInTheDocument()
     })
 
-    it(`should skip with Escape for ${role}`, async () => {
+    it("should skip with Escape for", async () => {
       const onComplete = vi.fn()
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={onComplete}
-          userRole={role}
         />
       )
 
@@ -232,7 +219,6 @@ describe("Keyboard Navigation Per Role", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={onComplete}
-        userRole="investor"
       />
     )
 
@@ -250,95 +236,19 @@ describe("Keyboard Navigation Per Role", () => {
 // ============================================================================
 // Role Change Mid-Walkthrough
 // ============================================================================
-describe("Role Change Mid-Walkthrough", () => {
-  it("should reset to step 1 when userRole prop changes", async () => {
-    const { rerender } = render(
-      <OnboardingWalkthrough
-        isOpen={true}
-        onComplete={vi.fn()}
-        userRole="investor"
-      />
-    )
-
-    // Navigate to step 3
-    await act(async () => {
-      fireEvent.keyDown(window, { key: "ArrowRight" })
-    })
-    await act(async () => {
-      fireEvent.keyDown(window, { key: "ArrowRight" })
-    })
-    expect(screen.getByText(/Step 3 of/)).toBeInTheDocument()
-
-    // Change role
-    rerender(
-      <OnboardingWalkthrough
-        isOpen={true}
-        onComplete={vi.fn()}
-        userRole="council_ta"
-      />
-    )
-
-    // Should be back at step 1
-    expect(screen.getByText(/Step 1 of/)).toBeInTheDocument()
-  })
-
-  it("should show correct step count after switching to fallback", async () => {
-    const { rerender } = render(
-      <OnboardingWalkthrough
-        isOpen={true}
-        onComplete={vi.fn()}
-        userRole="investor"
-      />
-    )
-    expect(screen.getByText(/of 7/)).toBeInTheDocument()
-
-    rerender(
-      <OnboardingWalkthrough
-        isOpen={true}
-        onComplete={vi.fn()}
-        userRole={null}
-      />
-    )
-    expect(screen.getByText(/of 6/)).toBeInTheDocument()
-  })
-
-  it("should handle rapid role switching without crashing", async () => {
-    const { rerender } = render(
-      <OnboardingWalkthrough
-        isOpen={true}
-        onComplete={vi.fn()}
-        userRole="investor"
-      />
-    )
-
-    for (let i = 0; i < 50; i++) {
-      const role = ALL_ROLES[i % ALL_ROLES.length]
-      rerender(
-        <OnboardingWalkthrough
-          isOpen={true}
-          onComplete={vi.fn()}
-          userRole={role}
-        />
-      )
-    }
-    // Should still be rendered
-    expect(screen.getByText("Welcome to HMO Hunter")).toBeInTheDocument()
-  })
-})
 
 // ============================================================================
 // Property Details Trigger Per Role
 // ============================================================================
 describe("Property Details Trigger", () => {
-  ALL_ROLES.forEach((role) => {
-    it(`should call onShowPropertyDetails at the Property Details step for ${role}`, async () => {
+  ;[null].forEach(() => {
+    it("should call onShowPropertyDetails at the Property Details step for", async () => {
       const onShow = vi.fn()
       const onHide = vi.fn()
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
           onShowPropertyDetails={onShow}
           onHidePropertyDetails={onHide}
         />
@@ -354,14 +264,13 @@ describe("Property Details Trigger", () => {
       expect(onShow).toHaveBeenCalled()
     })
 
-    it(`should call onHidePropertyDetails when leaving Property Details step for ${role}`, async () => {
+    it("should call onHidePropertyDetails when leaving Property Details step for", async () => {
       const onShow = vi.fn()
       const onHide = vi.fn()
       render(
         <OnboardingWalkthrough
           isOpen={true}
           onComplete={vi.fn()}
-          userRole={role}
           onShowPropertyDetails={onShow}
           onHidePropertyDetails={onHide}
         />
@@ -395,7 +304,6 @@ describe("Skip / Complete Behaviour", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={onComplete}
-        userRole="investor"
       />
     )
 
@@ -412,7 +320,6 @@ describe("Skip / Complete Behaviour", () => {
       <OnboardingWalkthrough
         isOpen={true}
         onComplete={onComplete}
-        userRole="investor"
       />
     )
 

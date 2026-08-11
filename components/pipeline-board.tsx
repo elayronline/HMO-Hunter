@@ -52,59 +52,34 @@ import {
   Mail,
   Calendar,
 } from "lucide-react"
-import type { UserType } from "@/components/role-selection-modal"
 import type { PipelineDeal, PipelineStageConfig } from "@/lib/types/pipeline"
 
 interface PipelineBoardProps {
-  userType: UserType
 }
 
 // Default stage configs (used before DB fetch)
-const DEFAULT_STAGES: Record<UserType, PipelineStageConfig[]> = {
-  investor: [
-    { id: "1", user_type: "investor", stage_key: "identified", stage_label: "Identified", stage_order: 1, color: "#94a3b8", is_terminal: false },
-    { id: "2", user_type: "investor", stage_key: "researched", stage_label: "Researched", stage_order: 2, color: "#60a5fa", is_terminal: false },
-    { id: "3", user_type: "investor", stage_key: "contacted", stage_label: "Contacted", stage_order: 3, color: "#a78bfa", is_terminal: false },
-    { id: "4", user_type: "investor", stage_key: "viewing", stage_label: "Viewing", stage_order: 4, color: "#fbbf24", is_terminal: false },
-    { id: "5", user_type: "investor", stage_key: "offer_made", stage_label: "Offer Made", stage_order: 5, color: "#f97316", is_terminal: false },
-    { id: "6", user_type: "investor", stage_key: "under_offer", stage_label: "Under Offer", stage_order: 6, color: "#22d3ee", is_terminal: false },
-    { id: "7", user_type: "investor", stage_key: "completed", stage_label: "Completed", stage_order: 7, color: "#22c55e", is_terminal: true },
-    { id: "8", user_type: "investor", stage_key: "dead", stage_label: "Dead", stage_order: 8, color: "#ef4444", is_terminal: true },
-  ],
-  council_ta: [
-    { id: "1", user_type: "council_ta", stage_key: "identified", stage_label: "Identified", stage_order: 1, color: "#94a3b8", is_terminal: false },
-    { id: "2", user_type: "council_ta", stage_key: "assessed", stage_label: "Assessed", stage_order: 2, color: "#60a5fa", is_terminal: false },
-    { id: "3", user_type: "council_ta", stage_key: "shortlisted", stage_label: "Shortlisted", stage_order: 3, color: "#a78bfa", is_terminal: false },
-    { id: "4", user_type: "council_ta", stage_key: "inspection", stage_label: "Inspection", stage_order: 4, color: "#fbbf24", is_terminal: false },
-    { id: "5", user_type: "council_ta", stage_key: "placement_ready", stage_label: "Placement Ready", stage_order: 5, color: "#22d3ee", is_terminal: false },
-    { id: "6", user_type: "council_ta", stage_key: "placed", stage_label: "Placed", stage_order: 6, color: "#22c55e", is_terminal: true },
-    { id: "7", user_type: "council_ta", stage_key: "rejected", stage_label: "Rejected", stage_order: 7, color: "#ef4444", is_terminal: true },
-  ],
-  operator: [
-    { id: "1", user_type: "operator", stage_key: "identified", stage_label: "Identified", stage_order: 1, color: "#94a3b8", is_terminal: false },
-    { id: "2", user_type: "operator", stage_key: "compliance_check", stage_label: "Compliance Check", stage_order: 2, color: "#60a5fa", is_terminal: false },
-    { id: "3", user_type: "operator", stage_key: "renewal_due", stage_label: "Renewal Due", stage_order: 3, color: "#fbbf24", is_terminal: false },
-    { id: "4", user_type: "operator", stage_key: "in_progress", stage_label: "In Progress", stage_order: 4, color: "#a78bfa", is_terminal: false },
-    { id: "5", user_type: "operator", stage_key: "compliant", stage_label: "Compliant", stage_order: 5, color: "#22c55e", is_terminal: true },
-    { id: "6", user_type: "operator", stage_key: "non_compliant", stage_label: "Non-Compliant", stage_order: 6, color: "#ef4444", is_terminal: true },
-  ],
-  agent: [
-    { id: "1", user_type: "agent", stage_key: "sourced", stage_label: "Sourced", stage_order: 1, color: "#94a3b8", is_terminal: false },
-    { id: "2", user_type: "agent", stage_key: "packaged", stage_label: "Packaged", stage_order: 2, color: "#60a5fa", is_terminal: false },
-    { id: "3", user_type: "agent", stage_key: "presented", stage_label: "Presented", stage_order: 3, color: "#a78bfa", is_terminal: false },
-    { id: "4", user_type: "agent", stage_key: "client_viewing", stage_label: "Client Viewing", stage_order: 4, color: "#fbbf24", is_terminal: false },
-    { id: "5", user_type: "agent", stage_key: "offer", stage_label: "Offer", stage_order: 5, color: "#f97316", is_terminal: false },
-    { id: "6", user_type: "agent", stage_key: "exchanged", stage_label: "Exchanged", stage_order: 6, color: "#22c55e", is_terminal: true },
-    { id: "7", user_type: "agent", stage_key: "fallen_through", stage_label: "Fallen Through", stage_order: 7, color: "#ef4444", is_terminal: true },
-  ],
-}
+/**
+ * The acquisition funnel. Was four sets keyed by role — this is the investor
+ * one, which is the only funnel the platform now describes. The operator
+ * compliance stages are preserved in lib/types/compliance-checklist.ts.
+ */
+const DEFAULT_STAGES: PipelineStageConfig[] = [
+  { id: "1", stage_key: "identified", stage_label: "Identified", stage_order: 1, color: "#94a3b8", is_terminal: false },
+  { id: "2", stage_key: "researched", stage_label: "Researched", stage_order: 2, color: "#60a5fa", is_terminal: false },
+  { id: "3", stage_key: "contacted", stage_label: "Contacted", stage_order: 3, color: "#a78bfa", is_terminal: false },
+  { id: "4", stage_key: "viewing", stage_label: "Viewing", stage_order: 4, color: "#fbbf24", is_terminal: false },
+  { id: "5", stage_key: "offer_made", stage_label: "Offer Made", stage_order: 5, color: "#f97316", is_terminal: false },
+  { id: "6", stage_key: "under_offer", stage_label: "Under Offer", stage_order: 6, color: "#22d3ee", is_terminal: false },
+  { id: "7", stage_key: "completed", stage_label: "Completed", stage_order: 7, color: "#22c55e", is_terminal: true },
+  { id: "8", stage_key: "dead", stage_label: "Dead", stage_order: 8, color: "#ef4444", is_terminal: true },
+]
 
 const PRIORITY_LABELS = ["None", "Low", "Medium", "High"] as const
 const PRIORITY_COLORS = ["text-slate-400", "text-blue-500", "text-amber-500", "text-red-500"]
 
-export function PipelineBoard({ userType }: PipelineBoardProps) {
+export function PipelineBoard({}: PipelineBoardProps) {
   const [deals, setDeals] = useState<PipelineDeal[]>([])
-  const [stages] = useState<PipelineStageConfig[]>(DEFAULT_STAGES[userType] || DEFAULT_STAGES.investor)
+  const [stages] = useState<PipelineStageConfig[]>(DEFAULT_STAGES)
   const [loading, setLoading] = useState(true)
   const [editingDeal, setEditingDeal] = useState<PipelineDeal | null>(null)
   const [editNotes, setEditNotes] = useState("")

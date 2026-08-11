@@ -42,11 +42,7 @@ import { HmoPlanningDecisionsCard } from "@/components/hmo-planning-decisions-ca
 // DataEnrichmentCard removed - enrichment is automated, not user-triggered
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 import { SavePropertyButton } from "@/components/save-property-button"
-import { TASuitabilityBadge } from "@/components/ta-suitability-badge"
 import { toast } from "sonner"
-import { getLhaWeeklyRate, getLhaMonthlyRate } from "@/lib/data/lha-rates"
-import { getVisibilityForRole } from "@/lib/role-visibility"
-import type { UserType } from "@/components/role-selection-modal"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -62,7 +58,6 @@ interface PropertyDetailCardProps {
   isPremium?: boolean
   isSaved?: boolean
   className?: string
-  userRole?: UserType | null
   hideFooter?: boolean
   hideHeader?: boolean
 }
@@ -75,11 +70,9 @@ export function PropertyDetailCard({
   isPremium = false,
   isSaved = false,
   className,
-  userRole,
   hideFooter = false,
   hideHeader = false,
 }: PropertyDetailCardProps) {
-  const visibility = getVisibilityForRole(userRole)
   const [activeTab, setActiveTab] = useState<TabType>("analysis")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
   const [isEnriching, setIsEnriching] = useState(false)
@@ -221,7 +214,7 @@ export function PropertyDetailCard({
               {property.listing_type === "purchase" ? "asking" : "/mo"}
             </span>
           </div>
-          {visibility.showDealScore && property.deal_score && (
+          {property.deal_score && (
             <div className={cn(
               "flex items-center gap-1 px-2 py-1 rounded text-sm font-bold",
               property.deal_score >= 70 ? "bg-emerald-100 text-emerald-700" :
@@ -234,30 +227,6 @@ export function PropertyDetailCard({
           )}
         </div>
 
-        {/* LHA Rate Comparison (rental properties only, council/TA role) */}
-        {visibility.showLhaComparison && property.listing_type === "rent" && property.price_pcm && (() => {
-          const lhaWeekly = getLhaWeeklyRate(property.city, property.bedrooms, property.postcode)
-          const lhaMonthly = lhaWeekly ? Math.round((lhaWeekly * 52) / 12) : null
-          if (!lhaMonthly) return null
-          return (
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs text-slate-500">LHA:</span>
-              <span className="text-xs font-medium text-slate-700">
-                £{lhaWeekly?.toFixed(0)}/wk (£{lhaMonthly}/mo)
-              </span>
-              <span className={cn(
-                "inline-flex items-center h-5 px-1.5 rounded text-[10px] font-bold",
-                property.price_pcm <= lhaMonthly ? "bg-emerald-100 text-emerald-700" :
-                property.price_pcm <= lhaMonthly * 1.1 ? "bg-amber-100 text-amber-700" :
-                "bg-red-100 text-red-700"
-              )}>
-                {property.price_pcm <= lhaMonthly ? "Within LHA" :
-                 property.price_pcm <= lhaMonthly * 1.1 ? "Near LHA" :
-                 "Over LHA"}
-              </span>
-            </div>
-          )
-        })()}
 
         {/* Row 2: Address */}
         <div className="flex items-center gap-2 mt-3">
@@ -305,16 +274,14 @@ export function PropertyDetailCard({
               <HelpCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Unknown
             </span>
           )}
-          {visibility.showTaSuitability && (
-            <TASuitabilityBadge property={property} isPremium={isPremium} />
-          )}
+          
         </div>
       </div>}
 
       {/* ═══════════════════════════════════════════════════════════════════
           METRICS BAR
       ═══════════════════════════════════════════════════════════════════ */}
-      {visibility.showYieldMetrics && (
+      {(true) && (
         <div className="shrink-0 grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-slate-50">
           {[
             { label: "Net Yield", value: netYield ? `${netYield}%` : "—", positive: netYield && parseFloat(netYield) >= 6 },
@@ -373,7 +340,7 @@ export function PropertyDetailCard({
           {/* ANALYSIS TAB */}
           {activeTab === "analysis" && (
             <>
-              {visibility.showYieldCalculator && (
+              {(true) && (
                 <PremiumYieldCalculator property={property} isPremium={isPremium} />
               )}
               <AreaStatisticsCard postcode={property.postcode} />
@@ -440,7 +407,7 @@ export function PropertyDetailCard({
               )}
 
               {/* Ownership - Premium Feature */}
-              {visibility.showOwnership && (property.owner_name || property.company_name) && (
+              {(property.owner_name || property.company_name) && (
                 <Section title="Ownership">
                   {isPremium ? (
                     property.company_name ? (

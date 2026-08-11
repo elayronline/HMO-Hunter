@@ -11,8 +11,6 @@ import { D2VComposer } from "@/components/d2v-composer"
 import { ViewingTracker } from "@/components/viewing-tracker"
 import { SenderProfileEditor, loadSenderProfile, type SenderProfile } from "@/components/sender-profile"
 import { createClient } from "@/lib/supabase/client"
-import { getVisibilityForRole } from "@/lib/role-visibility"
-import type { UserType } from "@/components/role-selection-modal"
 import {
   Kanban, Mail, Calendar, Search, ArrowLeft, Zap,
   TrendingUp, ShieldCheck, FileText, Users, Building2,
@@ -21,56 +19,24 @@ import {
 import { toast } from "sonner"
 
 // ICP-specific value propositions
-const ICP_VALUE: Record<UserType, {
-  headline: string
-  subtitle: string
-  stats: { label: string; value: string; icon: typeof Zap }[]
-  competitiveEdge: string
-}> = {
-  investor: {
-    headline: "Find & Close HMO Deals Faster",
-    subtitle: "From discovery to completion — the only platform that combines HMO intelligence with deal execution tools.",
-    stats: [
-      { label: "Avg. days to find a deal", value: "3x faster", icon: Zap },
-      { label: "Off-market data sources", value: "6 sources", icon: Search },
-      { label: "Owner contact rate", value: "85%+", icon: Users },
-    ],
-    competitiveEdge: "Unlike PropStream or PropertyData, HMO Hunter combines deal sourcing, owner outreach, and pipeline management in one platform — no spreadsheets needed.",
-  },
-  council_ta: {
-    headline: "Source TA Properties Efficiently",
-    subtitle: "Identify, assess, and place properties for temporary accommodation — all in one workflow.",
-    stats: [
-      { label: "Properties with TA data", value: "LHA + suitability", icon: ShieldCheck },
-      { label: "Compliance checks", value: "Automated", icon: FileText },
-      { label: "Inspection tracking", value: "Built-in", icon: Calendar },
-    ],
-    competitiveEdge: "No other platform combines HMO register data with LHA rates, TA suitability scoring, and inspection workflow management for council teams.",
-  },
-  operator: {
-    headline: "Stay Compliant, Stay Profitable",
-    subtitle: "Track every licence, inspection, and compliance deadline across your entire HMO portfolio.",
-    stats: [
-      { label: "Licence expiry alerts", value: "90 days ahead", icon: ShieldCheck },
-      { label: "Compliance checks", value: "8-point", icon: FileText },
-      { label: "Portfolio visibility", value: "All-in-one", icon: Building2 },
-    ],
-    competitiveEdge: "Purpose-built for HMO operators — not a generic property management tool. Every feature is designed around HMO licensing and compliance.",
-  },
-  agent: {
-    headline: "Source & Package Deals at Scale",
-    subtitle: "Find off-market opportunities, contact owners directly, and manage your deal pipeline from sourcing to exchange.",
-    stats: [
-      { label: "D2V letter templates", value: "Ready-made", icon: Mail },
-      { label: "Off-market leads", value: "3 free sources", icon: Search },
-      { label: "Pipeline stages", value: "7-stage flow", icon: Kanban },
-    ],
-    competitiveEdge: "GoDryv charges per letter. PropertyEngine lacks HMO intelligence. HMO Hunter gives you both — with integrated owner data and deal scoring.",
-  },
+/**
+ * What the platform is for. Was four pitches keyed by role; the roles are gone,
+ * and this is the one that describes the product: source effectively, verify
+ * accurately.
+ */
+const VALUE_PROPOSITION = {
+  headline: "Find & Close HMO Deals Faster",
+  subtitle: "From discovery to completion — HMO intelligence and deal execution in one place.",
+  stats: [
+    { label: "Avg. days to find a deal", value: "3x faster", icon: Zap },
+    { label: "Off-market data sources", value: "6 sources", icon: Search },
+    { label: "Owner contact rate", value: "85%+", icon: Users },
+  ],
+  competitiveEdge:
+    "Unlike PropStream or PropertyData, HMO Hunter combines deal sourcing, owner outreach, and pipeline management in one platform — no spreadsheets needed.",
 }
 
 export default function PipelinePage() {
-  const [userType, setUserType] = useState<UserType>("investor")
   const [loading, setLoading] = useState(true)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
   const [senderProfile, setSenderProfile] = useState<SenderProfile | null>(null)
@@ -78,33 +44,8 @@ export default function PipelinePage() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    async function loadUserType() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/auth/login")
-        return
-      }
-      if (user.user_metadata?.user_type) {
-        setUserType(user.user_metadata.user_type as UserType)
-      }
-
-      // Load sender profile
-      const profile = await loadSenderProfile()
-      setSenderProfile(profile)
-
-      // Open profile editor if ?tab=profile
-      if (searchParams.get("tab") === "profile") {
-        setShowProfileEditor(true)
-      }
-
-      setLoading(false)
-    }
-    loadUserType()
   }, [router, searchParams])
-
-  const visibility = getVisibilityForRole(userType)
-  const value = ICP_VALUE[userType]
+  const value = VALUE_PROPOSITION
 
   if (loading) {
     return (
@@ -115,10 +56,10 @@ export default function PipelinePage() {
   }
 
   const tabs: { key: string; label: string; icon: typeof Kanban; visible: boolean }[] = [
-    { key: "pipeline", label: "Pipeline", icon: Kanban, visible: visibility.showPipeline },
-    { key: "d2v", label: "D2V Outreach", icon: Mail, visible: visibility.showD2VOutreach },
-    { key: "viewings", label: "Viewings", icon: Calendar, visible: visibility.showViewingTracker },
-    { key: "off-market", label: "Off-Market Leads", icon: Search, visible: visibility.showOffMarketSourcing },
+    { key: "pipeline", label: "Pipeline", icon: Kanban, visible: true },
+    { key: "d2v", label: "D2V Outreach", icon: Mail, visible: true },
+    { key: "viewings", label: "Viewings", icon: Calendar, visible: true },
+    { key: "off-market", label: "Off-Market Leads", icon: Search, visible: true },
   ]
 
   const visibleTabs = tabs.filter(t => t.visible)
@@ -139,12 +80,6 @@ export default function PipelinePage() {
             </button>
             <span className="text-slate-300">/</span>
             <h1 className="text-sm font-semibold text-slate-900">Deal Management</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Badge variant="outline" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              {userType === "investor" ? "Investor" : userType === "council_ta" ? "Council/TA" : userType === "operator" ? "Operator" : "Agent"}
-            </Badge>
           </div>
         </div>
       </header>
@@ -196,13 +131,13 @@ export default function PipelinePage() {
             })}
           </TabsList>
 
-          {visibility.showPipeline && (
+          {(
             <TabsContent value="pipeline">
-              <PipelineBoard userType={userType} />
+              <PipelineBoard />
             </TabsContent>
           )}
 
-          {visibility.showD2VOutreach && (
+          {(
             <TabsContent value="d2v">
               {/* Sender profile banner */}
               <div className="flex items-center justify-between mb-4 px-4 py-3 bg-white rounded-lg border">
@@ -237,13 +172,13 @@ export default function PipelinePage() {
             </TabsContent>
           )}
 
-          {visibility.showViewingTracker && (
+          {(
             <TabsContent value="viewings">
-              <ViewingTracker userType={userType} />
+              <ViewingTracker />
             </TabsContent>
           )}
 
-          {visibility.showOffMarketSourcing && (
+          {(
             <TabsContent value="off-market">
               <OffMarketDashboard />
             </TabsContent>

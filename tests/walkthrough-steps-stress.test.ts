@@ -1,15 +1,12 @@
 import { describe, it, expect } from "vitest"
 import {
-  getStepsForRole,
-  ROLE_STEPS,
+  getWalkthroughSteps,
   FALLBACK_STEPS,
   type Step,
   type HighlightPosition,
   type ArrowDirection,
 } from "@/lib/walkthrough-steps"
-import type { UserType } from "@/components/role-selection-modal"
 
-const ALL_ROLES: UserType[] = ["investor", "council_ta", "operator", "agent"]
 
 const VALID_POSITIONS: HighlightPosition[] = [
   "center", "top-left", "top-center", "top-right",
@@ -27,9 +24,9 @@ const REQUIRED_STEP_FIELDS: (keyof Step)[] = [
 // Data Integrity
 // ============================================================================
 describe("Step Data Integrity", () => {
-  ALL_ROLES.forEach((role) => {
-    describe(`${role} steps`, () => {
-      const steps = getStepsForRole(role)
+  ;[null].forEach(() => {
+    describe("walkthrough steps", () => {
+      const steps = getWalkthroughSteps()
 
       it("should return a non-empty array", () => {
         expect(Array.isArray(steps)).toBe(true)
@@ -101,46 +98,46 @@ describe("Step Data Integrity", () => {
 // ============================================================================
 describe("Shared Steps Consistency", () => {
   it("every role should start with a Welcome step", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       expect(steps[0].title).toContain("Welcome")
     })
   })
 
   it("every role should end with a You're Ready step", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       expect(steps[steps.length - 1].title).toContain("Ready")
     })
   })
 
   it("every role should have a Property Map step", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       const mapStep = steps.find((s) => s.title === "Property Map")
       expect(mapStep).toBeDefined()
     })
   })
 
   it("every role should have a Search & Filters step", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       const filterStep = steps.find((s) => s.title === "Search & Filters")
       expect(filterStep).toBeDefined()
     })
   })
 
   it("every role should have a Quick Filter Tabs step", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       const tabStep = steps.find((s) => s.title === "Quick Filter Tabs")
       expect(tabStep).toBeDefined()
     })
   })
 
   it("every role should have a Property Details step with showPropertyDetails flag", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       const detailsStep = steps.find((s) => s.showPropertyDetails === true)
       expect(detailsStep).toBeDefined()
       expect(detailsStep!.title).toContain("Property Details")
@@ -148,8 +145,8 @@ describe("Shared Steps Consistency", () => {
   })
 
   it("exactly one step per role should have showPropertyDetails = true", () => {
-    ALL_ROLES.forEach((role) => {
-      const steps = getStepsForRole(role)
+    ;[null].forEach(() => {
+      const steps = getWalkthroughSteps()
       const detailSteps = steps.filter((s) => s.showPropertyDetails === true)
       expect(detailSteps.length).toBe(1)
     })
@@ -164,133 +161,46 @@ describe("Shared Steps Consistency", () => {
 // ============================================================================
 // Role-Specific Content
 // ============================================================================
-describe("Role-Specific Content", () => {
-  it("investor steps should mention yield and deal score", () => {
-    const steps = getStepsForRole("investor")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
+describe("Walkthrough Content", () => {
+  // One walkthrough, so there is no longer any cross-role content to keep
+  // apart. What it must still do is describe the two jobs the platform exists
+  // for: finding opportunities, and checking they are what they appear to be.
+  const allText = getWalkthroughSteps()
+    .map((s) => s.description)
+    .join(" ")
+    .toLowerCase()
+
+  it("covers sourcing", () => {
     expect(allText).toContain("yield")
     expect(allText).toContain("deal score")
   })
 
-  it("council_ta steps should mention TA suitability and LHA", () => {
-    const steps = getStepsForRole("council_ta")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).toContain("ta suitability")
-    expect(allText).toContain("lha")
+  it("covers verification", () => {
+    expect(allText).toMatch(/licence|article 4|epc/)
   })
 
-  it("operator steps should mention licence and expiry", () => {
-    const steps = getStepsForRole("operator")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).toContain("licence")
-    expect(allText).toContain("expir")
-  })
-
-  it("agent steps should mention deal score and comparison", () => {
-    const steps = getStepsForRole("agent")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).toContain("deal score")
-    expect(allText).toContain("comparison")
-  })
-
-  // Cross-checks: roles should NOT contain each other's unique content
-  it("investor steps should NOT mention TA suitability", () => {
-    const steps = getStepsForRole("investor")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
+  // The removed models must not linger in the copy a new user is shown first.
+  it("does not describe anything the platform no longer does", () => {
     expect(allText).not.toContain("ta suitability")
-  })
-
-  it("council_ta steps should NOT mention yield calculator", () => {
-    const steps = getStepsForRole("council_ta")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).not.toContain("yield calculator")
-  })
-
-  it("operator steps should NOT mention comparison tool", () => {
-    const steps = getStepsForRole("operator")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).not.toContain("comparison tool")
-  })
-
-  it("agent steps should NOT mention TA suitability", () => {
-    const steps = getStepsForRole("agent")
-    const allText = steps.map((s) => s.description).join(" ").toLowerCase()
-    expect(allText).not.toContain("ta suitability")
-  })
-
-  it("each role welcome step should have a role-specific description", () => {
-    const descriptions = ALL_ROLES.map(
-      (role) => getStepsForRole(role)[0].description
-    )
-    const unique = new Set(descriptions)
-    expect(unique.size).toBe(ALL_ROLES.length)
+    expect(allText).not.toContain("lha")
+    expect(allText).not.toContain("r2hmo")
   })
 })
 
 // ============================================================================
 // Edge Cases
 // ============================================================================
-describe("Edge Cases", () => {
-  it("should return fallback steps for null role", () => {
-    const steps = getStepsForRole(null)
-    expect(steps).toBe(FALLBACK_STEPS)
-    expect(steps.length).toBe(6)
-  })
-
-  it("should return fallback steps for undefined role", () => {
-    const steps = getStepsForRole(undefined)
-    expect(steps).toBe(FALLBACK_STEPS)
-    expect(steps.length).toBe(6)
-  })
-
-  it("should return fallback steps for unknown role string", () => {
-    const steps = getStepsForRole("unknown_role" as UserType)
-    expect(steps).toBe(FALLBACK_STEPS)
-  })
-
-  it("should return fallback steps for empty string role", () => {
-    const steps = getStepsForRole("" as UserType)
-    expect(steps).toBe(FALLBACK_STEPS)
-  })
-
-  it("should return different steps for different roles", () => {
-    const investorSteps = getStepsForRole("investor")
-    const councilSteps = getStepsForRole("council_ta")
-    // Middle steps should differ
-    expect(investorSteps[1].description).not.toBe(councilSteps[1].description)
-    expect(investorSteps[3].title).not.toBe(councilSteps[3].title)
-  })
-
-  it("should return stable references for the same role", () => {
-    const a = getStepsForRole("investor")
-    const b = getStepsForRole("investor")
-    expect(a).toBe(b)
-  })
-
-  it("should return stable reference for fallback", () => {
-    const a = getStepsForRole(null)
-    const b = getStepsForRole(undefined)
-    expect(a).toBe(b)
-  })
-
-  it("ROLE_STEPS should cover all 4 roles", () => {
-    ALL_ROLES.forEach((role) => {
-      expect(ROLE_STEPS[role]).toBeDefined()
-      expect(ROLE_STEPS[role].length).toBeGreaterThan(0)
-    })
-  })
-})
 
 // ============================================================================
 // No Step Gaps
 // ============================================================================
 describe("No Step Gaps", () => {
-  ALL_ROLES.forEach((role) => {
-    it(`${role} should have no undefined or null entries`, () => {
-      const steps = getStepsForRole(role)
+  ;[null].forEach(() => {
+    it("should have no undefined or null entries", () => {
+      const steps = getWalkthroughSteps()
       steps.forEach((step, i) => {
-        expect(step, `step ${i} is undefined/null for ${role}`).toBeDefined()
-        expect(step, `step ${i} is null for ${role}`).not.toBeNull()
+        expect(step, "step ${i} is undefined/null for").toBeDefined()
+        expect(step, "step ${i} is null for").not.toBeNull()
       })
     })
   })
@@ -306,34 +216,4 @@ describe("No Step Gaps", () => {
 // ============================================================================
 // Stress: Bulk Iteration
 // ============================================================================
-describe("Stress: Bulk Iteration", () => {
-  it("should handle 1000 sequential getStepsForRole calls without error", () => {
-    for (let i = 0; i < 1000; i++) {
-      const role = ALL_ROLES[i % ALL_ROLES.length]
-      const steps = getStepsForRole(role)
-      expect(steps.length).toBe(7)
-    }
-  })
 
-  it("should handle rapid role switching", () => {
-    let prev: Step[] | null = null
-    for (let i = 0; i < 500; i++) {
-      const role = ALL_ROLES[i % ALL_ROLES.length]
-      const steps = getStepsForRole(role)
-      if (prev && i % ALL_ROLES.length === 0) {
-        // Same role should give same reference
-        expect(steps).toBe(getStepsForRole(role))
-      }
-      prev = steps
-    }
-  })
-
-  it("should handle alternating between valid and invalid roles", () => {
-    const mixed = ["investor", null, "council_ta", undefined, "operator", "" as UserType, "agent", "fake" as UserType]
-    mixed.forEach((role) => {
-      const steps = getStepsForRole(role as UserType | null | undefined)
-      expect(steps.length).toBeGreaterThan(0)
-      expect(steps[0].title).toContain("Welcome")
-    })
-  })
-})

@@ -83,8 +83,6 @@ import { CreditBalance } from "@/components/credit-balance"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
-import { RoleSelectionModal, roles as roleOptions, type UserType } from "@/components/role-selection-modal"
-import { assessTASuitability } from "@/lib/services/ta-suitability"
 import { Map, List } from "lucide-react"
 import { PropertyListView } from "@/components/property-list-view"
 
@@ -142,10 +140,8 @@ export default function HMOHunterPage() {
   const [minBathrooms, setMinBathrooms] = useState<number>(0)
   const [isFurnished, setIsFurnished] = useState(false)
   const [hasParking, setHasParking] = useState(false)
-  const [taSuitabilityFilter, setTaSuitabilityFilter] = useState<"suitable" | "partial" | null>(null)
 
   // Role selection modal state
-  const [showRoleSelection, setShowRoleSelection] = useState(false)
 
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
@@ -366,19 +362,8 @@ export default function HMOHunterPage() {
         setUser(authUser)
         if (authUser) {
           fetchSavedProperties()
-          // Show role selection for users who haven't chosen a role yet
-          if (!authUser.user_metadata?.user_type) {
-            setShowRoleSelection(true)
-          } else if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
-            // Only show walkthrough if role is already set (otherwise it triggers after role selection)
+          if (!authUser.user_metadata?.onboarding_completed || isDemoMode) {
             setShowWalkthrough(true)
-          }
-          // Apply role-based defaults
-          const roleType = authUser.user_metadata?.user_type
-          if (roleType === "operator") {
-            setMinBedrooms(3)
-          } else if (roleType === "agent") {
-            setMinDealScore(45)
           }
         }
       }
@@ -565,7 +550,6 @@ export default function HMOHunterPage() {
   }
 
   const handleResetFilters = () => {
-    const userType = user?.user_metadata?.user_type
     setPriceRange([50000, 2000000])
     setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
     setSelectedLocation(DEFAULT_LOCATION)
@@ -578,17 +562,15 @@ export default function HMOHunterPage() {
     setFloorAreaBandFilter(null)
     setYieldBandFilter(null)
     setEpcBandFilter(null)
-    setMinDealScore(userType === "agent" ? 45 : 0)
+    setMinDealScore(0)
     setActiveSegment("all")
     setLicenceExpiryEnabled(false)
     setLicenceExpiryMonthRange([1, 12])
     setLicenceExpiryYear(new Date().getFullYear())
-    // Phase 6 - TA Sourcing filter resets
-    setMinBedrooms(userType === "operator" ? 3 : 0)
+    setMinBedrooms(0)
     setMinBathrooms(0)
     setIsFurnished(false)
     setHasParking(false)
-    setTaSuitabilityFilter(null)
     setOwnerDataFilter(false)
     setAdvancedFiltersExpanded(false)
   }
@@ -754,14 +736,7 @@ export default function HMOHunterPage() {
     return filtered
   }, [properties, activeSegment])
 
-  // Phase 6 - Client-side TA suitability filter
-  const displayProperties = useMemo(() => {
-    if (!taSuitabilityFilter) return segmentFilteredProperties
-    return segmentFilteredProperties.filter((p: Property) => {
-      const result = assessTASuitability(p)
-      return result.suitability === taSuitabilityFilter
-    })
-  }, [segmentFilteredProperties, taSuitabilityFilter])
+  const displayProperties = segmentFilteredProperties
 
   return (
     <div className="flex flex-col h-screen bg-slate-800">
@@ -843,10 +818,6 @@ export default function HMOHunterPage() {
                   <p className="text-xs text-slate-500">Signed in</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowRoleSelection(true)}>
-                  <Users className="w-4 h-4 mr-2" />
-                  {roleOptions.find(r => r.id === user.user_metadata?.user_type)?.label ?? "Set Role"}
-                </DropdownMenuItem>
                 {user.user_metadata?.is_admin && (
                   <DropdownMenuItem onClick={() => router.push("/admin")}>
                     <Shield className="w-4 h-4 mr-2" />
@@ -1029,7 +1000,6 @@ export default function HMOHunterPage() {
               minBathrooms,
               isFurnished,
               hasParking,
-              taSuitabilityFilter,
             }}
             onLoadFilters={(filters: SearchFilters) => {
               setPriceRange(filters.priceRange)
@@ -1052,7 +1022,6 @@ export default function HMOHunterPage() {
               if (filters.minBathrooms !== undefined) setMinBathrooms(filters.minBathrooms)
               if (filters.isFurnished !== undefined) setIsFurnished(filters.isFurnished)
               if (filters.hasParking !== undefined) setHasParking(filters.hasParking)
-              if (filters.taSuitabilityFilter !== undefined) setTaSuitabilityFilter(filters.taSuitabilityFilter as any)
             }}
             isLoggedIn={!!user}
           />
@@ -1180,7 +1149,6 @@ export default function HMOHunterPage() {
                     licenceExpiryEnabled,
                     isFurnished,
                     hasParking,
-                    taSuitabilityFilter !== null,
                     ownerDataFilter,
                   ].filter(Boolean).length
                   return (
@@ -1374,22 +1342,6 @@ export default function HMOHunterPage() {
                         onCheckedChange={setHasParking}
                       />
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <label className="text-xs font-medium text-slate-600 mb-1 block">TA Suitability</label>
-                    <Select
-                      value={taSuitabilityFilter || "any"}
-                      onValueChange={(value) => setTaSuitabilityFilter(value === "any" ? null : value as "suitable" | "partial")}
-                    >
-                      <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200">
-                        <SelectValue placeholder="Any" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any</SelectItem>
-                        <SelectItem value="suitable">TA Suitable</SelectItem>
-                        <SelectItem value="partial">Partial Match</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
 
@@ -2100,7 +2052,6 @@ export default function HMOHunterPage() {
                     onViewFullDetails={() => setShowFullDetails(true)}
                     isPremium={isPremiumUser}
                     isSaved={savedPropertyIds.has(selectedProperty.id)}
-                    userRole={user?.user_metadata?.user_type ?? null}
                   />
                 </div>
 
@@ -2507,42 +2458,10 @@ export default function HMOHunterPage() {
         />
       )}
 
-      {/* Role Selection Modal - shown when user_type not set, or when user chooses to change role */}
-      <RoleSelectionModal
-        isOpen={showRoleSelection}
-        currentRole={user?.user_metadata?.user_type ?? null}
-        onClose={() => setShowRoleSelection(false)}
-        onComplete={(userType: UserType) => {
-          setShowRoleSelection(false)
-          // Apply role-based filter defaults
-          // Every role now sees the same purchase-priced stock; only the
-          // bedroom and deal-score defaults still differ. council_ta used to
-          // default to a rental price band, which no longer has anything
-          // behind it — see the note in the commit for what that segment needs.
-          setPriceRange([50000, 2000000])
-          setMinBedrooms(userType === "operator" ? 3 : 0)
-          setMinDealScore(userType === "agent" ? 45 : 0)
-          // Update local user state so UI reflects the change immediately
-          // Skip the next onAuthStateChange to prevent stale metadata overwriting this
-          if (user) {
-            skipNextAuthUpdate.current = true
-            setUser({
-              ...user,
-              user_metadata: { ...user.user_metadata, user_type: userType },
-            })
-          }
-          // Show walkthrough only on first login (no existing role)
-          if (!user?.user_metadata?.user_type && !user?.user_metadata?.onboarding_completed) {
-            setShowWalkthrough(true)
-          }
-        }}
-      />
-
       {/* Onboarding Walkthrough - shown on first login */}
       <OnboardingWalkthrough
         isOpen={showWalkthrough}
         onComplete={() => setShowWalkthrough(false)}
-        userRole={user?.user_metadata?.user_type ?? null}
         onShowPropertyDetails={() => {
           // Select first property to demo the details panel
           if (properties.length > 0 && !selectedProperty) {

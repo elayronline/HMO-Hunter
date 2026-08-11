@@ -327,16 +327,6 @@ describe("propertyFiltersSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("should validate taSuitability filter", () => {
-    expect(propertyFiltersSchema.safeParse({ taSuitability: "suitable" }).success).toBe(true)
-    expect(propertyFiltersSchema.safeParse({ taSuitability: "partial" }).success).toBe(true)
-  })
-
-  it("should reject invalid taSuitability value", () => {
-    expect(propertyFiltersSchema.safeParse({ taSuitability: "invalid" }).success).toBe(false)
-    expect(propertyFiltersSchema.safeParse({ taSuitability: "not_suitable" }).success).toBe(false)
-  })
-
   it("should accept all Phase 6 filters combined", () => {
     const result = propertyFiltersSchema.safeParse({
       listingType: "rent",
@@ -344,7 +334,6 @@ describe("propertyFiltersSchema", () => {
       minBathrooms: 2,
       isFurnished: true,
       hasParking: false,
-      taSuitability: "suitable",
     })
     expect(result.success).toBe(true)
   })

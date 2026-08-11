@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
-import { getLhaMonthlyRate } from "@/lib/data/lha-rates"
 
 interface HeroMetricsBarProps {
   property: Property
@@ -29,20 +28,6 @@ function getPricePerRoomStatus(pricePerRoom: number | null): MetricStatus {
   if (!pricePerRoom) return "neutral"
   if (pricePerRoom < 60000) return "positive"
   if (pricePerRoom <= 80000) return "neutral"
-  return "negative"
-}
-
-function getR2RMarginStatus(margin: number | null): MetricStatus {
-  if (margin === null) return "neutral"
-  if (margin >= 30) return "positive"
-  if (margin >= 10) return "neutral"
-  return "negative"
-}
-
-function getSpreadStatus(spread: number | null): MetricStatus {
-  if (spread === null) return "neutral"
-  if (spread >= 300) return "positive"
-  if (spread >= 0) return "neutral"
   return "negative"
 }
 
@@ -96,40 +81,33 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     ? Math.round(property.purchase_price / property.bedrooms)
     : null
 
-  // R2R metrics for rent properties
-  const isRent = property.listing_type === "rent"
-  let r2rMargin: number | null = null
-  let monthlySpread: number | null = null
-  let rentPerRoom: number | null = null
-
-  if (isRent && property.price_pcm && property.price_pcm > 0 && property.bedrooms && property.bedrooms > 0) {
-    const lhaRate = property.city
-      ? getLhaMonthlyRate(property.city, property.bedrooms, property.postcode)
+  // A property with no asking price is not for sale — it is an existing HMO,
+  // and what it is worth is a conversation with the owner. The old branch here
+  // computed an R2HMO margin against the LHA rate, which was rent-to-rent
+  // arithmetic for a model the platform no longer runs. What a buyer can
+  // actually use is what the property is observed to achieve, so these are
+  // measured figures with nothing derived from an assumption.
+  const hasAskingPrice = property.purchase_price != null && property.purchase_price > 0
+  const rentPerRoom =
+    property.price_pcm && property.price_pcm > 0 && property.bedrooms && property.bedrooms > 0
+      ? Math.round(property.price_pcm / property.bedrooms)
       : null
-    if (lhaRate) {
-      monthlySpread = Math.round(lhaRate - property.price_pcm)
-      r2rMargin = Math.round(((lhaRate - property.price_pcm) / property.price_pcm) * 100)
-    }
-    rentPerRoom = Math.round(property.price_pcm / property.bedrooms)
-  }
 
-  const metrics = isRent ? [
+  const metrics = !hasAskingPrice ? [
     {
-      label: "R2HMO Margin",
-      value: r2rMargin !== null ? `${r2rMargin >= 0 ? "+" : ""}${r2rMargin}%` : "—",
-      status: getR2RMarginStatus(r2rMargin),
-    },
-    {
-      label: "Mo. Spread",
-      value: monthlySpread !== null
-        ? `${monthlySpread >= 0 ? "+" : ""}£${Math.abs(monthlySpread).toLocaleString()}`
-        : "—",
-      status: getSpreadStatus(monthlySpread),
+      label: "Let At",
+      value: property.price_pcm ? `£${property.price_pcm.toLocaleString()}` : "—",
+      status: "neutral" as const,
     },
     {
       label: "Rent/Room",
       value: rentPerRoom ? `£${rentPerRoom.toLocaleString()}` : "—",
       status: getRentPerRoomStatus(rentPerRoom),
+    },
+    {
+      label: "Rooms",
+      value: property.bedrooms ? String(property.bedrooms) : "—",
+      status: "neutral" as const,
     },
   ] : [
     {

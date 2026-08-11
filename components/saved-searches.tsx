@@ -42,7 +42,6 @@ export interface SearchFilters {
   minBathrooms: number
   isFurnished: boolean
   hasParking: boolean
-  taSuitabilityFilter: string | null
 }
 
 interface SavedSearch {

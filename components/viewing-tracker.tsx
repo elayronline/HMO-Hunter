@@ -33,12 +33,10 @@ import {
   AlertCircle,
   Eye,
 } from "lucide-react"
-import type { UserType } from "@/components/role-selection-modal"
 import type { PropertyViewing, ViewingType, ViewingStatus } from "@/lib/types/pipeline"
-import { VIEWING_CHECKLISTS } from "@/lib/types/pipeline"
+import { VIEWING_CHECKLIST } from "@/lib/types/pipeline"
 
 interface ViewingTrackerProps {
-  userType: UserType
 }
 
 const VIEWING_TYPE_LABELS: Record<ViewingType, string> = {
@@ -56,7 +54,7 @@ const STATUS_CONFIG: Record<ViewingStatus, { label: string; icon: typeof CheckCi
   no_show: { label: "No Show", icon: AlertCircle, color: "text-amber-500" },
 }
 
-export function ViewingTracker({ userType }: ViewingTrackerProps) {
+export function ViewingTracker() {
   const [viewings, setViewings] = useState<PropertyViewing[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("upcoming")
@@ -135,7 +133,7 @@ export function ViewingTracker({ userType }: ViewingTrackerProps) {
     setCompletionNotes(viewing.notes || "")
     // Init checklist from ICP defaults
     const defaultChecklist: Record<string, boolean> = {}
-    VIEWING_CHECKLISTS[userType]?.forEach(item => {
+    VIEWING_CHECKLIST.forEach(item => {
       defaultChecklist[item.key] = (viewing.checklist as Record<string, boolean>)?.[item.key] || false
     })
     setChecklist(defaultChecklist)
@@ -289,13 +287,10 @@ export function ViewingTracker({ userType }: ViewingTrackerProps) {
             {/* ICP-specific checklist */}
             <div>
               <label className="text-sm font-medium">
-                {userType === "council_ta" ? "Inspection Checklist"
-                  : userType === "operator" ? "Compliance Checklist"
-                  : userType === "agent" ? "Viewing Checklist"
-                  : "Property Checklist"}
+                {"Viewing Checklist"}
               </label>
               <div className="space-y-2 mt-2">
-                {VIEWING_CHECKLISTS[userType]?.map(item => (
+                {VIEWING_CHECKLIST.map(item => (
                   <div key={item.key} className="flex items-center gap-2">
                     <Checkbox
                       checked={checklist[item.key] || false}

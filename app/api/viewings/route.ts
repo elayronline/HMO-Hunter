@@ -6,34 +6,13 @@ import { viewingCreateSchema, viewingUpdateSchema } from "@/lib/validation/schem
 import { sendEmail } from "@/lib/email/resend"
 import { viewingConfirmationEmail } from "@/lib/email/templates"
 import type { ViewingType } from "@/lib/types/pipeline"
-import type { UserType } from "@/components/role-selection-modal"
 
 // Map viewing_type to the correct pipeline stage per ICP
-const VIEWING_STAGE_MAP: Record<UserType, Record<ViewingType, string>> = {
-  investor: {
+const VIEWING_STAGE_MAP: Record<ViewingType, string> = {
     site_visit: "viewing",
     inspection: "viewing",
     portfolio_check: "viewing",
     client_viewing: "viewing",
-  },
-  council_ta: {
-    site_visit: "inspection",
-    inspection: "inspection",
-    portfolio_check: "inspection",
-    client_viewing: "inspection",
-  },
-  operator: {
-    site_visit: "compliance_check",
-    inspection: "compliance_check",
-    portfolio_check: "compliance_check",
-    client_viewing: "compliance_check",
-  },
-  agent: {
-    site_visit: "client_viewing",
-    inspection: "client_viewing",
-    portfolio_check: "client_viewing",
-    client_viewing: "client_viewing",
-  },
 }
 
 export async function GET(request: NextRequest) {
@@ -150,8 +129,7 @@ export async function POST(request: NextRequest) {
 
   // If linked to pipeline, auto-advance stage based on ICP
   if (pipeline_deal_id) {
-    const userType = (user.user_metadata?.user_type as UserType) || "investor"
-    const stageMap = VIEWING_STAGE_MAP[userType] || VIEWING_STAGE_MAP.investor
+    const stageMap = VIEWING_STAGE_MAP
     const targetStage = stageMap[viewing_type as ViewingType]
 
     // Stages that already represent a viewing — don't re-advance

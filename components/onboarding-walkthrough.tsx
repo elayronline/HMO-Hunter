@@ -14,15 +14,13 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react"
-import { getStepsForRole, type HighlightPosition, type ArrowDirection } from "@/lib/walkthrough-steps"
-import type { UserType } from "@/components/role-selection-modal"
+import { getWalkthroughSteps, type HighlightPosition, type ArrowDirection } from "@/lib/walkthrough-steps"
 
 interface OnboardingWalkthroughProps {
   isOpen: boolean
   onComplete: () => void
   onShowPropertyDetails?: () => void
   onHidePropertyDetails?: () => void
-  userRole?: UserType | null
 }
 
 const ArrowIcon = ({ direction }: { direction: ArrowDirection }) => {
@@ -85,16 +83,16 @@ const getArrowPositionClasses = (position: HighlightPosition, direction: ArrowDi
   }
 }
 
-export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetails, onHidePropertyDetails, userRole }: OnboardingWalkthroughProps) {
+export function OnboardingWalkthrough({ isOpen, onComplete, onShowPropertyDetails, onHidePropertyDetails }: OnboardingWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
 
-  const steps = useMemo(() => getStepsForRole(userRole), [userRole])
+  const steps = useMemo(() => getWalkthroughSteps(), [])
 
   // Reset to step 0 when role changes
   useEffect(() => {
     setCurrentStep(0)
-  }, [userRole])
+  }, [])
 
   // Show/hide property details based on current step (only when walkthrough is active)
   useEffect(() => {

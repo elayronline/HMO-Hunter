@@ -25,7 +25,6 @@ import {
   type UserCredits,
   type CreditAction,
 } from "@/lib/credits"
-import { getVisibilityForRole, ROLE_VISIBILITY, type RoleVisibility } from "@/lib/role-visibility"
 import {
   FRESHNESS_RULES,
   assessFreshness,
@@ -52,8 +51,7 @@ import {
   gdprLogAccessSchema,
   propertyFiltersSchema,
 } from "@/lib/validation/schemas"
-import { VIEWING_CHECKLISTS, D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
-import type { UserType } from "@/components/role-selection-modal"
+import { D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
 
 // ============================================================
 // HELPERS
@@ -543,103 +541,9 @@ describe("Freshness: Every Source × Every Status Boundary", () => {
 // 5. ROLE VISIBILITY: EXHAUSTIVE CROSS-ROLE INVARIANTS
 // ============================================================
 
-describe("Role Visibility: Security Invariants", () => {
-  const allRoles: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  it("D2V should NEVER be shown to council_ta or operator", () => {
-    expect(ROLE_VISIBILITY.council_ta.showD2VOutreach).toBe(false)
-    expect(ROLE_VISIBILITY.operator.showD2VOutreach).toBe(false)
-  })
-
-  it("off-market should NEVER be shown to council_ta or operator", () => {
-    expect(ROLE_VISIBILITY.council_ta.showOffMarketSourcing).toBe(false)
-    expect(ROLE_VISIBILITY.operator.showOffMarketSourcing).toBe(false)
-  })
-
-  it("TA suitability should ONLY be shown to council_ta", () => {
-    allRoles.forEach(role => {
-      if (role === "council_ta") {
-        expect(ROLE_VISIBILITY[role].showTaSuitability).toBe(true)
-      } else {
-        expect(ROLE_VISIBILITY[role].showTaSuitability).toBe(false)
-      }
-    })
-  })
-
-  it("every role should have pipeline and viewing tracker", () => {
-    allRoles.forEach(role => {
-      expect(ROLE_VISIBILITY[role].showPipeline).toBe(true)
-      expect(ROLE_VISIBILITY[role].showViewingTracker).toBe(true)
-    })
-  })
-
-  it("fallback visibility should grant maximum access", () => {
-    const fallback = getVisibilityForRole(null)
-    const boolKeys = Object.entries(fallback).filter(([, v]) => typeof v === "boolean")
-    boolKeys.forEach(([key, value]) => {
-      expect(value).toBe(true)
-    })
-  })
-
-  it("no role should have yield AND R2R simultaneously", () => {
-    allRoles.forEach(role => {
-      const v = ROLE_VISIBILITY[role]
-      expect(v.showYieldMetrics && v.showR2RMetrics).toBe(false)
-    })
-  })
-})
-
 // ============================================================
 // 6. PIPELINE STAGE INTEGRITY
 // ============================================================
-
-describe("Pipeline: Stage Transition Integrity", () => {
-  const STAGE_CONFIGS: Record<UserType, string[]> = {
-    investor: ["identified", "researched", "contacted", "viewing", "offer_made", "under_offer", "completed", "dead"],
-    council_ta: ["identified", "assessed", "shortlisted", "inspection", "placement_ready", "placed", "rejected"],
-    operator: ["identified", "compliance_check", "renewal_due", "in_progress", "compliant", "non_compliant"],
-    agent: ["sourced", "packaged", "presented", "client_viewing", "offer", "exchanged", "fallen_through"],
-  }
-
-  const allRoles: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  allRoles.forEach(role => {
-    describe(`${role} pipeline`, () => {
-      const stages = STAGE_CONFIGS[role]
-
-      it("should have at least 6 stages", () => {
-        expect(stages.length).toBeGreaterThanOrEqual(6)
-      })
-
-      it("should have unique stage names", () => {
-        expect(new Set(stages).size).toBe(stages.length)
-      })
-
-      it("first stage should not be terminal", () => {
-        const first = stages[0]
-        expect(["completed", "dead", "placed", "rejected", "compliant", "non_compliant", "exchanged", "fallen_through"]).not.toContain(first)
-      })
-
-      it("last two stages should be terminal", () => {
-        const last = stages[stages.length - 1]
-        const secondLast = stages[stages.length - 2]
-        const terminals = ["completed", "dead", "placed", "rejected", "compliant", "non_compliant", "exchanged", "fallen_through"]
-        expect(terminals).toContain(last)
-        expect(terminals).toContain(secondLast)
-      })
-
-      it("should accept valid stage in pipeline deal create", () => {
-        stages.forEach(stage => {
-          const result = pipelineDealCreateSchema.safeParse({
-            property_id: uuid(1),
-            stage,
-          })
-          expect(result.success).toBe(true)
-        })
-      })
-    })
-  })
-})
 
 // ============================================================
 // 7. D2V CAMPAIGN LIFECYCLE
@@ -687,40 +591,6 @@ describe("D2V: Full Campaign Lifecycle Validation", () => {
 // ============================================================
 // 8. VIEWING CHECKLIST COMPLETENESS
 // ============================================================
-
-describe("Viewing Checklists: Cross-ICP Validation", () => {
-  const allRoles: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  it("every checklist item should have key and label", () => {
-    allRoles.forEach(role => {
-      VIEWING_CHECKLISTS[role].forEach(item => {
-        expect(item.key).toBeTruthy()
-        expect(item.label).toBeTruthy()
-        expect(item.key.length).toBeGreaterThan(0)
-        expect(item.label.length).toBeGreaterThan(0)
-      })
-    })
-  })
-
-  it("no duplicate keys within a role", () => {
-    allRoles.forEach(role => {
-      const keys = VIEWING_CHECKLISTS[role].map(i => i.key)
-      expect(new Set(keys).size).toBe(keys.length)
-    })
-  })
-
-  it("fire_safety should appear in investor AND council_ta checklists", () => {
-    expect(VIEWING_CHECKLISTS.investor.some(i => i.key === "fire_safety")).toBe(true)
-    expect(VIEWING_CHECKLISTS.council_ta.some(i => i.key === "fire_safety")).toBe(true)
-  })
-
-  it("compliance items should be in operator checklist", () => {
-    const opKeys = VIEWING_CHECKLISTS.operator.map(i => i.key)
-    expect(opKeys).toContain("gas_safety")
-    expect(opKeys).toContain("electrical_cert")
-    expect(opKeys).toContain("fire_alarms")
-  })
-})
 
 // ============================================================
 // 9. REFRESH QUEUE: SCALE + PRIORITY CORRECTNESS

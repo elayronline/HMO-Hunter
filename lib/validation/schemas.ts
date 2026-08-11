@@ -143,7 +143,6 @@ export const propertyFiltersSchema = z.object({
   minBathrooms: z.coerce.number().int().min(1).max(10).optional(),
   isFurnished: z.coerce.boolean().optional(),
   hasParking: z.coerce.boolean().optional(),
-  taSuitability: z.enum(["suitable", "partial"]).optional(),
 })
 
 // Pipeline schemas

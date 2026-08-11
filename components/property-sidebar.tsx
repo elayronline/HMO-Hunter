@@ -31,14 +31,11 @@ import { HeroMetricsBar } from "@/components/hero-metrics-bar"
 import { KeyFlagsRow } from "@/components/key-flags-row"
 import { PropertyGallery } from "@/components/property-gallery"
 import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
-import { getLhaWeeklyRate, getLhaMonthlyRate } from "@/lib/data/lha-rates"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
 import { AgentContactCard } from "@/components/agent-contact-card"
 import { EPCBadge } from "@/components/epc-badge"
 import { BroadbandBadge } from "@/components/broadband-badge"
-import { getVisibilityForRole } from "@/lib/role-visibility"
-import type { UserType } from "@/components/role-selection-modal"
 
 interface PropertySidebarProps {
   property: Property
@@ -49,7 +46,6 @@ interface PropertySidebarProps {
   isPremium?: boolean
   isSaved?: boolean
   className?: string
-  userRole?: UserType | null
 }
 
 type TabType = "overview" | "compliance" | "area" | "property"
@@ -63,9 +59,7 @@ export function PropertySidebar({
   isPremium = false,
   isSaved = false,
   className,
-  userRole,
 }: PropertySidebarProps) {
-  const visibility = getVisibilityForRole(userRole)
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [copiedCompanyNumber, setCopiedCompanyNumber] = useState(false)
   const [showShareToast, setShowShareToast] = useState(false)
@@ -132,7 +126,7 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           VERDICT HEADER (80px)
       ════════════════════════════════════════════════════════════════════ */}
-      {visibility.showDealVerdict ? (
+      {true ? (
         <DealVerdictHeader property={property} onClose={onClose} />
       ) : (
         <div className="shrink-0 p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
@@ -156,7 +150,7 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           HERO METRICS BAR (72px)
       ════════════════════════════════════════════════════════════════════ */}
-      {(visibility.showYieldMetrics || visibility.showR2RMetrics) && (
+      {(true) && (
         <HeroMetricsBar property={property} className="shrink-0 border-b border-slate-200" />
       )}
 
@@ -184,7 +178,7 @@ export function PropertySidebar({
       {/* ════════════════════════════════════════════════════════════════════
           KEY FLAGS ROW (40px)
       ════════════════════════════════════════════════════════════════════ */}
-      <KeyFlagsRow property={property} className="shrink-0 border-b border-slate-200" userRole={userRole} />
+      <KeyFlagsRow property={property} className="shrink-0 border-b border-slate-200" />
 
       {/* ════════════════════════════════════════════════════════════════════
           TAB NAVIGATION (48px)
@@ -218,42 +212,10 @@ export function PropertySidebar({
           {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
             <>
-              {visibility.showYieldCalculator && (
+              {(true) && (
                 <PremiumYieldCalculator property={property} isPremium={isPremium} />
               )}
 
-              {/* LHA Rate Comparison (rental properties, council/TA role) */}
-              {visibility.showLhaComparison && property.listing_type === "rent" && property.price_pcm && (() => {
-                const lhaWeekly = getLhaWeeklyRate(property.city, property.bedrooms, property.postcode)
-                const lhaMonthly = lhaWeekly ? Math.round((lhaWeekly * 52) / 12) : null
-                if (!lhaMonthly) return null
-                const diff = property.price_pcm - lhaMonthly
-                const isAffordable = diff <= 0
-                return (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">LHA Rate Comparison</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">LHA Rate (weekly)</span>
-                        <span className="text-sm font-medium">£{lhaWeekly?.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">LHA Rate (monthly)</span>
-                        <span className="text-sm font-medium">£{lhaMonthly}</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        <span className="text-sm text-slate-600">Rent vs LHA</span>
-                        <span className={cn(
-                          "text-sm font-bold",
-                          isAffordable ? "text-emerald-600" : "text-red-600"
-                        )}>
-                          {isAffordable ? "-" : "+"}£{Math.abs(diff)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
             </>
           )}
 
@@ -431,7 +393,7 @@ export function PropertySidebar({
               )}
 
               {/* Ownership - Premium Feature */}
-              {visibility.showOwnership && (property.owner_name || property.company_name) && (
+              {(property.owner_name || property.company_name) && (
                 <Section title="Ownership">
                   {isPremium ? (
                     property.company_name ? (

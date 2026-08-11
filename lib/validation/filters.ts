@@ -172,9 +172,6 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
     sanitized.hasParking = filters.hasParking
   }
   // TA suitability filter
-  if (filters.taSuitability === "suitable" || filters.taSuitability === "partial") {
-    sanitized.taSuitability = filters.taSuitability
-  }
 
   return sanitized
 }

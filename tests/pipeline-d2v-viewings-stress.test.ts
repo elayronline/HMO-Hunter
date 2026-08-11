@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { CREDIT_COSTS, formatCreditStatus, type UserCredits } from "@/lib/credits"
-import { getVisibilityForRole, ROLE_VISIBILITY } from "@/lib/role-visibility"
-import { VIEWING_CHECKLISTS, D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
+import { D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
 import { viewingConfirmationEmail } from "@/lib/email/templates"
 import {
   pipelineDealCreateSchema,
@@ -12,7 +11,6 @@ import {
   viewingCreateSchema,
   viewingUpdateSchema,
 } from "@/lib/validation/schemas"
-import type { UserType } from "@/components/role-selection-modal"
 
 // ============================================================
 // CREDIT SYSTEM - NEW ACTIONS
@@ -87,153 +85,9 @@ describe("Pipeline Credit Costs", () => {
 // ROLE VISIBILITY - NEW FEATURES
 // ============================================================
 
-describe("ICP Feature Visibility", () => {
-  const allUserTypes: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  it("should define all new visibility fields for every role", () => {
-    allUserTypes.forEach(role => {
-      const vis = getVisibilityForRole(role)
-      expect(vis.showPipeline).toBeDefined()
-      expect(vis.showD2VOutreach).toBeDefined()
-      expect(vis.showViewingTracker).toBeDefined()
-      expect(vis.showOffMarketSourcing).toBeDefined()
-      expect(vis.defaultViewingType).toBeDefined()
-    })
-  })
-
-  it("should give all roles access to pipeline", () => {
-    allUserTypes.forEach(role => {
-      expect(getVisibilityForRole(role).showPipeline).toBe(true)
-    })
-  })
-
-  it("should give all roles access to viewing tracker", () => {
-    allUserTypes.forEach(role => {
-      expect(getVisibilityForRole(role).showViewingTracker).toBe(true)
-    })
-  })
-
-  it("should restrict D2V to investor and agent only", () => {
-    expect(getVisibilityForRole("investor").showD2VOutreach).toBe(true)
-    expect(getVisibilityForRole("agent").showD2VOutreach).toBe(true)
-    expect(getVisibilityForRole("council_ta").showD2VOutreach).toBe(false)
-    expect(getVisibilityForRole("operator").showD2VOutreach).toBe(false)
-  })
-
-  it("should restrict off-market sourcing to investor and agent", () => {
-    expect(getVisibilityForRole("investor").showOffMarketSourcing).toBe(true)
-    expect(getVisibilityForRole("agent").showOffMarketSourcing).toBe(true)
-    expect(getVisibilityForRole("council_ta").showOffMarketSourcing).toBe(false)
-    expect(getVisibilityForRole("operator").showOffMarketSourcing).toBe(false)
-  })
-
-  it("should assign correct default viewing types per ICP", () => {
-    expect(getVisibilityForRole("investor").defaultViewingType).toBe("site_visit")
-    expect(getVisibilityForRole("council_ta").defaultViewingType).toBe("inspection")
-    expect(getVisibilityForRole("operator").defaultViewingType).toBe("portfolio_check")
-    expect(getVisibilityForRole("agent").defaultViewingType).toBe("client_viewing")
-  })
-
-  it("should return fallback visibility for null/undefined roles", () => {
-    const fallback = getVisibilityForRole(null)
-    expect(fallback.showPipeline).toBe(true)
-    expect(fallback.showD2VOutreach).toBe(true)
-    expect(fallback.showViewingTracker).toBe(true)
-
-    const undefinedFallback = getVisibilityForRole(undefined)
-    expect(undefinedFallback.showPipeline).toBe(true)
-  })
-
-  it("should not break existing visibility settings", () => {
-    // Investor should still see deal score and yield
-    const investor = getVisibilityForRole("investor")
-    expect(investor.showDealScore).toBe(true)
-    expect(investor.showYieldMetrics).toBe(true)
-    expect(investor.showYieldCalculator).toBe(true)
-
-    // Council should still see TA metrics
-    const council = getVisibilityForRole("council_ta")
-    expect(council.showTaSuitability).toBe(true)
-    expect(council.showLhaComparison).toBe(true)
-    expect(council.showR2RMetrics).toBe(true)
-
-    // Operator should still see ownership
-    const operator = getVisibilityForRole("operator")
-    expect(operator.showOwnership).toBe(true)
-
-    // Agent should still see deal score
-    const agent = getVisibilityForRole("agent")
-    expect(agent.showDealScore).toBe(true)
-    expect(agent.showHmoClassification).toBe(true)
-  })
-})
-
 // ============================================================
 // VIEWING CHECKLISTS PER ICP
 // ============================================================
-
-describe("ICP Viewing Checklists", () => {
-  const allUserTypes: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  it("should have checklists defined for all user types", () => {
-    allUserTypes.forEach(role => {
-      expect(VIEWING_CHECKLISTS[role]).toBeDefined()
-      expect(Array.isArray(VIEWING_CHECKLISTS[role])).toBe(true)
-      expect(VIEWING_CHECKLISTS[role].length).toBeGreaterThan(0)
-    })
-  })
-
-  it("should have at least 6 items per checklist", () => {
-    allUserTypes.forEach(role => {
-      expect(VIEWING_CHECKLISTS[role].length).toBeGreaterThanOrEqual(6)
-    })
-  })
-
-  it("should have unique keys within each checklist", () => {
-    allUserTypes.forEach(role => {
-      const keys = VIEWING_CHECKLISTS[role].map(i => i.key)
-      const uniqueKeys = new Set(keys)
-      expect(uniqueKeys.size).toBe(keys.length)
-    })
-  })
-
-  it("should have non-empty labels", () => {
-    allUserTypes.forEach(role => {
-      VIEWING_CHECKLISTS[role].forEach(item => {
-        expect(item.label.length).toBeGreaterThan(0)
-        expect(item.key.length).toBeGreaterThan(0)
-      })
-    })
-  })
-
-  it("investor checklist should focus on property assessment", () => {
-    const keys = VIEWING_CHECKLISTS.investor.map(i => i.key)
-    expect(keys).toContain("room_sizes")
-    expect(keys).toContain("hmo_layout")
-    expect(keys).toContain("fire_safety")
-  })
-
-  it("council_ta checklist should focus on habitability", () => {
-    const keys = VIEWING_CHECKLISTS.council_ta.map(i => i.key)
-    expect(keys).toContain("space_standards")
-    expect(keys).toContain("damp_mould")
-    expect(keys).toContain("heating_working")
-  })
-
-  it("operator checklist should focus on compliance", () => {
-    const keys = VIEWING_CHECKLISTS.operator.map(i => i.key)
-    expect(keys).toContain("fire_alarms")
-    expect(keys).toContain("gas_safety")
-    expect(keys).toContain("electrical_cert")
-  })
-
-  it("agent checklist should focus on marketing", () => {
-    const keys = VIEWING_CHECKLISTS.agent.map(i => i.key)
-    expect(keys).toContain("photos_taken")
-    expect(keys).toContain("price_validated")
-    expect(keys).toContain("vendor_motivation")
-  })
-})
 
 // ============================================================
 // D2V PLACEHOLDERS
@@ -634,64 +488,6 @@ describe("Viewing Validation Schemas", () => {
 // STRESS TESTS - PIPELINE STAGES
 // ============================================================
 
-describe("Pipeline Stage Configuration Stress", () => {
-  const allUserTypes: UserType[] = ["investor", "council_ta", "operator", "agent"]
-
-  it("each ICP should have at least 5 stages", () => {
-    // Verify from the default stages defined in the component
-    const stageCounts: Record<string, number> = {
-      investor: 8,
-      council_ta: 7,
-      operator: 6,
-      agent: 7,
-    }
-
-    allUserTypes.forEach(role => {
-      expect(stageCounts[role]).toBeGreaterThanOrEqual(5)
-    })
-  })
-
-  it("each ICP should have exactly one completed/success terminal stage", () => {
-    // Based on the migration seed data
-    const successStages: Record<string, string> = {
-      investor: "completed",
-      council_ta: "placed",
-      operator: "compliant",
-      agent: "exchanged",
-    }
-
-    allUserTypes.forEach(role => {
-      expect(successStages[role]).toBeDefined()
-    })
-  })
-
-  it("each ICP should have a failure terminal stage", () => {
-    const failStages: Record<string, string> = {
-      investor: "dead",
-      council_ta: "rejected",
-      operator: "non_compliant",
-      agent: "fallen_through",
-    }
-
-    allUserTypes.forEach(role => {
-      expect(failStages[role]).toBeDefined()
-    })
-  })
-
-  it("each ICP should have 'identified' or equivalent first stage", () => {
-    const firstStages: Record<string, string> = {
-      investor: "identified",
-      council_ta: "identified",
-      operator: "identified",
-      agent: "sourced",
-    }
-
-    allUserTypes.forEach(role => {
-      expect(firstStages[role]).toBeDefined()
-    })
-  })
-})
-
 // ============================================================
 // STRESS TESTS - CONCURRENT OPERATIONS
 // ============================================================
@@ -835,103 +631,6 @@ describe("Data Integrity Stress", () => {
 // ============================================================
 // ICP-AWARE VIEWING STAGE MAPPING
 // ============================================================
-
-describe("ICP-Aware Viewing Stage Mapping", () => {
-  // Mirror the mapping from the API route
-  const VIEWING_STAGE_MAP: Record<string, Record<string, string>> = {
-    investor: {
-      site_visit: "viewing",
-      inspection: "viewing",
-      portfolio_check: "viewing",
-      client_viewing: "viewing",
-    },
-    council_ta: {
-      site_visit: "inspection",
-      inspection: "inspection",
-      portfolio_check: "inspection",
-      client_viewing: "inspection",
-    },
-    operator: {
-      site_visit: "compliance_check",
-      inspection: "compliance_check",
-      portfolio_check: "compliance_check",
-      client_viewing: "compliance_check",
-    },
-    agent: {
-      site_visit: "client_viewing",
-      inspection: "client_viewing",
-      portfolio_check: "client_viewing",
-      client_viewing: "client_viewing",
-    },
-  }
-
-  const allUserTypes: UserType[] = ["investor", "council_ta", "operator", "agent"]
-  const allViewingTypes = ["site_visit", "inspection", "portfolio_check", "client_viewing"]
-
-  it("should have a stage mapping for every ICP", () => {
-    allUserTypes.forEach(role => {
-      expect(VIEWING_STAGE_MAP[role]).toBeDefined()
-    })
-  })
-
-  it("should map every viewing type for every ICP", () => {
-    allUserTypes.forEach(role => {
-      allViewingTypes.forEach(vt => {
-        expect(VIEWING_STAGE_MAP[role][vt]).toBeDefined()
-        expect(VIEWING_STAGE_MAP[role][vt].length).toBeGreaterThan(0)
-      })
-    })
-  })
-
-  it("investor viewing types should all map to 'viewing'", () => {
-    allViewingTypes.forEach(vt => {
-      expect(VIEWING_STAGE_MAP.investor[vt]).toBe("viewing")
-    })
-  })
-
-  it("council_ta viewing types should all map to 'inspection'", () => {
-    allViewingTypes.forEach(vt => {
-      expect(VIEWING_STAGE_MAP.council_ta[vt]).toBe("inspection")
-    })
-  })
-
-  it("operator viewing types should all map to 'compliance_check'", () => {
-    allViewingTypes.forEach(vt => {
-      expect(VIEWING_STAGE_MAP.operator[vt]).toBe("compliance_check")
-    })
-  })
-
-  it("agent viewing types should all map to 'client_viewing'", () => {
-    allViewingTypes.forEach(vt => {
-      expect(VIEWING_STAGE_MAP.agent[vt]).toBe("client_viewing")
-    })
-  })
-
-  it("mapped stages should be valid pipeline stages for each ICP", () => {
-    const validStages: Record<string, string[]> = {
-      investor: ["identified", "researched", "contacted", "viewing", "offer_made", "under_offer", "completed", "dead"],
-      council_ta: ["identified", "assessed", "shortlisted", "inspection", "placement_ready", "placed", "rejected"],
-      operator: ["identified", "compliance_check", "renewal_due", "in_progress", "compliant", "non_compliant"],
-      agent: ["sourced", "packaged", "presented", "client_viewing", "offer", "exchanged", "fallen_through"],
-    }
-
-    allUserTypes.forEach(role => {
-      allViewingTypes.forEach(vt => {
-        const mappedStage = VIEWING_STAGE_MAP[role][vt]
-        expect(validStages[role]).toContain(mappedStage)
-      })
-    })
-  })
-
-  it("portfolio_check should never map to a non-existent stage", () => {
-    // This was the original bug — portfolio_check was falling through to "viewing"
-    // which doesn't exist in operator's pipeline stages
-    allUserTypes.forEach(role => {
-      const stage = VIEWING_STAGE_MAP[role].portfolio_check
-      expect(stage).not.toBe("portfolio_check") // portfolio_check is NOT a pipeline stage
-    })
-  })
-})
 
 // ============================================================
 // VIEWING CONFIRMATION EMAIL

@@ -12,8 +12,6 @@
 
 import { describe, it, expect } from "vitest"
 import type { Property } from "@/lib/types/database"
-import { assessTASuitability, CRITERIA_LABELS, type TASuitabilityResult } from "@/lib/services/ta-suitability"
-import { getLhaMonthlyRate } from "@/lib/data/lha-rates"
 
 // ---------------------------------------------------------------------------
 // Property factory — reuses the pattern from ta-suitability.test.ts
@@ -140,23 +138,17 @@ function calcPurchaseMetrics(property: Property) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: replicates HeroMetricsBar calculations for rent listings
+// Helper: mirrors what HeroMetricsBar reports for a property with no asking
+// price. The R2R margin and LHA spread it used to compute were rent-to-rent
+// arithmetic for a model the platform no longer runs.
 // ---------------------------------------------------------------------------
 function calcRentMetrics(property: Property) {
-  let r2rMargin: number | null = null
-  let monthlySpread: number | null = null
-  let rentPerRoom: number | null = null
+  const rentPerRoom =
+    property.price_pcm && property.price_pcm > 0 && property.bedrooms > 0
+      ? Math.round(property.price_pcm / property.bedrooms)
+      : null
 
-  if (property.price_pcm && property.price_pcm > 0 && property.bedrooms > 0) {
-    const lhaRate = getLhaMonthlyRate(property.city, property.bedrooms, property.postcode)
-    if (lhaRate) {
-      monthlySpread = Math.round(lhaRate - property.price_pcm)
-      r2rMargin = Math.round(((lhaRate - property.price_pcm) / property.price_pcm) * 100)
-    }
-    rentPerRoom = Math.round(property.price_pcm / property.bedrooms)
-  }
-
-  return { r2rMargin, monthlySpread, rentPerRoom }
+  return { rentPerRoom }
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +167,7 @@ function getVerdict(score: number | null | undefined): Verdict {
 // ============================================================================
 // INVESTOR PROFILE — Purchase listings, yield & deal scores
 // ============================================================================
-describe("Investor Profile: Property Details", () => {
+describe("Property Details", () => {
   const investorProperty = makeProperty({
     listing_type: "purchase",
     purchase_price: 250000,
@@ -363,219 +355,6 @@ describe("Investor Profile: Property Details", () => {
 // ============================================================================
 // COUNCIL / TA PROFILE — Rent listings, TA suitability, LHA rates
 // ============================================================================
-describe("Council/TA Profile: Property Details", () => {
-  const councilProperty = makeProperty({
-    listing_type: "rent",
-    price_pcm: 600,
-    purchase_price: null,
-    bedrooms: 3,
-    bathrooms: 1,
-    city: "Manchester",
-    postcode: "M14 5TQ",
-    licensed_hmo: true,
-    licence_status: "active",
-    epc_rating: "C",
-  })
-
-  describe("TA Suitability Assessment", () => {
-    const result = assessTASuitability(councilProperty)
-
-    it("should be suitable when all 5 criteria met", () => {
-      expect(result.suitability).toBe("suitable")
-      expect(result.score).toBe(5)
-    })
-
-    it("should pass isRental criterion for rent listing", () => {
-      expect(result.criteria.isRental).toBe(true)
-    })
-
-    it("should pass hasActiveLicence criterion", () => {
-      expect(result.criteria.hasActiveLicence).toBe(true)
-    })
-
-    it("should pass hasAdequateEpc for rating C", () => {
-      expect(result.criteria.hasAdequateEpc).toBe(true)
-    })
-
-    it("should pass hasMinBedrooms for 3 beds", () => {
-      expect(result.criteria.hasMinBedrooms).toBe(true)
-    })
-
-    it("should pass withinLhaBudget when rent is under LHA ceiling", () => {
-      expect(result.criteria.withinLhaBudget).toBe(true)
-    })
-
-    it("should return LHA monthly rate", () => {
-      expect(result.lhaMonthly).not.toBeNull()
-      expect(result.lhaMonthly!).toBeGreaterThan(0)
-    })
-
-    it("should have reason mentioning all criteria met", () => {
-      expect(result.reason).toContain("all")
-    })
-  })
-
-  describe("TA Suitability — Partial", () => {
-    it("should be partial when 3 criteria met", () => {
-      const p = makeProperty({
-        listing_type: "rent",
-        price_pcm: 2000, // way over LHA
-        licensed_hmo: false,
-        licence_status: "none",
-        epc_rating: "C",
-        bedrooms: 3,
-      })
-      const result = assessTASuitability(p)
-      expect(result.suitability).toBe("partial")
-      expect(result.score).toBeGreaterThanOrEqual(3)
-      expect(result.score).toBeLessThan(5)
-    })
-
-    it("should be partial when licence is expired", () => {
-      const p = makeProperty({
-        listing_type: "rent",
-        price_pcm: 600,
-        licensed_hmo: false,
-        licence_status: "expired",
-        epc_rating: "C",
-        bedrooms: 3,
-      })
-      const result = assessTASuitability(p)
-      expect(result.criteria.hasActiveLicence).toBe(false)
-      expect(result.score).toBeLessThan(5)
-    })
-  })
-
-  describe("TA Suitability — Not Suitable", () => {
-    it("should be not_suitable when fewer than 3 criteria met", () => {
-      const p = makeProperty({
-        listing_type: "purchase",
-        price_pcm: null,
-        purchase_price: 300000,
-        licensed_hmo: false,
-        licence_status: "none",
-        epc_rating: "G",
-        bedrooms: 1,
-      })
-      const result = assessTASuitability(p)
-      expect(result.suitability).toBe("not_suitable")
-      expect(result.score).toBeLessThan(3)
-    })
-
-    it("should fail hasAdequateEpc for rating F", () => {
-      const p = makeProperty({ epc_rating: "F" })
-      expect(assessTASuitability(p).criteria.hasAdequateEpc).toBe(false)
-    })
-
-    it("should fail hasAdequateEpc for rating G", () => {
-      const p = makeProperty({ epc_rating: "G" })
-      expect(assessTASuitability(p).criteria.hasAdequateEpc).toBe(false)
-    })
-
-    it("should fail hasMinBedrooms for 1 bedroom", () => {
-      const p = makeProperty({ bedrooms: 1 })
-      expect(assessTASuitability(p).criteria.hasMinBedrooms).toBe(false)
-    })
-
-    it("should fail withinLhaBudget when rent exceeds 110% of LHA", () => {
-      const p = makeProperty({ price_pcm: 5000 }) // way over
-      expect(assessTASuitability(p).criteria.withinLhaBudget).toBe(false)
-    })
-  })
-
-  describe("R2R Metrics (Rent-to-Rent)", () => {
-    const metrics = calcRentMetrics(councilProperty)
-
-    it("should calculate rent per room", () => {
-      // 600 / 3 = 200
-      expect(metrics.rentPerRoom).toBe(200)
-    })
-
-    it("should calculate monthly spread (LHA - rent)", () => {
-      expect(metrics.monthlySpread).not.toBeNull()
-    })
-
-    it("should calculate R2R margin percentage", () => {
-      expect(metrics.r2rMargin).not.toBeNull()
-    })
-
-    it("monthly spread should be positive when rent is below LHA", () => {
-      // Manchester 3-bed LHA should be > 600
-      expect(metrics.monthlySpread!).toBeGreaterThan(0)
-    })
-
-    it("R2R margin should be positive when rent is below LHA", () => {
-      expect(metrics.r2rMargin!).toBeGreaterThan(0)
-    })
-  })
-
-  describe("R2R Metrics Edge Cases", () => {
-    it("should return null metrics when price_pcm is 0", () => {
-      const p = makeProperty({ price_pcm: 0 })
-      const m = calcRentMetrics(p)
-      expect(m.rentPerRoom).toBeNull()
-      expect(m.r2rMargin).toBeNull()
-    })
-
-    it("should return null metrics when price_pcm is null", () => {
-      const p = makeProperty({ price_pcm: null })
-      const m = calcRentMetrics(p)
-      expect(m.rentPerRoom).toBeNull()
-    })
-
-    it("should return null spread when city has no LHA data", () => {
-      const p = makeProperty({ city: "SomeMadeUpCity", price_pcm: 500, bedrooms: 3 })
-      const m = calcRentMetrics(p)
-      expect(m.monthlySpread).toBeNull()
-    })
-
-    it("should handle negative spread when rent exceeds LHA", () => {
-      const p = makeProperty({ price_pcm: 5000, bedrooms: 3 })
-      const m = calcRentMetrics(p)
-      if (m.monthlySpread !== null) {
-        expect(m.monthlySpread).toBeLessThan(0)
-      }
-    })
-
-    it("should calculate rent per room for single bedroom", () => {
-      const p = makeProperty({ price_pcm: 800, bedrooms: 1 })
-      expect(calcRentMetrics(p).rentPerRoom).toBe(800)
-    })
-  })
-
-  describe("LHA Rate Integration", () => {
-    it("should return a rate for Manchester 3-bed", () => {
-      const rate = getLhaMonthlyRate("Manchester", 3, "M14 5TQ")
-      expect(rate).not.toBeNull()
-      expect(rate!).toBeGreaterThan(0)
-    })
-
-    it("should return a rate for London postcode", () => {
-      const rate = getLhaMonthlyRate("London", 2, "E1 6AN")
-      expect(rate).not.toBeNull()
-      expect(rate!).toBeGreaterThan(0)
-    })
-
-    it("should return null for unknown city without postcode match", () => {
-      const rate = getLhaMonthlyRate("Atlantis", 2, "ZZ9 9ZZ")
-      expect(rate).toBeNull()
-    })
-  })
-
-  describe("TA Criteria Labels", () => {
-    it("should have labels for all 5 criteria", () => {
-      expect(Object.keys(CRITERIA_LABELS)).toHaveLength(5)
-    })
-
-    it("should have human-readable label for isRental", () => {
-      expect(CRITERIA_LABELS.isRental).toContain("rent")
-    })
-
-    it("should have human-readable label for withinLhaBudget", () => {
-      expect(CRITERIA_LABELS.withinLhaBudget).toContain("LHA")
-    })
-  })
-})
 
 // ============================================================================
 // OPERATOR PROFILE — Licence tracking, compliance, EPC
@@ -969,18 +748,6 @@ describe("Cross-Profile: Same Property, Different Needs", () => {
     expect(m.pricePerRoom).not.toBeNull()
   })
 
-  it("council sees TA suitability assessment", () => {
-    const result = assessTASuitability(sharedProperty)
-    expect(result.suitability).toBeDefined()
-    expect(["suitable", "partial", "not_suitable"]).toContain(result.suitability)
-  })
-
-  it("council sees R2R metrics for rent listing", () => {
-    const m = calcRentMetrics(sharedProperty)
-    expect(m.rentPerRoom).toBe(175) // 700 / 4
-    expect(m.monthlySpread).not.toBeNull()
-  })
-
   it("operator sees licence is active with future expiry", () => {
     expect(sharedProperty.licence_status).toBe("active")
     const end = new Date(sharedProperty.licence_end_date!)
@@ -1047,15 +814,6 @@ describe("Stress: Bulk Property Validation", () => {
         const m = calcRentMetrics(p)
         expect(m).toBeDefined()
       }
-    })
-  })
-
-  it(`should assess TA suitability for all ${BULK_COUNT} properties without error`, () => {
-    bulkProperties.forEach((p) => {
-      const result = assessTASuitability(p)
-      expect(["suitable", "partial", "not_suitable"]).toContain(result.suitability)
-      expect(result.score).toBeGreaterThanOrEqual(0)
-      expect(result.score).toBeLessThanOrEqual(5)
     })
   })
 

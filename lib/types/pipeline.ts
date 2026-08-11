@@ -1,5 +1,4 @@
 import type { Property } from "./database"
-import type { UserType } from "@/components/role-selection-modal"
 
 // ============================================================
 // DEAL PIPELINE TYPES
@@ -7,7 +6,6 @@ import type { UserType } from "@/components/role-selection-modal"
 
 export type PipelineStageConfig = {
   id: string
-  user_type: UserType
   stage_key: string
   stage_label: string
   stage_order: number
@@ -168,48 +166,25 @@ export type PropertyViewing = {
 }
 
 // ICP-specific viewing checklists
-export const VIEWING_CHECKLISTS: Record<UserType, { key: string; label: string }[]> = {
-  investor: [
-    { key: "exterior_condition", label: "Exterior condition assessed" },
-    { key: "room_sizes", label: "Room sizes measured" },
-    { key: "bathroom_count", label: "Bathroom count verified" },
-    { key: "hmo_layout", label: "HMO conversion layout viable" },
-    { key: "fire_safety", label: "Fire escape routes checked" },
-    { key: "parking", label: "Parking availability confirmed" },
-    { key: "local_area", label: "Local area/amenities checked" },
-    { key: "structural_issues", label: "No structural issues" },
-  ],
-  council_ta: [
-    { key: "space_standards", label: "Meets space standards" },
-    { key: "fire_safety", label: "Fire safety compliant" },
-    { key: "damp_mould", label: "No damp or mould" },
-    { key: "heating_working", label: "Heating system working" },
-    { key: "hot_water", label: "Hot water available" },
-    { key: "kitchen_facilities", label: "Kitchen facilities adequate" },
-    { key: "furniture_condition", label: "Furniture condition acceptable" },
-    { key: "accessibility", label: "Accessibility requirements met" },
-  ],
-  operator: [
-    { key: "licence_displayed", label: "HMO licence displayed" },
-    { key: "fire_alarms", label: "Fire alarms tested" },
-    { key: "fire_doors", label: "Fire doors operational" },
-    { key: "emergency_lighting", label: "Emergency lighting working" },
-    { key: "gas_safety", label: "Gas safety certificate current" },
-    { key: "electrical_cert", label: "Electrical certificate current" },
-    { key: "epc_displayed", label: "EPC displayed" },
-    { key: "tenant_satisfaction", label: "Tenant satisfaction checked" },
-  ],
-  agent: [
-    { key: "photos_taken", label: "Marketing photos taken" },
-    { key: "measurements", label: "Room measurements recorded" },
-    { key: "epc_confirmed", label: "EPC rating confirmed" },
-    { key: "price_validated", label: "Asking price validated" },
-    { key: "vendor_motivation", label: "Vendor motivation assessed" },
-    { key: "comparable_checked", label: "Comparable sales checked" },
-    { key: "access_arrangements", label: "Access arrangements noted" },
-    { key: "client_feedback", label: "Client feedback recorded" },
-  ],
-}
+/**
+ * What to check on a viewing.
+ *
+ * Was four lists keyed by user role. The roles are gone — the platform serves
+ * one job, sourcing and verifying a property to buy — so this is the sourcing
+ * checklist, which is what all but one of the old lists were anyway. The
+ * compliance list from the operator profile is kept in
+ * lib/types/compliance-checklist.ts for whenever there is a post-purchase view.
+ */
+export const VIEWING_CHECKLIST: { key: string; label: string }[] = [
+  { key: "exterior_condition", label: "Exterior condition assessed" },
+  { key: "room_sizes", label: "Room sizes measured" },
+  { key: "bathroom_count", label: "Bathroom count verified" },
+  { key: "hmo_layout", label: "HMO conversion layout viable" },
+  { key: "fire_safety", label: "Fire escape routes checked" },
+  { key: "parking", label: "Parking availability confirmed" },
+  { key: "local_area", label: "Local area/amenities checked" },
+  { key: "structural_issues", label: "No structural issues" },
+]
 
 // ============================================================
 // OFF-MARKET OPPORTUNITY TYPES
