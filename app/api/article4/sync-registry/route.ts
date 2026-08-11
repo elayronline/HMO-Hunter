@@ -22,6 +22,10 @@ function toCouncilRow(c: CouncilRecord) {
     area_count: c.areaCount,
     area_count_with_geometry: c.areaCountWithGeometry,
     direction_count: c.directionCount,
+    // A commercial conversion needs Class MA as well as the HMO right, so the
+    // registry carries both and the two are never conflated.
+    has_class_ma_article4: c.hasClassMaArticle4InForce,
+    class_ma_direction_count: c.classMaDirectionCount,
     earliest_commencement: asDate(c.earliestCommencement),
     latest_commencement: asDate(c.latestCommencement),
     document_urls: c.documentUrls,

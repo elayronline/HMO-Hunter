@@ -53,6 +53,41 @@ export const HMO_PATTERN =
 export const HMO_EXCLUSIONS =
   /agricultural|mineral extraction|caravan|camping|motor racing|launderette/i
 
+/**
+ * Directions withdrawing Class MA — commercial (Use Class E) to dwellinghouse.
+ *
+ * These were being discarded as "not HMO-related", which they are, but they
+ * decide whether a commercial building can become an HMO at all: the route runs
+ * E → C3 under Class MA and only then C3 → C4 under Class L. A council can
+ * withdraw either independently, so a conversion is only as good as its weaker
+ * step, and reading only the HMO direction reports a blocked route as open.
+ *
+ * The wording is written against what councils actually publish rather than the
+ * legislation. They say "Commercial, Business and Service use to Residential",
+ * "office/light industrial/storage and distribution premises to residential
+ * use", and "Class E ... to C3" as often as they say "Class MA" — and one spells
+ * it "Residentail", which is why the alternatives stop at `residen`. Distances
+ * are bounded and stop at a full stop for the reason the bare `hmo` alternative
+ * had to gain a word boundary: an unbounded `.*` will eventually span two
+ * unrelated sentences and match something that was never said.
+ *
+ * 20 directions across 8 councils in the live feed, none of which the HMO
+ * pattern also matches.
+ */
+export const CLASS_MA_PATTERN =
+  /\bclass ma\b|commercial,? business,? and service[^.]{0,60}(residen|c3)|office[^.]{0,90}to residen|use class e[^.]{0,50}c3|class e[^.]{0,80}to c3/i
+
+/** True when a direction withdraws the commercial-to-residential right. */
+export function isClassMaRelated(entity: {
+  name?: string | null
+  notes?: string | null
+  description?: string | null
+}): boolean {
+  const text = [entity.name, entity.notes, entity.description].filter(Boolean).join(" ")
+  if (!text) return false
+  return CLASS_MA_PATTERN.test(text)
+}
+
 export interface Article4DirectionRecord {
   entity: number
   name: string
@@ -106,6 +141,13 @@ export interface CouncilRecord {
   nextCommencementDate: string | null
   /** Retired directions, kept so a lapsed restriction is not read as current. */
   directionsExpired: number
+  /**
+   * A Class MA direction is in force — commercial to residential withdrawn.
+   * Independent of the HMO figures above: a council can withdraw one right and
+   * not the other, and a commercial conversion needs both.
+   */
+  hasClassMaArticle4InForce: boolean
+  classMaDirectionCount: number
   /**
    * Set when a restriction rests on an immediate direction whose confirmation
    * deadline has passed with no confirmation recorded. It is still treated as
@@ -250,8 +292,11 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
 
   const hmoAreas = areas.filter(isHmoRelated)
   const hmoDirections = directions.filter(isHmoRelated)
+  // Kept separate rather than merged into the HMO set: these restrict a
+  // different step of the conversion route and must be reported separately.
+  const classMaDirections = directions.filter(isClassMaRelated)
 
-  const orgIds = [...hmoAreas, ...hmoDirections]
+  const orgIds = [...hmoAreas, ...hmoDirections, ...classMaDirections]
     .map((e) => e["organisation-entity"])
     .filter((id): id is number => Boolean(id))
   const orgNames = await resolveOrganisations(orgIds)
@@ -271,8 +316,11 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
     }
   }
 
+  const classMaByKey = new Map<string, any[]>()
+
   bucket(areasByKey, hmoAreas)
   bucket(directionsByKey, hmoDirections)
+  bucket(classMaByKey, classMaDirections)
 
   // One record per council, deduped by slug. Six LPA names appear twice in the
   // district dataset as duplicate entity records for the same place; the first
@@ -289,6 +337,7 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
     const matchKey = normaliseCouncilName(name)
     const councilAreas = areasByKey.get(matchKey) ?? []
     const councilDirections = directionsByKey.get(matchKey) ?? []
+    const councilClassMa = classMaByKey.get(matchKey) ?? []
 
     const mapped: Article4DirectionRecord[] = councilDirections.map((d) => ({
       entity: d.entity,
@@ -337,6 +386,12 @@ export async function buildCouncilRegistry(now: Date = new Date()): Promise<Coun
         ...pendingAreas.map((a) => a["start-date"]),
       ]).earliest,
       directionsExpired: mapped.filter((d) => d.forceState === "expired").length,
+      // Force state applies here too: a Class MA direction that has not
+      // commenced does not block a conversion yet.
+      hasClassMaArticle4InForce: councilClassMa.some(
+        (d) => forceStateOn(d["start-date"] || null, d["end-date"] || null, now) === "in_force"
+      ),
+      classMaDirectionCount: councilClassMa.length,
       provisionalPastDeadline: null,
       coverageLevel,
       areaCount: councilAreas.length,

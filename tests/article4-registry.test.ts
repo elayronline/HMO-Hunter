@@ -4,6 +4,7 @@ import {
   isHmoRelated,
   dateRange,
   forceStateOn,
+  isClassMaRelated,
   coveredKeysFromRegistry,
   directionOnlyKeysFromRegistry,
   buildCouncilRegistry,
@@ -22,6 +23,8 @@ function council(over: Partial<CouncilRecord> = {}): CouncilRecord {
     directionsNotYetInForce: 0,
     nextCommencementDate: null,
     directionsExpired: 0,
+    hasClassMaArticle4InForce: false,
+    classMaDirectionCount: 0,
     provisionalPastDeadline: null,
     coverageLevel: "none",
     areaCount: 0,
@@ -234,5 +237,59 @@ describe("isHmoRelated does not match place names containing 'hmo'", () => {
     expect(isHmoRelated({ name: "Small HMO Article 4 Direction" })).toBe(true)
     expect(isHmoRelated({ name: "Houses in Multiple Occupation (HMO) Direction" })).toBe(true)
     expect(isHmoRelated({ name: "Change of use C3 to C4" })).toBe(true)
+  })
+})
+
+/**
+ * Class MA directions decide the first step of a commercial conversion. They
+ * were being discarded as not-HMO-related, which is true and beside the point:
+ * without them a blocked route reads as an open one.
+ */
+describe("isClassMaRelated", () => {
+  // Written against what councils actually publish, not the legislation.
+  const realWordings = [
+    "Modified Article 4 direction withdrawing Class MA permitted development rights in selected town centre locations",
+    "Commercial, Business and Service use to Residential use",
+    "Removal of permitted development rights to change office/light industrial/storage and distribution premises to residential use in some of the District",
+    "We have removed permitted development rights for changes of use from Class E commercial, business and service uses to C3",
+  ]
+
+  for (const wording of realWordings) {
+    it(`matches: "${wording.slice(0, 52)}..."`, () => {
+      expect(isClassMaRelated({ name: wording })).toBe(true)
+    })
+  }
+
+  // One council writes "Residentail", which is why the alternatives stop at
+  // "residen" rather than requiring the whole word.
+  it("survives the council's own typo", () => {
+    expect(
+      isClassMaRelated({
+        description:
+          "Article 4 direction restricts change of use from Commercial, Business and Service use to Residentail outside of Central Activities Zone.",
+      })
+    ).toBe(true)
+  })
+
+  // The two patterns describe different steps and must not collect each other's
+  // directions, or a council with one would appear to have both.
+  it("does not match HMO directions", () => {
+    for (const hmo of [
+      "Small Houses in Multiple Occupation Article 4 Direction",
+      "Article 4 Direction relating to houses in multiple occupation (HMOs)",
+      "Change of use from C3 dwellinghouses to C4 houses in multiple occupation",
+    ]) {
+      expect(isClassMaRelated({ name: hmo })).toBe(false)
+    }
+  })
+
+  it("does not match unrelated directions", () => {
+    for (const other of [
+      "Bishopstone Conservation Area Article 4 Direction",
+      "Demolition of walls in Bath",
+      "Estate agents' boards in Bath",
+    ]) {
+      expect(isClassMaRelated({ name: other })).toBe(false)
+    }
   })
 })
