@@ -25,7 +25,6 @@ export async function POST() {
       return NextResponse.json({
         success: false,
         error: "Database missing required columns. Please run the SQL migration first.",
-        instructions: "Go to http://localhost:3000/api/fix-database to get the SQL to run in Supabase",
         log,
       }, { status: 400 })
     }
@@ -112,7 +111,7 @@ export async function GET() {
   if (error) {
     return NextResponse.json({
       error: error.message,
-      hint: "If the error mentions missing columns, run: GET /api/fix-database and execute the SQL in Supabase",
+      hint: "If the error mentions missing columns, apply the migrations in supabase/migrations.",
     }, { status: 500 })
   }
 
@@ -135,7 +134,7 @@ export async function GET() {
     message: "Current data status. Use POST to refresh data from APIs.",
     stats,
     instructions: {
-      step1: "Run SQL from GET /api/fix-database in Supabase SQL Editor",
+      step1: "Apply the migrations in supabase/migrations via the Supabase SQL Editor",
       step2: "POST /api/refresh-data to fetch fresh data from APIs",
     },
   })

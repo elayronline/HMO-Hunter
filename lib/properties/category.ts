@@ -37,6 +37,17 @@ export type MarketStatus =
   | "let_listed"
   /** A known HMO with no live advertisement — the cold outreach case. */
   | "off_market"
+  /**
+   * A commercial building for sale that could become an HMO.
+   *
+   * A category of its own because nothing else about it reads like the rest of
+   * the stock: it has no bedrooms, no rent, no licence and no HMO history, and
+   * what makes it an opportunity is a planning route rather than a property.
+   * Shown as for-sale stock it would look like a bad deal on every metric the
+   * platform computes; shown as its own kind of thing, it is judged on whether
+   * the route survives — see lib/properties/conversion.ts.
+   */
+  | "commercial_conversion"
 
 export type LicenceState =
   /** Licensed, with more than the ending window left to run. */
@@ -64,6 +75,7 @@ export interface PropertyCategory {
 /** The fields categorisation reads. Kept narrow so tests need no fixtures. */
 export interface CategorisableProperty {
   listing_type?: string | null
+  property_type?: string | null
   purchase_price?: number | null
   price_pcm?: number | null
   source_name?: string | null
@@ -84,6 +96,18 @@ export interface CategorisableProperty {
  */
 const LISTING_PORTALS = new Set(["zoopla", "rightmove", "onthemarket"])
 
+/**
+ * Commercial stock, which is judged on a planning route rather than on the
+ * property. Kept as a type check rather than a guess from bedroom count,
+ * because a house with no bedrooms recorded is a gap in the data, not a shop.
+ */
+const COMMERCIAL_TYPES = new Set(["commercial", "office", "retail", "class e"])
+
+function isCommercial(property: CategorisableProperty): boolean {
+  const type = property.property_type?.trim().toLowerCase()
+  return type ? COMMERCIAL_TYPES.has(type) : false
+}
+
 function isLiveAdvertisement(property: CategorisableProperty): boolean {
   const source = property.source_name?.trim().toLowerCase()
   return source ? LISTING_PORTALS.has(source) : false
@@ -100,7 +124,9 @@ export function categorise(
   now: Date = new Date()
 ): PropertyCategory {
   const market: MarketStatus =
-    property.listing_type === "purchase"
+    property.listing_type === "purchase" && isCommercial(property)
+      ? "commercial_conversion"
+      : property.listing_type === "purchase"
       ? "for_sale"
       : isLiveAdvertisement(property)
         ? "let_listed"
@@ -150,6 +176,8 @@ export function categorise(
  * off-market case. A two-bed flat to let is not.
  */
 export function isServed(property: CategorisableProperty): boolean {
+  // Commercial stock for sale is served on the same footing as any other
+  // purchase: it is something you can buy. What differs is how it is judged.
   if (property.listing_type === "purchase") return true
   return Boolean(property.licensed_hmo) || property.licence_status === "expired"
 }
@@ -174,6 +202,7 @@ export const MARKET_LABELS: Record<MarketStatus, string> = {
   // the HMO is operating and the owner is active.
   let_listed: "Existing HMO · owner letting",
   off_market: "Off market",
+  commercial_conversion: "Commercial · conversion opportunity",
 }
 
 export const LICENCE_LABELS: Record<LicenceState, string> = {

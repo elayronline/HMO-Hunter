@@ -18,7 +18,6 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
 const CSRF_EXEMPT_PATHS = [
   "/api/cron/",
   "/api/send-notifications",
-  "/api/fix-listing-types",
   "/api/payments/webhook",
 ]
 
