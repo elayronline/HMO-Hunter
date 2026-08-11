@@ -121,10 +121,13 @@ export function assessConversion(input: ConversionInput): ConversionAssessment {
         to: "C3",
         gpdoClass: "Schedule 2, Part 3, Class MA",
         status: "permitted_development",
-        note: "No Class MA Article 4 direction is recorded for this council. Class MA also carries its own qualifying conditions — vacancy period, floor area, prior approval — which are not assessed here.",
+        note: "No Class MA Article 4 direction is recorded for this council. Class MA still carries its own qualifying conditions — two years of prior Class E use, and prior approval — which are not assessed here.",
       })
       openQuestions.push(
-        "Class MA prior approval: the building must have been vacant for three months and fall under the floor area limit. Neither is in our data."
+        "Class MA requires the building to have been in Class E use for a continuous two years before the prior approval application. Nothing in our data establishes that."
+      )
+      openQuestions.push(
+        "Prior approval is still required — transport, contamination, flooding, noise, natural light and fire safety. It is a decision, not a formality."
       )
     }
 

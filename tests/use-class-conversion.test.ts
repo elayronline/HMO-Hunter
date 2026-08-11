@@ -101,8 +101,21 @@ describe("conversion routes", () => {
 
   it("says a permitted route is still not a yes", () => {
     const c = assessConversion({ useClass: "E", ...open })
-    // Class MA carries prior-approval conditions we hold no data on.
+    // Class MA carries conditions we hold no data on.
     expect(c.openQuestions.some((q) => q.includes("prior approval"))).toBe(true)
+    expect(c.openQuestions.some((q) => q.includes("two years"))).toBe(true)
+  })
+
+  // SI 2024/141 removed the 1,500 sqm cap and the three-month vacancy rule on
+  // 5 March 2024. Both were stated here as live conditions until this test.
+  it("does not cite conditions repealed in 2024", () => {
+    const all = assessConversion({ useClass: "E", ...open })
+      .openQuestions.concat(assessConversion({ useClass: "E", ...open }).steps.map((s) => s.note))
+      .join(" ")
+      .toLowerCase()
+    expect(all).not.toContain("vacant")
+    expect(all).not.toContain("1,500")
+    expect(all).not.toContain("floor area limit")
   })
 
   it("flags a missing floor plan as a limit on any room count", () => {
