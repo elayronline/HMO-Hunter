@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface UserData {
   id: string
@@ -159,7 +160,7 @@ export default function AdminPortal() {
 
   async function updateUserRole(userId: string, newRole: 'admin' | 'standard_pro') {
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await csrfFetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole })
@@ -186,7 +187,7 @@ export default function AdminPortal() {
   async function toggleAccountStatus(userId: string, activate: boolean, reason?: string) {
     setActionLoading(true)
     try {
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
+      const response = await csrfFetch(`/api/admin/users/${userId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: activate, reason })
@@ -223,7 +224,7 @@ export default function AdminPortal() {
   async function adjustCredits(userId: string) {
     setActionLoading(true)
     try {
-      const response = await fetch(`/api/admin/users/${userId}/credits`, {
+      const response = await csrfFetch(`/api/admin/users/${userId}/credits`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -94,6 +94,7 @@ import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { Map, List } from "lucide-react"
 import { PropertyListView } from "@/components/property-list-view"
+import { csrfFetch } from "@/lib/csrf-client"
 
 export default function HMOHunterPage() {
   const router = useRouter()
@@ -303,7 +304,7 @@ export default function HMOHunterPage() {
     if (!user) return // Don't track for non-logged-in users
 
     try {
-      const response = await fetch('/api/track-property-view', {
+      const response = await csrfFetch('/api/track-property-view', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId })

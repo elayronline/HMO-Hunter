@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/hooks/use-toast"
+import { csrfFetch } from "@/lib/csrf-client"
 
 export interface SearchFilters {
   priceRange: number[]
@@ -101,7 +102,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
 
     setSaving(true)
     try {
-      const response = await fetch('/api/saved-searches', {
+      const response = await csrfFetch('/api/saved-searches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +154,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
   async function loadSearch(search: SavedSearch) {
     try {
       // Update last_used_at
-      await fetch('/api/saved-searches', {
+      await csrfFetch('/api/saved-searches', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: search.id })
@@ -171,7 +172,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
 
   async function deleteSearch(searchId: string, searchName: string) {
     try {
-      const response = await fetch(`/api/saved-searches?id=${searchId}`, {
+      const response = await csrfFetch(`/api/saved-searches?id=${searchId}`, {
         method: 'DELETE'
       })
 

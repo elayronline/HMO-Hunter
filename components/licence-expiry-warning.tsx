@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { licenceExpiry } from "@/lib/properties/category"
 import type { Property } from "@/lib/types/database"
 
 interface LicenceExpiryWarningProps {
@@ -16,9 +17,14 @@ interface LicenceExpiryWarningProps {
 }
 
 export function LicenceExpiryWarning({ property, showTooltip = true }: LicenceExpiryWarningProps) {
-  if (!property.licence_end_date) return null
+  // The published expiry, never licence_end_date. This badge counts days and
+  // says "Expired 47d ago" — a specific claim about a specific property, and
+  // the column it used to read holds six seeded dates across 252 rows, so the
+  // count was precise and wrong. See licenceExpiry() in lib/properties/category.ts.
+  const published = licenceExpiry(property)
+  if (!published) return null
 
-  const endDate = new Date(property.licence_end_date)
+  const endDate = new Date(published)
   const now = new Date()
   const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
@@ -136,9 +142,10 @@ export function LicenceExpiryWarning({ property, showTooltip = true }: LicenceEx
  * Get the expiry status for a property
  */
 export function getLicenceExpiryStatus(property: Property): "expired" | "urgent" | "warning" | "ok" | null {
-  if (!property.licence_end_date) return null
+  const published = licenceExpiry(property)
+  if (!published) return null
 
-  const endDate = new Date(property.licence_end_date)
+  const endDate = new Date(published)
   const now = new Date()
   const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 

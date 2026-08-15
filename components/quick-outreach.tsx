@@ -36,6 +36,7 @@ import {
   type LetterScenario,
 } from "@/lib/d2v-templates"
 import { SenderProfileEditor, loadSenderProfile, saveSenderProfile, type SenderProfile } from "@/components/sender-profile"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface QuickOutreachProps {
   property: Property
@@ -154,7 +155,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
         toast.success(`Email opened for ${recipientName}`)
       } else {
         // Create campaign + send via Stannp
-        const campaignRes = await fetch("/api/d2v/campaigns", {
+        const campaignRes = await csrfFetch("/api/d2v/campaigns", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -172,7 +173,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
         const campaign = await campaignRes.json()
 
         // Save template for reuse
-        await fetch("/api/d2v/templates", {
+        await csrfFetch("/api/d2v/templates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -183,7 +184,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
         }).catch(() => {})
 
         // Send
-        const sendRes = await fetch("/api/d2v/campaigns", {
+        const sendRes = await csrfFetch("/api/d2v/campaigns", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaign_id: campaign.id }),
