@@ -482,9 +482,12 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
                 {property.council_tax_band && (
                   <QuickFact label="Council Tax" value={`Band ${property.council_tax_band}`} />
                 )}
-                {property.max_occupants && (
-                  <QuickFact label="Max Occupants" value={String(property.max_occupants)} />
-                )}
+                {/* "Max Occupants" stood here. max_occupants is bedrooms + 1
+                    on all 252 rows that have it — a formula from
+                    scripts/012_populate_licence_term_data.sql, not a figure any
+                    council set. A licensed occupancy is exactly the sort of
+                    number a buyer would rely on, so an invented one is worse
+                    than none. */}
                 {property.days_on_market != null && (
                   <QuickFact label="Days on Market" value={String(property.days_on_market)} />
                 )}

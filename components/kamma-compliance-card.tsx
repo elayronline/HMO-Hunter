@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface KammaData {
   success: boolean
@@ -61,7 +62,7 @@ export function KammaComplianceCard({
   const checkCompliance = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/kamma-check", {
+      const response = await csrfFetch("/api/kamma-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postcode, address, uprn, bedrooms }),

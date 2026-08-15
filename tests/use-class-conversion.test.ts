@@ -7,20 +7,20 @@ describe("use class", () => {
   // A licence records both the use and the occupancy a council granted it for,
   // which is the only case where the class is a fact rather than a reading.
   it("reads C4 from a licence with an occupancy", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: 5, bedrooms: 5 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: 5, bedrooms: 5 })
     expect(a.useClass).toBe("C4")
     expect(a.basis).toBe("recorded")
   })
 
   it("reads sui generis above the seven-occupant threshold", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: 9, bedrooms: 6 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: 9, bedrooms: 6 })
     expect(a.useClass).toBe("sui_generis")
     expect(a.basis).toBe("recorded")
   })
 
   // Occupants, not bedrooms: a seven-bed house let to six people is C4.
   it("does not call a large house sui generis on bedroom count alone", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: 6, bedrooms: 7 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: 6, bedrooms: 7 })
     expect(a.useClass).toBe("C4")
   })
 
@@ -30,7 +30,7 @@ describe("use class", () => {
   // occupancy evidence told 347 properties they had a route that may not exist,
   // 131 of them while showing seven or more bedrooms beside "small HMO".
   it("does not pick a size class when the licence carries no occupancy", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 8 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: null, bedrooms: 8 })
     expect(a.useClass).toBe("hmo_unspecified")
     expect(a.useClass).not.toBe("C4")
     // The HMO use itself is recorded — only its size is open.
@@ -39,14 +39,14 @@ describe("use class", () => {
   })
 
   it("mentions a bedroom count that points the other way, without claiming it", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 8 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: null, bedrooms: 8 })
     expect(a.reason).toContain("8 bedrooms")
     expect(a.reason).toContain("bedrooms are not occupants")
   })
 
   it("still reads a recorded occupancy as the class it defines", () => {
-    expect(assessUseClass({ licensed_hmo: true, max_occupants: 5 }).useClass).toBe("C4")
-    expect(assessUseClass({ licensed_hmo: true, max_occupants: 7 }).useClass).toBe("sui_generis")
+    expect(assessUseClass({ licensed_hmo: true, licensed_max_occupants: 5 }).useClass).toBe("C4")
+    expect(assessUseClass({ licensed_hmo: true, licensed_max_occupants: 7 }).useClass).toBe("sui_generis")
   })
 
   it("treats a two-bed with no licence as C3", () => {
@@ -188,10 +188,10 @@ describe("commercial conversion as a category", () => {
 describe("nothing is claimed that the evidence will not carry", () => {
   it("never returns C4 without a recorded occupancy", () => {
     const withoutOccupancy = [
-      { licensed_hmo: true, max_occupants: null, bedrooms: 3 },
-      { licensed_hmo: true, max_occupants: null, bedrooms: 7 },
-      { licensed_hmo: true, max_occupants: null, bedrooms: 12 },
-      { licence_status: "expired", max_occupants: null, bedrooms: 5 },
+      { licensed_hmo: true, licensed_max_occupants: null, bedrooms: 3 },
+      { licensed_hmo: true, licensed_max_occupants: null, bedrooms: 7 },
+      { licensed_hmo: true, licensed_max_occupants: null, bedrooms: 12 },
+      { licence_status: "expired", licensed_max_occupants: null, bedrooms: 5 },
     ]
     for (const input of withoutOccupancy) {
       expect(assessUseClass(input).useClass).not.toBe("C4")
@@ -201,12 +201,12 @@ describe("nothing is claimed that the evidence will not carry", () => {
   // The seven-bedroom "small HMO" that started this: the label and the bedroom
   // count sat side by side on the same card and contradicted each other.
   it("does not call a seven-bedroom property a small HMO", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 7 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: null, bedrooms: 7 })
     expect(USE_CLASS_LABELS[a.useClass]).not.toContain("small HMO")
   })
 
   it("keeps HMO use recorded even where the size class is not", () => {
-    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 7 })
+    const a = assessUseClass({ licensed_hmo: true, licensed_max_occupants: null, bedrooms: 7 })
     expect(a.useClass).toBe("hmo_unspecified")
     expect(a.basis).toBe("recorded")
   })

@@ -17,18 +17,27 @@
  */
 
 import { assessUseClass, USE_CLASS_LABELS, type UseClassInput } from "@/lib/properties/use-class"
-import { categorise, type CategorisableProperty } from "@/lib/properties/category"
+import {
+  categorise,
+  licenceExpiry,
+  licenceReference,
+  type CategorisableProperty,
+} from "@/lib/properties/category"
 import { CheckCircle2, AlertTriangle, HelpCircle, Building2, Clock } from "lucide-react"
 
+/*
+ * licence_id, licence_start_date, licence_end_date and max_occupants are
+ * deliberately absent. Every value in those columns came from
+ * scripts/012_populate_licence_term_data.sql — see licenceExpiry() in
+ * lib/properties/category.ts — and this panel exists to show evidence a reader
+ * can check against the council's register. An MD5 of the address and a
+ * bedrooms + 1 occupancy are the opposite of that.
+ */
 export interface CurrentUseProperty extends UseClassInput {
-  licence_id?: string | null
   hmo_licence_reference?: string | null
-  licence_start_date?: string | null
-  licence_end_date?: string | null
   hmo_licence_expiry?: string | null
   hmo_council?: string | null
   article_4_council?: string | null
-  max_occupants?: number | null
   bedrooms?: number | null
 }
 
@@ -59,10 +68,9 @@ export function CurrentUsePanel({ property }: { property: CurrentUseProperty }) 
   const ending = licence === "licence_ending"
   const inHmoUse = licence !== "unlicensed"
 
-  const reference = property.licence_id ?? property.hmo_licence_reference ?? null
+  const reference = licenceReference(property)
   const council = property.hmo_council ?? property.article_4_council ?? null
-  const start = formatDate(property.licence_start_date)
-  const end = formatDate(property.licence_end_date ?? property.hmo_licence_expiry)
+  const end = formatDate(licenceExpiry(property))
 
   // Three headline states, and the third is not a softer version of the second.
   const state = inHmoUse
@@ -129,19 +137,15 @@ export function CurrentUsePanel({ property }: { property: CurrentUseProperty }) 
 
       {/* The evidence for the claim above, so it can be checked rather than
           taken on trust. Only rows we actually hold are rendered. */}
-      {inHmoUse && (reference || council || start || end || property.max_occupants) && (
+      {inHmoUse && (reference || council || end) && (
         <div className="mt-2.5 divide-y divide-slate-200/70 border-t border-slate-200/70 pt-1.5">
           {reference && <Evidence label="Licence reference" value={reference} />}
           {council && <Evidence label="Issuing council" value={council} />}
-          {start && <Evidence label="Licence granted" value={start} />}
           {end && (
             <Evidence
               label={expired ? "Licence expired" : "Licence expires"}
               value={end}
             />
-          )}
-          {property.max_occupants != null && (
-            <Evidence label="Licensed occupancy" value={`${property.max_occupants} occupants`} />
           )}
         </div>
       )}

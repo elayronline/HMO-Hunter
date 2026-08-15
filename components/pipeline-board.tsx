@@ -53,6 +53,7 @@ import {
   Calendar,
 } from "lucide-react"
 import type { PipelineDeal, PipelineStageConfig } from "@/lib/types/pipeline"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface PipelineBoardProps {
 }
@@ -106,7 +107,7 @@ export function PipelineBoard({}: PipelineBoardProps) {
 
   const moveDeal = async (dealId: string, newStage: string) => {
     try {
-      const res = await fetch("/api/pipeline", {
+      const res = await csrfFetch("/api/pipeline", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: dealId, stage: newStage }),
@@ -122,7 +123,7 @@ export function PipelineBoard({}: PipelineBoardProps) {
 
   const archiveDeal = async (dealId: string) => {
     try {
-      const res = await fetch("/api/pipeline", {
+      const res = await csrfFetch("/api/pipeline", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: dealId, archived_at: new Date().toISOString() }),
@@ -137,7 +138,7 @@ export function PipelineBoard({}: PipelineBoardProps) {
 
   const deleteDeal = async (dealId: string) => {
     try {
-      const res = await fetch(`/api/pipeline?id=${dealId}`, { method: "DELETE" })
+      const res = await csrfFetch(`/api/pipeline?id=${dealId}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete")
       setDeals(prev => prev.filter(d => d.id !== dealId))
       toast.success("Deal removed")
@@ -149,7 +150,7 @@ export function PipelineBoard({}: PipelineBoardProps) {
   const saveEdits = async () => {
     if (!editingDeal) return
     try {
-      const res = await fetch("/api/pipeline", {
+      const res = await csrfFetch("/api/pipeline", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -205,7 +206,7 @@ export function PipelineBoard({}: PipelineBoardProps) {
 
     // Persist to server
     try {
-      const res = await fetch("/api/pipeline", {
+      const res = await csrfFetch("/api/pipeline", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: dealId, stage: targetStage }),

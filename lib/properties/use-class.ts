@@ -65,7 +65,23 @@ export interface UseClassAssessment {
 export interface UseClassInput {
   property_type?: string | null
   bedrooms?: number | null
-  max_occupants?: number | null
+  /**
+   * A maximum occupancy a council actually granted, and nothing else.
+   *
+   * Deliberately not named max_occupants. That column exists on every property
+   * row and holds bedrooms + 1 on all 252 rows that have a value — a formula
+   * from scripts/012_populate_licence_term_data.sql, not a council's figure.
+   * Callers pass whole property rows, so a field of that name would have been
+   * picked up at runtime whatever the type said, and the branch below grades
+   * its conclusion "recorded": the report was telling a buyer "Licensed for 6
+   * occupants, within the 3-6 range that defines a small HMO" on the strength
+   * of arithmetic.
+   *
+   * Nothing populates this today. No column in the schema holds a published
+   * occupancy, so every licensed property falls through to hmo_unspecified,
+   * which is the true answer. Wire it up when a register supplies one.
+   */
+  licensed_max_occupants?: number | null
   licensed_hmo?: boolean | null
   licence_status?: string | null
   hmo_status?: string | null
@@ -88,7 +104,7 @@ const SUI_GENERIS_FROM = 7
 const COMMERCIAL_TYPES = new Set(["commercial", "office", "retail", "class e"])
 
 export function assessUseClass(input: UseClassInput): UseClassAssessment {
-  const occupants = input.max_occupants ?? null
+  const occupants = input.licensed_max_occupants ?? null
   const beds = input.bedrooms ?? null
   const licensed = Boolean(input.licensed_hmo) || input.licence_status === "expired"
   const type = input.property_type?.trim().toLowerCase()

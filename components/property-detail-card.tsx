@@ -38,10 +38,18 @@ import { SoldPriceHistory } from "@/components/sold-price-history"
 import { KammaComplianceCard } from "@/components/kamma-compliance-card"
 import { LicenceDetailsCard } from "@/components/licence-details-card"
 import { HmoPlanningDecisionsCard } from "@/components/hmo-planning-decisions-card"
+import {
+  categorise,
+  licenceExpiry,
+  licenceReference,
+  type CategorisableProperty,
+  type LicenceState,
+} from "@/lib/properties/category"
 // DataEnrichmentCard removed - enrichment is automated, not user-triggered
 import { EnrichedDataDisplay } from "@/components/enriched-data-display"
 import { SavePropertyButton } from "@/components/save-property-button"
 import { toast } from "sonner"
+import { csrfFetch } from "@/lib/csrf-client"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPACING CONSTANTS (4px base)
@@ -100,7 +108,7 @@ export function PropertyDetailCard({
 
       setIsEnriching(true)
       try {
-        const response = await fetch("/api/enrich-batch", {
+        const response = await csrfFetch("/api/enrich-batch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ propertyIds: [property.id] }),
@@ -167,12 +175,23 @@ export function PropertyDetailCard({
     return Math.round((annualRent - costs - mortgage) / 12)
   })()
 
-  const licenceConfigs: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
-    active: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
-    pending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", label: "Pending" },
-    expired: { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Expired" },
+  /*
+   * Derived from the expiry date, not the stored licence_status. Councils only
+   * write "expired" on revocation, so a licence that simply ran out still reads
+   * "active" — this panel was showing "Licence Active" in emerald over a date
+   * in the past. Same rule as the list card and the segment tabs.
+   */
+  const licenceState = categorise(property as CategorisableProperty).licence
+  const licenceConfigs: Record<LicenceState, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
+    licensed: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
+    licence_ending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", label: "Ending soon" },
+    licence_expired: { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Expired" },
+    licence_undated: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
+    unlicensed: { icon: AlertCircle, color: "text-slate-400", bg: "bg-slate-50", label: "None recorded" },
   }
-  const licenceConfig = licenceConfigs[property.licence_status || ""] || { icon: AlertCircle, color: "text-slate-400", bg: "bg-slate-50", label: "Unknown" }
+  const licenceConfig = licenceConfigs[licenceState]
+  const publishedExpiry = licenceExpiry(property)
+  const publishedReference = licenceReference(property)
 
   const amenities = [
     { icon: Wifi, label: "WiFi", show: property.wifi_included },
@@ -529,28 +548,29 @@ export function PropertyDetailCard({
                       <p className={cn("text-sm font-semibold", licenceConfig.color)}>
                         Licence {licenceConfig.label}
                       </p>
-                      {property.licence_end_date && (
+                      {publishedExpiry ? (
                         <p className="text-xs text-slate-600 mt-1">
-                          {property.licence_status === "expired" ? "Expired" : "Valid until"}{" "}
-                          {new Date(property.licence_end_date).toLocaleDateString("en-GB")}
+                          {licenceState === "licence_expired" ? "Expired" : "Valid until"}{" "}
+                          {new Date(publishedExpiry).toLocaleDateString("en-GB")}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-600 mt-1">
+                          The register published no expiry date
                         </p>
                       )}
                     </div>
                   </div>
-                  {(property.licence_id || property.max_occupants) && (
-                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-black/10">
-                      {property.licence_id && (
-                        <div>
-                          <p className="text-xs text-slate-500">Licence #</p>
-                          <p className="text-sm font-mono font-medium text-slate-800 mt-1">{property.licence_id}</p>
-                        </div>
-                      )}
-                      {property.max_occupants && (
-                        <div>
-                          <p className="text-xs text-slate-500">Max Occupants</p>
-                          <p className="text-sm font-bold text-slate-900 mt-1">{property.max_occupants}</p>
-                        </div>
-                      )}
+                  {/* Licence # read licence_id and there was a "Max Occupants"
+                      figure beside it. Both come from
+                      scripts/012_populate_licence_term_data.sql — the reference
+                      is MD5(address) and the occupancy is bedrooms + 1 — so
+                      this panel was presenting two invented facts as register
+                      data. Only the council's own reference is shown now, and
+                      only when there is one. */}
+                  {publishedReference && (
+                    <div className="mt-4 pt-4 border-t border-black/10">
+                      <p className="text-xs text-slate-500">Licence reference</p>
+                      <p className="text-sm font-mono font-medium text-slate-800 mt-1">{publishedReference}</p>
                     </div>
                   )}
                 </div>

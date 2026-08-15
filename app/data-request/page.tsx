@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Shield, CheckCircle, AlertCircle } from "lucide-react"
+import { csrfFetch } from "@/lib/csrf-client"
 
 type RequestType = "removal" | "access" | "rectification" | "objection"
 
@@ -26,7 +27,7 @@ export default function DataRequestPage() {
     setError("")
 
     try {
-      const response = await fetch("/api/gdpr/data-request", {
+      const response = await csrfFetch("/api/gdpr/data-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

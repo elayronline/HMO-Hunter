@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { createClient } from "@/lib/supabase/server"
 
+/*
+ * Every field list below named columns that are not on the table. The public
+ * list alone had seven — floor_area_sqm, epc_floor_area, is_hmo_licensed,
+ * licence_type, licence_expiry, article_4, broadband_speed — so PostgREST
+ * answered 42703 and this endpoint returned 500 to every caller at every tier,
+ * signed in or not. The property detail card refreshes itself through here
+ * after enrichment, which is why that refresh has never once succeeded.
+ *
+ * Names are the real ones now. The licence pair is hmo_licence_reference and
+ * hmo_licence_expiry; licence_id, licence_start_date, licence_end_date and
+ * max_occupants are absent on purpose — see licenceExpiry() in
+ * lib/properties/category.ts for why nothing may read them.
+ */
+
 // Public fields - safe to return without authentication
 const PUBLIC_FIELDS = `
   id,
@@ -16,50 +30,50 @@ const PUBLIC_FIELDS = `
   bedrooms,
   bathrooms,
   property_type,
-  floor_area_sqm,
+  gross_internal_area_sqm,
+  floor_area,
   epc_rating,
-  epc_floor_area,
-  is_hmo_licensed,
+  licensed_hmo,
+  licence_status,
   hmo_status,
-  licence_type,
-  licence_expiry,
-  article_4,
-  broadband_speed,
+  hmo_licence_type,
+  hmo_licence_expiry,
+  hmo_licence_reference,
+  article_4_status,
+  article_4_area,
+  article_4_council,
+  broadband_max_down,
   has_fiber,
   primary_image,
   images,
   floor_plans,
+  source_name,
   source_url,
   created_at,
   updated_at
 `
 
-// Additional fields for authenticated users
+// Additional fields for authenticated users. Who owns it, not how to reach
+// them — that is the premium tier below.
 const AUTHENTICATED_FIELDS = `
   ${PUBLIC_FIELDS},
   owner_name,
-  owner_company_name,
-  owner_company_number,
+  owner_type,
+  company_name,
+  company_number,
   licence_holder_name,
-  licence_holder_company,
-  hmo_licence_number,
-  hmo_licence_start,
-  hmo_licence_end,
-  hmo_max_occupants,
-  gross_yield,
-  deal_score,
-  classification,
   external_id
 `
 
 // All fields including contact info for premium/admin users
 const PREMIUM_FIELDS = `
   ${AUTHENTICATED_FIELDS},
-  owner_email,
-  owner_phone,
+  owner_contact_email,
+  owner_contact_phone,
   owner_address,
-  contact_email,
-  contact_phone
+  licence_holder_email,
+  licence_holder_phone,
+  contact_data_opted_out
 `
 
 export async function GET(
@@ -120,8 +134,16 @@ export async function GET(
       return NextResponse.json({ error: "Failed to fetch property" }, { status: 500 })
     }
 
+    // getProperties() strips contact details for owners who have opted out.
+    // This route reads through the service-role client, so nothing else would.
+    const row = property as unknown as Record<string, unknown> | null
+    const released =
+      row && row.contact_data_opted_out
+        ? { ...row, owner_contact_email: null, owner_contact_phone: null, licence_holder_email: null, licence_holder_phone: null }
+        : row
+
     return NextResponse.json({
-      property,
+      property: released,
       _meta: {
         authenticated: !!user,
         premium: isPremium,

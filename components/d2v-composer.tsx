@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import { D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
 import type { D2VTemplate, D2VCampaign, D2VChannel } from "@/lib/types/pipeline"
+import { csrfFetch } from "@/lib/csrf-client"
 
 // Default templates per channel
 const DEFAULT_LETTER_BODY = `Dear {{owner_name}},
@@ -184,7 +185,7 @@ export function D2VComposer() {
     }
 
     try {
-      const res = await fetch("/api/d2v/templates", {
+      const res = await csrfFetch("/api/d2v/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,7 +213,7 @@ export function D2VComposer() {
 
   const deleteTemplate = async (id: string) => {
     try {
-      const res = await fetch(`/api/d2v/templates?id=${id}`, { method: "DELETE" })
+      const res = await csrfFetch(`/api/d2v/templates?id=${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete")
       setTemplates(prev => prev.filter(t => t.id !== id))
       toast.success("Template deleted")
@@ -238,7 +239,7 @@ export function D2VComposer() {
     }
 
     try {
-      const res = await fetch("/api/d2v/campaigns", {
+      const res = await csrfFetch("/api/d2v/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -266,7 +267,7 @@ export function D2VComposer() {
 
   const sendCampaign = async (campaignId: string) => {
     try {
-      const res = await fetch("/api/d2v/campaigns", {
+      const res = await csrfFetch("/api/d2v/campaigns", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaign_id: campaignId }),

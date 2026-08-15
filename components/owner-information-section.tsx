@@ -27,8 +27,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { toast } from "@/hooks/use-toast"
+import { licenceExpiry, licenceReference } from "@/lib/properties/category"
 import type { Director, Property } from "@/lib/types/database"
 import { QuickOutreach } from "@/components/quick-outreach"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface OwnerInformationSectionProps {
   property: Property
@@ -44,7 +46,7 @@ async function trackContactAccess(
   action: "view" | "call" | "email" | "copy"
 ): Promise<{ success: boolean; warning?: string }> {
   try {
-    const response = await fetch("/api/track-contact", {
+    const response = await csrfFetch("/api/track-contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -110,6 +112,10 @@ export function OwnerInformationSection({
   // Title Owner data checks
   const hasTitleOwnerName = property.owner_name || property.company_name
   const isCompany = property.owner_type === "company" || property.company_number
+
+  // Only what a council published; see licenceExpiry() in lib/properties/category.ts.
+  const publishedExpiry = licenceExpiry(property)
+  const publishedReference = licenceReference(property)
 
   // Licence Holder data checks
   const hasLicence = property.licensed_hmo || property.hmo_status?.includes("Licensed")
@@ -374,63 +380,37 @@ export function OwnerInformationSection({
                   </div>
                 </div>
 
-                {/* Licence Term */}
-                {(property.licence_start_date || property.licence_end_date) && (
-                  <div className="flex items-start gap-2 pt-2 border-t border-teal-200/50">
-                    <Calendar className="h-4 w-4 text-teal-600 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">Existing Licence Term</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500">Start Date</p>
-                          <p className="font-medium text-teal-800">
-                            {property.licence_start_date
-                              ? new Date(property.licence_start_date).toLocaleDateString("en-GB", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "Not specified"}
-                          </p>
-                        </div>
-                        <div className="text-gray-400">→</div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500">End Date</p>
-                          <p className={`font-medium ${
-                            property.licence_end_date && new Date(property.licence_end_date) < new Date()
-                              ? "text-red-600"
-                              : "text-teal-800"
-                          }`}>
-                            {property.licence_end_date
-                              ? new Date(property.licence_end_date).toLocaleDateString("en-GB", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "Not specified"}
-                            {property.licence_end_date && new Date(property.licence_end_date) < new Date() && (
-                              <span className="ml-1 text-xs">(Expired)</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Additional Details Row */}
-                {(property.licence_id || property.max_occupants) && (
+                {/* Was an "Existing Licence Term" row with a start date, an
+                    end date and a red "(Expired)" flag, plus a Licence Number
+                    and a Max Occupants figure below it. All four read the
+                    columns written by scripts/012_populate_licence_term_data.sql
+                    — six start/end pairs across 252 properties, references
+                    built from MD5(address), occupancy set to bedrooms + 1. What
+                    a council actually published is the reference and the expiry,
+                    so that is what this shows. */}
+                {(publishedReference || publishedExpiry) && (
                   <div className="grid grid-cols-2 gap-3 pt-2 border-t border-teal-200/50">
-                    {property.licence_id && (
+                    {publishedReference && (
                       <div>
                         <p className="text-xs text-gray-500">Licence Number</p>
-                        <p className="font-medium text-teal-700 text-sm">{property.licence_id}</p>
+                        <p className="font-medium text-teal-700 text-sm">{publishedReference}</p>
                       </div>
                     )}
-                    {property.max_occupants && (
+                    {publishedExpiry && (
                       <div>
-                        <p className="text-xs text-gray-500">Max Occupants</p>
-                        <p className="font-medium text-teal-700 text-sm">{property.max_occupants} persons</p>
+                        <p className="text-xs text-gray-500">Expires</p>
+                        <p className={`font-medium text-sm ${
+                          new Date(publishedExpiry) < new Date() ? "text-red-600" : "text-teal-700"
+                        }`}>
+                          {new Date(publishedExpiry).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                          {new Date(publishedExpiry) < new Date() && (
+                            <span className="ml-1 text-xs">(Expired)</span>
+                          )}
+                        </p>
                       </div>
                     )}
                   </div>

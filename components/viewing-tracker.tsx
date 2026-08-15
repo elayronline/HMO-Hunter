@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import type { PropertyViewing, ViewingType, ViewingStatus } from "@/lib/types/pipeline"
 import { VIEWING_CHECKLIST } from "@/lib/types/pipeline"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface ViewingTrackerProps {
 }
@@ -86,7 +87,7 @@ export function ViewingTracker() {
 
   const updateViewingStatus = async (id: string, status: ViewingStatus) => {
     try {
-      const res = await fetch("/api/viewings", {
+      const res = await csrfFetch("/api/viewings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
@@ -104,7 +105,7 @@ export function ViewingTracker() {
     if (!selectedViewing) return
 
     try {
-      const res = await fetch("/api/viewings", {
+      const res = await csrfFetch("/api/viewings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -142,7 +143,7 @@ export function ViewingTracker() {
 
   const deleteViewing = async (id: string) => {
     try {
-      const res = await fetch(`/api/viewings?id=${id}`, { method: "DELETE" })
+      const res = await csrfFetch(`/api/viewings?id=${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete")
       setViewings(prev => prev.filter(v => v.id !== id))
       toast.success("Viewing deleted")
