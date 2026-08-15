@@ -371,11 +371,15 @@ export function OwnerInformationSection({
                   <Shield className="h-4 w-4 text-teal-600" />
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Licence Type</p>
+                    {/* Read licence_status and called anything "active" a
+                        "Mandatory HMO Licence". Mandatory, Additional and
+                        Selective are different schemes with different triggers,
+                        and the status column says nothing about which — on 232
+                        of these rows "active" is migration 012's word anyway.
+                        hmo_licence_type carries what the source actually said,
+                        and where it says nothing, so does this. */}
                     <p className="font-semibold text-teal-800">
-                      {property.licence_status === "active" ? "Mandatory HMO Licence" :
-                       property.licence_status === "pending" ? "Pending HMO Licence" :
-                       property.licence_status === "expired" ? "Expired HMO Licence" :
-                       property.hmo_status || "HMO Licence"}
+                      {property.hmo_licence_type || "Not recorded"}
                     </p>
                   </div>
                 </div>
