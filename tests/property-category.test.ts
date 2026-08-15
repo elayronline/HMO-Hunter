@@ -5,6 +5,9 @@ import {
   rentIsEvidence,
   MARKET_LABELS,
   LICENCE_ENDING_WINDOW_MONTHS,
+  sourcingCategory,
+  licenceExpiry,
+  licenceReference,
   type CategorisableProperty,
 } from "@/lib/properties/category"
 
@@ -173,5 +176,109 @@ describe("an existing HMO the owner is letting", () => {
       source_name: "Zoopla", licensed_hmo: false,
     })
     expect(isServed(plainRental)).toBe(false)
+  })
+})
+
+/**
+ * The three buckets a sourcer actually chooses between. They must partition the
+ * served set — every served property is exactly one of them — or the map's
+ * counts will not add up to what it displays.
+ */
+describe("sourcing category", () => {
+  it("calls a licensed HMO with no sale listing an existing off-market HMO", () => {
+    expect(sourcingCategory({ listing_type: "rent", licensed_hmo: true })).toBe(
+      "existing_off_market"
+    )
+  })
+
+  it("calls a licensed HMO on the market a for-sale HMO", () => {
+    expect(sourcingCategory({ listing_type: "purchase", licensed_hmo: true })).toBe("for_sale_hmo")
+  })
+
+  it("calls a house with no HMO use a change of use", () => {
+    expect(sourcingCategory({ listing_type: "purchase", licensed_hmo: false })).toBe(
+      "change_of_use"
+    )
+  })
+
+  it("treats a commercial building for sale as a change of use", () => {
+    expect(
+      sourcingCategory({ listing_type: "purchase", property_type: "commercial", licensed_hmo: false })
+    ).toBe("change_of_use")
+  })
+
+  // An expired licence is still evidence the building was in HMO use, which is
+  // the fact the planning question turns on.
+  it("counts an expired licence as existing HMO use, not a conversion", () => {
+    expect(sourcingCategory({ listing_type: "rent", licence_status: "expired" })).toBe(
+      "existing_off_market"
+    )
+    expect(sourcingCategory({ listing_type: "purchase", licence_status: "expired" })).toBe(
+      "for_sale_hmo"
+    )
+  })
+
+  it("assigns every served property exactly one category", () => {
+    const served = [
+      { listing_type: "purchase", licensed_hmo: false },
+      { listing_type: "purchase", licensed_hmo: true },
+      { listing_type: "rent", licensed_hmo: true },
+      { listing_type: "rent", licence_status: "expired" },
+      { listing_type: "purchase", property_type: "commercial", licensed_hmo: false },
+    ]
+    for (const p of served) {
+      expect(["existing_off_market", "for_sale_hmo", "change_of_use"]).toContain(
+        sourcingCategory(p)
+      )
+    }
+  })
+})
+
+/**
+ * The seeded licence columns. scripts/012_populate_licence_term_data.sql wrote
+ * licence_id, licence_start_date, licence_end_date and max_occupants onto 252
+ * rows from hardcoded per-city constants — six distinct end dates in total,
+ * references built from MD5(address), occupancy set to bedrooms + 1. None of
+ * it was published by a council, so none of it may reach a card.
+ */
+describe("licence evidence reads only published columns", () => {
+  it("returns the published expiry", () => {
+    expect(licenceExpiry({ hmo_licence_expiry: "2027-04-01" })).toBe("2027-04-01")
+  })
+
+  it("returns the council's own reference", () => {
+    expect(licenceReference({ hmo_licence_reference: "24/02862/HMOMAN" })).toBe("24/02862/HMOMAN")
+  })
+
+  it("says absent rather than falling back to the seeded columns", () => {
+    // Exactly the shape of a seeded row: a licence term and a reference are
+    // present on the record, and neither is an answer.
+    const seeded = {
+      hmo_licence_expiry: null,
+      hmo_licence_reference: null,
+      licence_end_date: "2027-03-14",
+      licence_id: "LDN-HMO-8e23a7",
+      max_occupants: 6,
+    } as Parameters<typeof licenceExpiry>[0]
+    expect(licenceExpiry(seeded)).toBeNull()
+    expect(licenceReference(seeded)).toBeNull()
+  })
+
+  // The badge, the tab, the sort and the licence-type filter all turn on this
+  // one derivation. When they each had their own, the Expired tab counted 15
+  // and the list underneath it showed 98 cards badged expired.
+  it("derives expiry from the date, not the stored status", () => {
+    const ranOut = property({ licensed_hmo: true, hmo_licence_expiry: "2025-04-01" })
+    expect(ranOut.licence_status).toBeNull()
+    expect(categorise(ranOut, NOW).licence).toBe("licence_expired")
+  })
+
+  it("still lets a revoked licence be expired before its date", () => {
+    const revoked = property({
+      licensed_hmo: true,
+      hmo_licence_expiry: "2030-01-01",
+      licence_status: "expired",
+    })
+    expect(categorise(revoked, NOW).licence).toBe("licence_expired")
   })
 })

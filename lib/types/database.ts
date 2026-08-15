@@ -270,6 +270,11 @@ export type PropertyFilters = {
   minPrice: number
   maxPrice: number
   propertyTypes: string[]
+  /**
+   * Which kinds of sourcing job to show. Empty or absent means all three.
+   * Replaces the old "Opportunities" bucket, which matched almost everything.
+   */
+  sourcingCategories?: ("existing_off_market" | "for_sale_hmo" | "change_of_use")[]
   city: string
   postcodePrefix?: string // e.g., "M14", "E1" - filters by postcode area
   licenceStatus?: "active" | "expired" | "all"
@@ -283,14 +288,11 @@ export type PropertyFilters = {
    * only            - only properties inside an Article 4 area.
    */
   article4Filter?: "include" | "exclude" | "confirmed_clear" | "only"
-  // Licence Type Filter
-  licenceTypeFilter?: string // "all" | "any_licensed" | "unlicensed" | specific licence type code
-  // Phase 4 - Potential HMO filters
-  showPotentialHMOs?: boolean
-  hmoClassification?: "ready_to_go" | "value_add" | null
-  minDealScore?: number
+  // Licence Type Filter. The four states the properties table can answer for;
+  // there is no per-property licence type recorded to filter on.
+  licenceTypeFilter?: string // "all" | "any_licensed" | "expired_licence" | "unlicensed"
+  // Matched against the measured gross_internal_area_sqm, not the stored band.
   floorAreaBand?: "under_90" | "90_120" | "120_plus" | null
-  yieldBand?: "low" | "medium" | "high" | null
   epcBand?: "good" | "needs_upgrade" | null
   isExLocalAuthority?: boolean
   // Phase 5 - Broadband filters

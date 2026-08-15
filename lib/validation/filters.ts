@@ -66,10 +66,17 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
     }
   }
 
-  // Boolean filters - ensure they're actually booleans
-  if (typeof filters.showPotentialHMOs === "boolean") {
-    sanitized.showPotentialHMOs = filters.showPotentialHMOs
+  // Sourcing categories - the three kinds of job a sourcer picks between.
+  if (Array.isArray(filters.sourcingCategories)) {
+    const valid = filters.sourcingCategories.filter(
+      (c) => c === "existing_off_market" || c === "for_sale_hmo" || c === "change_of_use"
+    )
+    if (valid.length > 0) {
+      sanitized.sourcingCategories = valid as PropertyFilters["sourcingCategories"]
+    }
   }
+
+  // Boolean filters - ensure they're actually booleans
   if (typeof filters.hasFiber === "boolean") {
     sanitized.hasFiber = filters.hasFiber
   }
@@ -103,29 +110,14 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
     }
   }
 
-  // Min deal score - must be 0-100
-  if (typeof filters.minDealScore === "number" && filters.minDealScore >= 0 && filters.minDealScore <= 100) {
-    sanitized.minDealScore = Math.floor(filters.minDealScore)
-  }
-
   // Min broadband speed - reasonable range
   if (typeof filters.minBroadbandSpeed === "number" && filters.minBroadbandSpeed >= 0 && filters.minBroadbandSpeed <= 10000) {
     sanitized.minBroadbandSpeed = Math.floor(filters.minBroadbandSpeed)
   }
 
-  // HMO classification
-  if (filters.hmoClassification === "ready_to_go" || filters.hmoClassification === "value_add") {
-    sanitized.hmoClassification = filters.hmoClassification
-  }
-
   // Floor area band
   if (filters.floorAreaBand === "under_90" || filters.floorAreaBand === "90_120" || filters.floorAreaBand === "120_plus") {
     sanitized.floorAreaBand = filters.floorAreaBand
-  }
-
-  // Yield band
-  if (filters.yieldBand === "low" || filters.yieldBand === "medium" || filters.yieldBand === "high") {
-    sanitized.yieldBand = filters.yieldBand
   }
 
   // EPC band

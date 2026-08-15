@@ -1,77 +1,18 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { CITY_ROOM_RENTS, roomRent } from "@/lib/properties/room-rents"
 
-/**
- * UK HMO Room Rental Data (2024/2025 Market Rates)
- * Source: SpareRoom, Rightmove, Zoopla market data
- *
- * These are per-room monthly rents for HMO properties
- */
-const CITY_ROOM_RENTS: Record<string, { min: number; max: number; avg: number }> = {
-  // London - highest rents, varies significantly by zone
-  "London": { min: 650, max: 1100, avg: 825 },
 
-  // South England
-  "Bristol": { min: 550, max: 800, avg: 675 },
-  "Brighton": { min: 600, max: 900, avg: 750 },
-  "Oxford": { min: 650, max: 950, avg: 800 },
-  "Cambridge": { min: 650, max: 950, avg: 800 },
-  "Southampton": { min: 500, max: 700, avg: 600 },
-  "Portsmouth": { min: 475, max: 675, avg: 575 },
-  "Reading": { min: 575, max: 825, avg: 700 },
-
-  // Midlands
-  "Birmingham": { min: 475, max: 700, avg: 575 },
-  "Coventry": { min: 450, max: 650, avg: 550 },
-  "Leicester": { min: 425, max: 625, avg: 525 },
-  "Nottingham": { min: 450, max: 650, avg: 550 },
-  "Derby": { min: 400, max: 575, avg: 475 },
-
-  // North England
-  "Manchester": { min: 525, max: 775, avg: 650 },
-  "Liverpool": { min: 425, max: 600, avg: 500 },
-  "Leeds": { min: 475, max: 675, avg: 575 },
-  "Sheffield": { min: 425, max: 600, avg: 500 },
-  "Newcastle": { min: 400, max: 575, avg: 475 },
-  "York": { min: 525, max: 750, avg: 625 },
-  "Bradford": { min: 375, max: 525, avg: 450 },
-  "Hull": { min: 350, max: 500, avg: 425 },
-
-  // Scotland
-  "Edinburgh": { min: 575, max: 850, avg: 700 },
-  "Glasgow": { min: 475, max: 675, avg: 575 },
-  "Aberdeen": { min: 450, max: 650, avg: 550 },
-  "Dundee": { min: 400, max: 575, avg: 475 },
-
-  // Wales
-  "Cardiff": { min: 475, max: 675, avg: 575 },
-  "Swansea": { min: 400, max: 575, avg: 475 },
-
-  // Default for unlisted cities
-  "_default": { min: 425, max: 625, avg: 525 },
-}
-
-/**
- * Generate a realistic room rent with some variance
- */
-function generateRoomRent(city: string): number {
-  const rates = CITY_ROOM_RENTS[city] || CITY_ROOM_RENTS["_default"]
-
-  // Add some variance around the average (±15%)
-  const variance = 0.15
-  const baseRent = rates.avg
-  const minRent = Math.max(rates.min, baseRent * (1 - variance))
-  const maxRent = Math.min(rates.max, baseRent * (1 + variance))
-
-  // Random value between min and max, rounded to nearest £25
-  const rent = minRent + Math.random() * (maxRent - minRent)
-  return Math.round(rent / 25) * 25
-}
 
 /**
  * POST /api/enrich-rents
  *
- * Updates properties with realistic HMO rental data based on UK market rates
+ * Sets each property's indicative room rent to a published market average.
+ *
+ * "Indicative" is meant literally: this is a reference average for a city, or a
+ * single national figure where the city is not one we hold a rate for. It is
+ * never a measurement of the property, and nothing downstream may present it as
+ * one. See CLAUDE.md — no user-facing value is ever generated.
  */
 export async function POST(request: Request) {
   const log: string[] = []
@@ -135,32 +76,35 @@ export async function POST(request: Request) {
     // Process each property
     for (const property of properties) {
       try {
-        const roomRent = generateRoomRent(property.city)
+        const rent = roomRent(property.city)
         const bedrooms = property.bedrooms || 4
-        const totalRent = roomRent * bedrooms
+        const totalRent = rent.rate * bedrooms
 
-        // Calculate purchase price if not set (based on ~7% yield)
-        let purchasePrice = property.purchase_price
-        if (!purchasePrice || purchasePrice === 0) {
-          const annualRent = totalRent * 12
-          const yieldRate = 0.065 + Math.random() * 0.02 // 6.5-8.5% yield
-          purchasePrice = Math.round(annualRent / yieldRate / 5000) * 5000
-        }
+        // No price is invented here any more. What stood here divided a rent
+        // this route had itself made up by a random yield between 6.5% and 8.5%,
+        // and wrote the result into the same column that holds real asking
+        // prices, with nothing to tell them apart. It is why two copies of one
+        // licence register record carried prices 38% apart. A property whose
+        // price no source publishes has no price, and the report says so.
+        const purchasePrice = property.purchase_price
 
         // Calculate yield
         const annualRent = totalRent * 12
         const grossYield = purchasePrice > 0 ? (annualRent / purchasePrice) * 100 : null
 
         const updateData: Record<string, any> = {
-          estimated_rent_per_room: roomRent,
-          price_pcm: property.listing_type === "rent" ? totalRent : property.price_pcm,
+          estimated_rent_per_room: rent.rate,
+          // Never over an advertised figure. price_pcm is reported as what the
+          // property achieves today rather than as an estimate, so overwriting a
+          // real let price with a computed one would make that sentence false.
+          price_pcm:
+            property.listing_type === "rent" && !property.price_pcm ? totalRent : property.price_pcm,
           estimated_gross_monthly_rent: totalRent,
           estimated_annual_income: annualRent,
         }
 
         // Update purchase price and yield for purchase listings
-        if (property.listing_type === "purchase" || !property.purchase_price) {
-          updateData.purchase_price = purchasePrice
+        if (property.listing_type === "purchase" && purchasePrice) {
           if (grossYield) {
             updateData.estimated_yield_percentage = Math.round(grossYield * 10) / 10
             // Set yield band
@@ -183,7 +127,9 @@ export async function POST(request: Request) {
           log.push(`  Failed: ${property.address} - ${updateError.message}`)
           failed.push(property.address)
         } else {
-          log.push(`  ${property.city}: ${property.address} - £${roomRent}/room × ${bedrooms} = £${totalRent}/mo`)
+          log.push(
+            `  ${property.city}: ${property.address} - £${rent.rate}/room (${rent.basis} average) × ${bedrooms} = £${totalRent}/mo`
+          )
           updated.push(property.address)
         }
       } catch (error) {
@@ -252,7 +198,8 @@ export async function GET() {
 
   return NextResponse.json({
     message: "POST to enrich properties with realistic UK HMO rental data",
-    description: "Uses 2024/2025 market rates by city to set room rents and total property rents",
+    description:
+      "Sets room rents from published city market averages, falling back to a single national average where the city is not held. Indicative only — never a measurement of the property.",
     stats,
     cityStats: Object.fromEntries(
       Object.entries(cityStats).map(([city, s]) => [

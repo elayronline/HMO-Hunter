@@ -167,6 +167,8 @@ export function coverageGaps(counts: {
   noEpc: number
   noFloorPlan: number
   noOwner: number
+  /** Properties whose indicative rent is the national figure, not a city one. */
+  nationalRentFallback?: number
 }): CoverageGap[] {
   return [
     {
@@ -186,6 +188,12 @@ export function coverageGaps(counts: {
       count: counts.noFloorPlan,
       total: counts.total,
       note: "Any room count for these is an assumption rather than a measurement.",
+    },
+    {
+      label: "Rent estimate is a national average",
+      count: counts.nationalRentFallback ?? 0,
+      total: counts.total,
+      note: "We hold a market room rent for 27 cities. For everywhere else the indicative rent is one national figure, so it says nothing about the local market. Replace it with a local comparable before using it.",
     },
     {
       label: "No owner identified",

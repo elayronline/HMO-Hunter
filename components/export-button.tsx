@@ -16,10 +16,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/hooks/use-toast"
+import { csrfFetch } from "@/lib/csrf-client"
 
 interface ExportButtonProps {
   propertyIds?: string[]
+  /**
+   * The filters currently applied, verbatim. Pass the same object the page
+   * fetched with — the export runs it back through the same query, so a
+   * hand-picked subset of fields here is a file that disagrees with the screen.
+   */
   filters?: Record<string, any>
+  /** The active category tab, applied after the query as it is on the page. */
+  segment?: "all" | "licensed" | "expired" | "conversion" | "restricted"
   disabled?: boolean
   variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg" | "icon"
@@ -31,6 +39,7 @@ type ExportFormat = "csv" | "pdf"
 export function ExportButton({
   propertyIds,
   filters,
+  segment,
   disabled = false,
   variant = "outline",
   size = "sm",
@@ -72,10 +81,10 @@ export function ExportButton({
     const mimeType = format === "pdf" ? "application/pdf" : "text/csv"
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await csrfFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyIds, filters })
+        body: JSON.stringify({ propertyIds, filters, segment })
       })
 
       if (response.ok) {

@@ -10,6 +10,29 @@
  * Coverage: England & Wales from 1995
  */
 
+/**
+ * A stable identifier for a Land Registry sale.
+ *
+ * The Price Paid data has a natural key: an address sold on a date for a price.
+ * Using it means the same transaction resolves to the same record however many
+ * times it is fetched.
+ */
+function landRegistryTransactionId(row: any, fallbackPostcode: string): string {
+  const parts = [
+    row.postcode?.value || fallbackPostcode,
+    row.paon?.value,
+    row.saon?.value,
+    row.date?.value,
+    row.amount?.value,
+  ]
+  return `LR-${parts
+    .map((p) => String(p ?? "").trim())
+    .join("-")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`
+}
+
 export interface LandRegistryTransaction {
   transactionId: string
   price: number
@@ -111,7 +134,11 @@ export async function fetchLandRegistryData(postcode: string): Promise<LandRegis
     }
 
     const transactions: LandRegistryTransaction[] = data.results.bindings.map((row: any) => ({
-      transactionId: `LR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // Derived from the sale itself, never from the clock or a random draw. A
+      // transaction identifier that changes on every fetch cannot dedupe, so
+      // the same sale would be recorded again on each run — the defect that put
+      // 31 duplicate copies of licensed HMOs in the database.
+      transactionId: landRegistryTransactionId(row, cleanPostcode),
       price: parseFloat(row.amount?.value || 0),
       dateOfTransfer: row.date?.value || "",
       postcode: row.postcode?.value || cleanPostcode,
@@ -179,7 +206,22 @@ export async function fetchRecentTransactions(postcode: string): Promise<LandReg
     }
 
     const transactions: LandRegistryTransaction[] = data.result.items.map((item: any) => ({
-      transactionId: item.transactionId || `LR-${Date.now()}`,
+      // Same rule as the SPARQL path above: derived from the sale, never the
+      // clock. This fallback was worse than its sibling — Date.now() alone gave
+      // every transaction in a single response the same identifier, so a batch
+      // collapsed to one row on upsert.
+      transactionId:
+        item.transactionId ||
+        landRegistryTransactionId(
+          {
+            postcode: { value: item.propertyAddress?.postcode },
+            paon: { value: item.propertyAddress?.paon },
+            saon: { value: item.propertyAddress?.saon },
+            date: { value: item.transactionDate },
+            amount: { value: item.pricePaid },
+          },
+          postcode
+        ),
       price: item.pricePaid || 0,
       dateOfTransfer: item.transactionDate || "",
       postcode: item.propertyAddress?.postcode || postcode,

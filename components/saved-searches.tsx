@@ -23,7 +23,12 @@ import { toast } from "@/hooks/use-toast"
 
 export interface SearchFilters {
   priceRange: number[]
-  propertyTypes: string[]
+  /**
+   * Optional because searches saved before the sourcing categories replaced
+   * the built-form filter have no such field. Loading one must not assert a
+   * selection it never recorded.
+   */
+  sourcingCategories?: string[]
   selectedLocation: any
   minEpcRating: string | null
   article4Filter: string
@@ -31,10 +36,7 @@ export interface SearchFilters {
   broadbandFilter: string
   ownerDataFilter: boolean
   activeSegment: string
-  showPotentialHMOs: boolean
-  hmoClassificationFilter: string | null
   floorAreaBandFilter: string | null
-  yieldBandFilter: string | null
   epcBandFilter: string | null
   // Phase 6 - TA Sourcing filters
   minBedrooms: number

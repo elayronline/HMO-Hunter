@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { assessUseClass } from "@/lib/properties/use-class"
+import { assessUseClass, USE_CLASS_LABELS } from "@/lib/properties/use-class"
 import { assessConversion } from "@/lib/properties/conversion"
 import { categorise, MARKET_LABELS } from "@/lib/properties/category"
 
@@ -25,11 +25,28 @@ describe("use class", () => {
   })
 
   // Half the licensed stock has no occupancy recorded. C4 is the smaller claim.
-  it("falls to the smaller claim when a licence carries no occupancy", () => {
+  // C4 and sui generis are not degrees of the same thing: one can be reached
+  // from C3 by permitted development and the other never can. Naming C4 on no
+  // occupancy evidence told 347 properties they had a route that may not exist,
+  // 131 of them while showing seven or more bedrooms beside "small HMO".
+  it("does not pick a size class when the licence carries no occupancy", () => {
     const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 8 })
-    expect(a.useClass).toBe("C4")
-    expect(a.basis).toBe("inferred")
-    expect(a.reason).toContain("smaller claim")
+    expect(a.useClass).toBe("hmo_unspecified")
+    expect(a.useClass).not.toBe("C4")
+    // The HMO use itself is recorded — only its size is open.
+    expect(a.basis).toBe("recorded")
+    expect(a.reason).toContain("not established")
+  })
+
+  it("mentions a bedroom count that points the other way, without claiming it", () => {
+    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 8 })
+    expect(a.reason).toContain("8 bedrooms")
+    expect(a.reason).toContain("bedrooms are not occupants")
+  })
+
+  it("still reads a recorded occupancy as the class it defines", () => {
+    expect(assessUseClass({ licensed_hmo: true, max_occupants: 5 }).useClass).toBe("C4")
+    expect(assessUseClass({ licensed_hmo: true, max_occupants: 7 }).useClass).toBe("sui_generis")
   })
 
   it("treats a two-bed with no licence as C3", () => {
@@ -40,9 +57,21 @@ describe("use class", () => {
 
   // A big house is not an HMO until it is let as one. Inferring C4 from size
   // would assert a use nobody has recorded.
-  it("does not infer HMO use from size alone", () => {
+  // A five-bedroom house with no licence may be a family home or an unlicensed
+  // HMO. The data does not distinguish them, so neither is asserted.
+  it("does not name a class for an unlicensed house it cannot place", () => {
     const a = assessUseClass({ bedrooms: 6, licensed_hmo: false })
-    expect(a.useClass).toBe("C3")
+    expect(a.useClass).toBe("unknown")
+    expect(a.basis).toBe("none")
+    expect(a.reason).toContain("could be a single dwelling or an unlicensed HMO")
+  })
+
+  // Class E is where a Class MA conversion starts. property_type was an input
+  // this function never read, so the commercial route could never fire at all.
+  it("recognises commercial stock so the Class MA route is reachable", () => {
+    const a = assessUseClass({ property_type: "commercial", licensed_hmo: false })
+    expect(a.useClass).toBe("E")
+    expect(a.basis).toBe("recorded")
   })
 
   it("says so when there is nothing to reason from", () => {
@@ -147,5 +176,68 @@ describe("commercial conversion as a category", () => {
   // bedroom count we simply failed to record.
   it("does not classify a house with no bedroom count as commercial", () => {
     expect(categorise({ listing_type: "purchase", property_type: "House", bedrooms: null } as never).market).toBe("for_sale")
+  })
+})
+
+/**
+ * The rule the whole codebase runs on, applied to use class: derive only where
+ * the derivation is near-certain, and say "not established" everywhere else.
+ * A class named on thin evidence is worse than no class, because the reader
+ * cannot tell the two apart once it is on the page.
+ */
+describe("nothing is claimed that the evidence will not carry", () => {
+  it("never returns C4 without a recorded occupancy", () => {
+    const withoutOccupancy = [
+      { licensed_hmo: true, max_occupants: null, bedrooms: 3 },
+      { licensed_hmo: true, max_occupants: null, bedrooms: 7 },
+      { licensed_hmo: true, max_occupants: null, bedrooms: 12 },
+      { licence_status: "expired", max_occupants: null, bedrooms: 5 },
+    ]
+    for (const input of withoutOccupancy) {
+      expect(assessUseClass(input).useClass).not.toBe("C4")
+    }
+  })
+
+  // The seven-bedroom "small HMO" that started this: the label and the bedroom
+  // count sat side by side on the same card and contradicted each other.
+  it("does not call a seven-bedroom property a small HMO", () => {
+    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 7 })
+    expect(USE_CLASS_LABELS[a.useClass]).not.toContain("small HMO")
+  })
+
+  it("keeps HMO use recorded even where the size class is not", () => {
+    const a = assessUseClass({ licensed_hmo: true, max_occupants: null, bedrooms: 7 })
+    expect(a.useClass).toBe("hmo_unspecified")
+    expect(a.basis).toBe("recorded")
+  })
+
+  // An existing HMO needs no change of use, whichever size class it is.
+  it("asks for no conversion where the property is already an HMO", () => {
+    const r = assessConversion({
+      useClass: "hmo_unspecified",
+      hmoArticle4InForce: true,
+      classMaArticle4InForce: false,
+      councilPositionKnown: true,
+      hasFloorPlan: false,
+    })
+    expect(r.steps).toHaveLength(0)
+    expect(r.wholeRoutePermitted).toBe(true)
+    expect(r.openQuestions.join(" ")).toContain("C4 or sui generis is not established")
+  })
+
+  // Where the class is unknown the route is still useful, but only as a
+  // conditional — it must never read as a statement about this property.
+  it("states the conversion route as a condition when the class is unknown", () => {
+    const r = assessConversion({
+      useClass: "unknown",
+      hmoArticle4InForce: false,
+      classMaArticle4InForce: false,
+      councilPositionKnown: true,
+      hasFloorPlan: false,
+    })
+    expect(r.steps).toHaveLength(1)
+    expect(r.steps[0].note).toContain("If this is currently a C3 dwellinghouse")
+    expect(r.steps[0].note).toContain("which we have not established")
+    expect(r.openQuestions.join(" ")).toContain("not established")
   })
 })
