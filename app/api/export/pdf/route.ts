@@ -3,7 +3,21 @@ import { createClient } from "@/lib/supabase/server"
 import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { exportRequestSchema } from "@/lib/validation/schemas"
+import { propertiesForExport } from "@/lib/export/query"
+import {
+  categorise,
+  licenceExpiry,
+  LICENCE_LABELS,
+  type CategorisableProperty,
+} from "@/lib/properties/category"
 import { jsPDF } from "jspdf"
+
+/**
+ * A PDF has to fit on pages, so unlike the CSV it is capped. The cap is
+ * printed on the document — the old one dropped everything past row 100 in
+ * silence, which reads as "these are all of them".
+ */
+const MAX_ROWS = 100
 
 // POST - Export properties to PDF
 export async function POST(request: NextRequest) {
@@ -22,9 +36,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { propertyIds, filters } = validation.data
+    const { propertyIds, filters, segment } = validation.data
 
-    // Deduct 10 credits for PDF export
+    // Same query as the map and the CSV, and credits only once there are rows.
+    // See lib/export/query.ts for why this route no longer builds its own.
+    const matched = await propertiesForExport(filters, segment, propertyIds)
+
+    if (matched.length === 0) {
+      return NextResponse.json(
+        { error: "No properties match these filters, so there is nothing to export." },
+        { status: 400 }
+      )
+    }
+
     const creditResult = await deductCredits(user.id, "csv_export") // Same cost as CSV
     if (!creditResult.success) {
       return NextResponse.json({
@@ -35,70 +59,8 @@ export async function POST(request: NextRequest) {
       }, { status: 429 })
     }
 
-    // Build query based on filters or specific IDs
-    let query = supabase
-      .from("properties")
-      .select(`
-        id,
-        address,
-        postcode,
-        city,
-        listing_type,
-        purchase_price,
-        price_pcm,
-        bedrooms,
-        bathrooms,
-        property_type,
-        hmo_status,
-        hmo_licence_number,
-        hmo_licence_end,
-        hmo_max_occupants,
-        epc_rating,
-        epc_floor_area,
-        deal_score,
-        gross_yield
-      `)
-
-    // If specific IDs provided, use those
-    if (propertyIds && propertyIds.length > 0) {
-      query = query.in("id", propertyIds)
-    } else if (filters) {
-      // Apply filters
-      if (filters.listingType) {
-        query = query.eq("listing_type", filters.listingType)
-      }
-      if (filters.city && filters.city !== "All Cities") {
-        query = query.eq("city", filters.city)
-      }
-      if (filters.minPrice) {
-        if (filters.listingType === "rent") {
-          query = query.gte("price_pcm", filters.minPrice)
-        } else {
-          query = query.gte("purchase_price", filters.minPrice)
-        }
-      }
-      if (filters.maxPrice) {
-        if (filters.listingType === "rent") {
-          query = query.lte("price_pcm", filters.maxPrice)
-        } else {
-          query = query.lte("purchase_price", filters.maxPrice)
-        }
-      }
-    }
-
-    // Limit to 100 rows for PDF (more results would create very large PDFs)
-    query = query.limit(100)
-
-    const { data: properties, error } = await query
-
-    if (error) {
-      console.error("[Export PDF] Error fetching properties:", error)
-      return NextResponse.json({ error: "Failed to fetch properties" }, { status: 500 })
-    }
-
-    if (!properties || properties.length === 0) {
-      return NextResponse.json({ error: "No properties to export" }, { status: 400 })
-    }
+    const properties = matched.slice(0, MAX_ROWS)
+    const omitted = matched.length - properties.length
 
     // Generate PDF
     const pdf = new jsPDF({
@@ -128,24 +90,30 @@ export async function POST(request: NextRequest) {
     pdf.text("HMO Hunter - Property Export", margin, yPosition)
     yPosition += 8
 
-    // Subtitle with date
+    // Subtitle with date, and the count actually printed versus the count matched.
     pdf.setFontSize(10)
     pdf.setTextColor(100, 116, 139) // Slate color
-    pdf.text(`Generated on ${new Date().toLocaleDateString("en-GB")} | ${properties.length} properties`, margin, yPosition)
+    const countLine =
+      omitted > 0
+        ? `${properties.length} of ${matched.length} properties — this PDF is limited to ${MAX_ROWS} rows, so ${omitted} are not shown. Export as CSV for the full set.`
+        : `${properties.length} properties`
+    pdf.text(`Generated on ${new Date().toLocaleDateString("en-GB")} | ${countLine}`, margin, yPosition)
     yPosition += 12
 
-    // Table headers
+    // Table headers. Yield and Score are gone with the features that produced
+    // them; gross_yield was never a column on the table at all. What replaces
+    // them is the licence state and its expiry, which are published facts.
     const columns = [
-      { header: "Address", width: 60 },
-      { header: "Postcode", width: 25 },
-      { header: "City", width: 25 },
-      { header: "Price", width: 25 },
-      { header: "Beds", width: 15 },
-      { header: "Type", width: 30 },
-      { header: "HMO", width: 20 },
-      { header: "EPC", width: 15 },
-      { header: "Yield", width: 20 },
-      { header: "Score", width: 15 },
+      { header: "Address", width: 58 },
+      { header: "Postcode", width: 22 },
+      { header: "City", width: 24 },
+      { header: "Asking price", width: 26 },
+      { header: "Beds", width: 13 },
+      { header: "Type", width: 26 },
+      { header: "Licence", width: 40 },
+      { header: "Expires", width: 24 },
+      { header: "EPC", width: 12 },
+      { header: "Article 4", width: 22 },
     ]
 
     // Draw table header
@@ -177,21 +145,31 @@ export async function POST(request: NextRequest) {
       }
 
       xPosition = margin
-      const price = property.listing_type === "purchase"
+
+      // Asking price only. This used to fall back to price_pcm for anything not
+      // for sale, printing our own city-average rent estimate in a column
+      // headed "Price" as though a vendor were asking it.
+      const price = property.purchase_price
         ? formatPrice(property.purchase_price)
-        : `${formatPrice(property.price_pcm)}/mo`
+        : "Off market"
+
+      const category = categorise(property as CategorisableProperty)
+      const expiry = licenceExpiry(property)
 
       const rowData = [
-        truncateText(property.address || "", 35),
+        truncateText(property.address || "", 34),
         property.postcode || "",
-        property.city || "",
+        truncateText(property.city || "", 13),
         price,
         property.bedrooms?.toString() || "-",
-        truncateText(property.property_type || "", 15),
-        property.hmo_status === "licensed" ? "Yes" : "No",
+        truncateText(property.property_type || "", 14),
+        // hmo_status was compared against "licensed", a value it never holds —
+        // the column stores "Licensed HMO" — so this column read "No" on every
+        // row, including 494 licensed ones.
+        truncateText(LICENCE_LABELS[category.licence], 22),
+        expiry ? new Date(expiry).toLocaleDateString("en-GB") : "-",
         property.epc_rating || "-",
-        property.gross_yield ? `${property.gross_yield.toFixed(1)}%` : "-",
-        property.deal_score?.toString() || "-",
+        articleFourLabel(property.article_4_status),
       ]
 
       rowData.forEach((value, colIndex) => {
@@ -218,6 +196,8 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="hmo-hunter-export-${new Date().toISOString().split("T")[0]}.pdf"`,
+        "X-Export-Rows": String(properties.length),
+        "X-Export-Rows-Omitted": String(omitted),
         "X-Credits-Remaining": String(creditResult.credits_remaining ?? 0),
         "X-Credits-Warning": creditResult.warning || "",
       }
@@ -233,6 +213,18 @@ function formatPrice(price: number | null | undefined): string {
   if (price >= 1000000) return `£${(price / 1000000).toFixed(2)}M`
   if (price >= 1000) return `£${(price / 1000).toFixed(0)}k`
   return `£${price}`
+}
+
+/** "unknown" is most of the stock and is a real answer, not a blank. */
+function articleFourLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "in_force":
+      return "In force"
+    case "none_found":
+      return "None found"
+    default:
+      return "Unverified"
+  }
 }
 
 function truncateText(text: string, maxLength: number): string {

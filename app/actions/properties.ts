@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
 import { validateFilters, isValidISODate } from "@/lib/validation/filters"
+import { PRICE_SLIDER_MAX } from "@/lib/properties/category"
 
 const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
@@ -76,11 +77,55 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
 
     // Price therefore always means purchase price. There is no rent branch left
     // to pick, so the licence-expiry carve-out is the only condition.
+    //
+    // A property with no price is not a property outside the price range. Most
+    // of the licensed HMO stock is off market — nobody is asking anything for
+    // it — so a plain gte/lte silently dropped 457 licensed HMOs the moment the
+    // fabricated prices were cleared out from under them, leaving the map
+    // showing 738 of 1,525. Those records are the off-market opportunities this
+    // product exists to surface, so an unpriced row passes a price filter
+    // rather than failing it, and the user narrows by price only among the
+    // properties that actually have one.
     if (validatedFilters.minPrice && !licenceExpiryFilterActive) {
-      query = query.gte("purchase_price", validatedFilters.minPrice)
+      query = query.or(`purchase_price.gte.${validatedFilters.minPrice},purchase_price.is.null`)
     }
-    if (validatedFilters.maxPrice && !licenceExpiryFilterActive) {
-      query = query.lte("purchase_price", validatedFilters.maxPrice)
+    // The slider's own maximum means "no upper limit", not "£2,000,000". Treated
+    // literally it excluded 330 properties on a ceiling the user never chose.
+    if (
+      validatedFilters.maxPrice &&
+      validatedFilters.maxPrice < PRICE_SLIDER_MAX &&
+      !licenceExpiryFilterActive
+    ) {
+      query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},purchase_price.is.null`)
+    }
+
+    // The three kinds of sourcing job, expressed as SQL. Kept in step with
+    // sourcingCategory() in lib/properties/category.ts, which is the same rule
+    // for a single row — the pair is tested against each other rather than
+    // trusted to stay aligned by hand.
+    //
+    // HMO use means a licence on the record, live or expired: an expired licence
+    // still proves the building was in HMO use, which is the fact a change-of-use
+    // question turns on.
+    const HMO_USE = "licensed_hmo.eq.true,licence_status.eq.expired"
+    const categories = validatedFilters.sourcingCategories
+    if (categories && categories.length > 0 && categories.length < 3) {
+      const clauses: string[] = []
+      if (categories.includes("existing_off_market")) {
+        clauses.push(`and(listing_type.neq.purchase,or(${HMO_USE}))`)
+      }
+      if (categories.includes("for_sale_hmo")) {
+        clauses.push(`and(listing_type.eq.purchase,or(${HMO_USE}))`)
+      }
+      if (categories.includes("change_of_use")) {
+        // NOT (col = true) evaluates to NULL for a NULL column, so PostgREST
+        // would drop every row that has never been assessed — which is most of
+        // the change-of-use stock. The null case has to be named explicitly.
+        clauses.push(
+          `and(or(licensed_hmo.is.null,licensed_hmo.eq.false),or(licence_status.is.null,licence_status.neq.expired))`
+        )
+      }
+      query = query.or(clauses.join(","))
     }
 
     // Apply filters
@@ -152,71 +197,77 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Licence Type Filter
+    //
+    // "Expired" is a date that has passed, not a stored status. The status
+    // column carries the council's own word and is only set on revocation, so
+    // filtering on it alone returned 15 properties while 98 cards on the page
+    // were badged expired. Kept in step with categorise() in
+    // lib/properties/category.ts, which decides the badge from the same date.
+    const today = new Date().toISOString().slice(0, 10)
+    const DERIVED_EXPIRED = `licence_status.eq.expired,and(licensed_hmo.eq.true,hmo_licence_expiry.lt.${today})`
     if (validatedFilters.licenceTypeFilter && validatedFilters.licenceTypeFilter !== "all") {
       if (validatedFilters.licenceTypeFilter === "any_licensed") {
-        // Show only properties with any active licence
-        query = query.eq("licensed_hmo", true)
+        // A licence that has run out is not a licence the reader can rely on,
+        // so "Any Licensed HMO" excludes it — the option below is for those.
+        query = query
+          .eq("licensed_hmo", true)
+          .neq("licence_status", "expired")
+          .or(`hmo_licence_expiry.is.null,hmo_licence_expiry.gte.${today}`)
       } else if (validatedFilters.licenceTypeFilter === "expired_licence") {
-        // Show only properties with expired licences
-        query = query.eq("licence_status", "expired")
+        query = query.or(DERIVED_EXPIRED)
       } else if (validatedFilters.licenceTypeFilter === "unlicensed") {
         // Show only properties without licences
         query = query.or("licensed_hmo.eq.false,licensed_hmo.is.null")
-      } else {
-        // Specific licence type code - need to filter by property_licences table
-        // First get property IDs that have this licence type
-        const { data: licencedPropertyIds } = await supabase
-          .from("property_licences")
-          .select("property_id")
-          .eq("licence_type_code", validatedFilters.licenceTypeFilter)
-          .eq("status", "active")
-
-        if (licencedPropertyIds && licencedPropertyIds.length > 0) {
-          const propertyIds = licencedPropertyIds.map(l => l.property_id)
-          query = query.in("id", propertyIds)
-        } else {
-          // No properties have this licence type - return empty
-          return []
-        }
       }
+      // A branch for specific licence-type codes stood here. It queried
+      // property_licences, which does not exist in the schema — PostgREST
+      // answers PGRST205 — and the undefined result fell through to
+      // `return []`. So "Mandatory HMO Licence", the commonest licence in the
+      // country, emptied the page, silently, and so did the other five. The
+      // options are gone from the UI; nothing stores licence type per property
+      // to filter on yet.
     }
 
-    // Phase 4 - Potential HMO Filters
-    if (validatedFilters.showPotentialHMOs) {
-      // When toggle is ON: show both Licensed HMOs AND Potential HMOs
-      // Additional filters below narrow down the potential HMO results
+    // These used to sit inside `if (showPotentialHMOs)`, whose else-branch
+    // restricted the whole result to licensed stock — the same thing the
+    // change_of_use sourcing category already does, and better. The switch is
+    // gone; see the note in app/map/page.tsx.
+    //
+    // The classification and yield-band filters went with it. Classification
+    // was keyed off deal_score, removed from the product in 5396d0f, and read
+    // a missing EPC as a D. yield_band bands estimated_yield_percentage, which
+    // comes off the city-average room rent.
 
-      // HMO Classification filter - only filter if specifically selected
-      if (validatedFilters.hmoClassification) {
-        query = query.eq("hmo_classification", validatedFilters.hmoClassification)
-      }
+    // Floor area, matched against the measurement rather than the stored band.
+    // floor_area_band is computed at ingestion from `floor_area ||
+    // estimateFloorArea(bedrooms, type)`, so on the rows with no measurement it
+    // is a guess from bedroom count — 60 to 100 m² plus 15 per bedroom. A
+    // property whose size nobody recorded is not a property of a known size,
+    // so it does not match a size filter.
+    if (validatedFilters.floorAreaBand) {
+      const bounds = {
+        under_90: { lt: 90 },
+        "90_120": { gte: 90, lte: 120 },
+        "120_plus": { gt: 120 },
+      }[validatedFilters.floorAreaBand]
+      query = query.not("gross_internal_area_sqm", "is", null)
+      if ("lt" in bounds && bounds.lt !== undefined) query = query.lt("gross_internal_area_sqm", bounds.lt)
+      if ("gte" in bounds && bounds.gte !== undefined) query = query.gte("gross_internal_area_sqm", bounds.gte)
+      if ("lte" in bounds && bounds.lte !== undefined) query = query.lte("gross_internal_area_sqm", bounds.lte)
+      if ("gt" in bounds && bounds.gt !== undefined) query = query.gt("gross_internal_area_sqm", bounds.gt)
+    }
 
-      // Min Deal Score filter - only applies to potential HMOs but doesn't exclude licensed
+    // EPC band. The label said "Compliant (C/D)" over a query matching A–D;
+    // the label now says A to D.
+    if (validatedFilters.epcBand === "good") {
+      query = query.in("epc_rating", ["A", "B", "C", "D"])
+    } else if (validatedFilters.epcBand === "needs_upgrade") {
+      query = query.in("epc_rating", ["E", "F", "G"])
+    }
 
-      // Floor Area Band filter
-      if (validatedFilters.floorAreaBand) {
-        query = query.eq("floor_area_band", validatedFilters.floorAreaBand)
-      }
-
-      // Yield Band filter
-      if (validatedFilters.yieldBand) {
-        query = query.eq("yield_band", validatedFilters.yieldBand)
-      }
-
-      // EPC Band filter (good = C/D, needs_upgrade = E/F/G)
-      if (validatedFilters.epcBand === "good") {
-        query = query.in("epc_rating", ["A", "B", "C", "D"])
-      } else if (validatedFilters.epcBand === "needs_upgrade") {
-        query = query.in("epc_rating", ["E", "F", "G"])
-      }
-
-      // Ex-Local Authority filter
-      if (validatedFilters.isExLocalAuthority) {
-        query = query.eq("is_ex_local_authority", true)
-      }
-    } else {
-      // When toggle is OFF: show only Licensed HMOs AND Expired Licence HMOs (exclude potential HMOs)
-      query = query.or("licensed_hmo.eq.true,licence_status.eq.expired")
+    // Ex-Local Authority filter
+    if (validatedFilters.isExLocalAuthority) {
+      query = query.eq("is_ex_local_authority", true)
     }
 
     // Owner Data Filter - show only properties with title owner information
@@ -239,14 +290,33 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       const lastDay = new Date(year, endMonth, 0).getDate()
       const endDate = `${year}-${endMonth.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`
 
-      // Filter: licence_end_date BETWEEN start and end dates
-      query = query.gte("licence_end_date", startDate)
-      query = query.lte("licence_end_date", endDate)
-      // Also ensure licence_end_date is not null
-      query = query.not("licence_end_date", "is", null)
+      // hmo_licence_expiry, not licence_end_date. This filter is the reason
+      // someone pays for the tier — "whose licence lapses in this window" — and
+      // it was reading the seeded column, whose 252 rows hold six distinct
+      // dates. Picking a month returned whichever cities the seed happened to
+      // stamp with it, not the licences actually running out.
+      query = query.gte("hmo_licence_expiry", startDate)
+      query = query.lte("hmo_licence_expiry", endDate)
+      query = query.not("hmo_licence_expiry", "is", null)
     }
 
-    const { data, error } = await safeSupabaseQuery(async () => await query)
+    // PostgREST caps a response at 1,000 rows. Nothing in this file asked for a
+    // limit, so the cap arrived silently: the map drew 1,000 markers, said
+    // "Showing 1000 properties", and gave no sign that 525 more existed. A
+    // truncation the reader cannot see is worse than a slower query, so the
+    // pages are walked until one comes back short.
+    const PAGE = 1000
+    const { data, error } = await safeSupabaseQuery(async () => {
+      const all: unknown[] = []
+      for (let from = 0; ; from += PAGE) {
+        const page = await query.range(from, from + PAGE - 1)
+        if (page.error) return page
+        const rows = page.data ?? []
+        all.push(...rows)
+        if (rows.length < PAGE) break
+      }
+      return { data: all, error: null }
+    })
 
     if (error) {
       const errorMessage = error.message || String(error)

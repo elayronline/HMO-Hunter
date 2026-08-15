@@ -63,14 +63,38 @@ export const savedSearchUpdateSchema = z.object({
 })
 
 // Export schemas
+/**
+ * An export is the page you were looking at, as a file.
+ *
+ * This used to accept eight filter fields out of the twenty the map applies,
+ * which is why the export could not have matched the screen even in principle:
+ * a request narrowed to Article 4 areas, an EPC floor and the expired segment
+ * arrived here as a city and a price range. The whole filter set is accepted
+ * now and handed to the same getProperties() the map calls.
+ */
 export const exportRequestSchema = z.object({
   propertyIds: z.array(z.string().uuid()).max(500).optional(),
+  segment: z.enum(["all", "licensed", "expired", "conversion", "restricted"]).optional(),
   filters: z
     .object({
-      listingType: z.enum(["rent", "purchase"]).optional(),
-      city: z.string().optional(),
       minPrice: z.number().int().nonnegative().optional(),
-      maxPrice: z.number().int().positive().optional(),
+      maxPrice: z.number().int().nonnegative().optional(),
+      sourcingCategories: z
+        .array(z.enum(["existing_off_market", "for_sale_hmo", "change_of_use"]))
+        .optional(),
+      city: z.string().optional(),
+      postcodePrefix: z.string().max(8).optional(),
+      minEpcRating: z.enum(["A", "B", "C", "D", "E"]).nullable().optional(),
+      article4Filter: z.enum(["include", "exclude", "confirmed_clear", "only"]).optional(),
+      licenceTypeFilter: z.string().max(50).optional(),
+      floorAreaBand: z.enum(["under_90", "90_120", "120_plus"]).nullable().optional(),
+      epcBand: z.enum(["good", "needs_upgrade"]).nullable().optional(),
+      hasFiber: z.boolean().optional(),
+      minBroadbandSpeed: z.number().int().nonnegative().optional(),
+      hasOwnerData: z.boolean().optional(),
+      licenceExpiryStartMonth: z.number().int().min(1).max(12).optional(),
+      licenceExpiryEndMonth: z.number().int().min(1).max(12).optional(),
+      licenceExpiryYear: z.number().int().min(2020).max(2040).optional(),
       minBedrooms: z.number().int().min(1).max(20).optional(),
       minBathrooms: z.number().int().min(1).max(10).optional(),
       isFurnished: z.boolean().optional(),
@@ -129,10 +153,7 @@ export const propertyFiltersSchema = z.object({
   minEpcRating: z.enum(["A", "B", "C", "D", "E"]).optional(),
   article4Filter: z.enum(["include", "exclude", "confirmed_clear", "only"]).optional(),
   licenceTypeFilter: z.string().optional(),
-  showPotentialHMOs: z.coerce.boolean().optional(),
-  hmoClassification: z.enum(["ready_to_go", "value_add"]).optional(),
   floorAreaBand: z.enum(["under_90", "90_120", "120_plus"]).optional(),
-  yieldBand: z.enum(["low", "medium", "high"]).optional(),
   epcBand: z.enum(["good", "needs_upgrade"]).optional(),
   hasFiber: z.coerce.boolean().optional(),
   minBroadbandSpeed: z.coerce.number().int().positive().optional(),

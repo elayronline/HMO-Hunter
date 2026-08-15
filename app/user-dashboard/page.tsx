@@ -11,19 +11,99 @@
  * Ordering is by urgency, not by category: a restriction commencing in five days
  * sits above a licence expiring in ninety, which sits above a coverage gap that
  * has been true for months.
+ *
+ * Visually the page is built around the dates. A day count is the one number on
+ * screen that decides whether to act today, so it gets its own column, tabular
+ * figures and the largest type here — and everything else is deliberately
+ * quieter than it.
  */
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CalendarClock, KeyRound, AlertTriangle, Search, FileText, MapIcon, ArrowRight } from "lucide-react"
+import { AppShell, ShellButton } from "@/components/app-shell"
+import {
+  CalendarClock,
+  KeyRound,
+  AlertTriangle,
+  Search,
+  FileText,
+  MapIcon,
+  ArrowRight,
+  ChevronRight,
+} from "lucide-react"
 import type { AttentionBoard } from "@/lib/dashboard/attention"
+
+/** A section heading with its note, so the page scans in one pass. */
+function SectionHead({
+  icon: Icon,
+  title,
+  note,
+}: {
+  icon: typeof CalendarClock
+  title: string
+  note?: string
+}) {
+  return (
+    <div className="mb-3">
+      <h2 className="flex items-center gap-2 text-[0.9375rem] font-bold tracking-tight text-ink">
+        <Icon className="h-4 w-4 text-ink-faint" />
+        {title}
+      </h2>
+      {note && <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-ink-subtle">{note}</p>}
+    </div>
+  )
+}
+
+function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-lg border border-line bg-surface shadow-[var(--elev-1)] ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+function LicenceRow({
+  licence,
+  tone,
+  onOpen,
+}: {
+  licence: AttentionBoard["expiringSoon"][number]
+  tone: "soon" | "expired"
+  onOpen: () => void
+}) {
+  const days = Math.abs(licence.daysRemaining)
+  const urgent = licence.daysRemaining <= 90
+  return (
+    <button
+      onClick={onOpen}
+      className="group flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-inset"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[0.875rem] font-medium text-ink">{licence.address}</span>
+        <span className="block truncate text-[0.75rem] text-ink-faint">
+          {[licence.postcode, licence.council].filter(Boolean).join(" · ") || "No council recorded"}
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
+        <span
+          className={`tnum block text-[0.875rem] font-semibold ${
+            tone === "expired" ? "text-danger" : urgent ? "text-warn" : "text-ink-muted"
+          }`}
+        >
+          {tone === "expired" ? `${days} days ago` : `${days} days`}
+        </span>
+        <span className="tnum block text-[0.75rem] text-ink-faint">{licence.expiry}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
+    </button>
+  )
+}
 
 export default function UserDashboardPage() {
   const router = useRouter()
   const [board, setBoard] = useState<AttentionBoard | null>(null)
   const [servedTotal, setServedTotal] = useState<number>(0)
+  const [totals, setTotals] = useState<{ expiring: number; expired: number }>({ expiring: 0, expired: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,39 +113,41 @@ export default function UserDashboardPage() {
         if (d.board) {
           setBoard(d.board)
           setServedTotal(d.servedTotal ?? 0)
+          setTotals({ expiring: d.expiringTotal ?? 0, expired: d.expiredTotal ?? 0 })
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">What needs attention</h1>
-            <p className="text-sm text-slate-500">
-              {servedTotal > 0
-                ? `${servedTotal.toLocaleString()} properties tracked`
-                : "Your sourcing overview"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push("/hmo-check")}>
-              <FileText className="w-4 h-4 mr-2" />
-              Check an address
-            </Button>
-            <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => router.push("/map")}>
-              <MapIcon className="w-4 h-4 mr-2" />
-              Map
-            </Button>
-          </div>
-        </div>
-      </header>
+  const check = (address: string) => router.push(`/hmo-check?address=${encodeURIComponent(address)}`)
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {loading && <p className="text-sm text-slate-500">Loading…</p>}
+  return (
+    <AppShell
+      title="What needs attention"
+      subtitle={servedTotal > 0 ? `${servedTotal.toLocaleString()} properties tracked` : undefined}
+      counts={{ expired: totals.expired }}
+      actions={
+        <>
+          <ShellButton href="/hmo-check">
+            <FileText className="h-4 w-4" />
+            Check an address
+          </ShellButton>
+          <ShellButton href="/map" variant="primary">
+            <MapIcon className="h-4 w-4" />
+            Map
+          </ShellButton>
+        </>
+      }
+    >
+      <div className="mx-auto max-w-6xl space-y-8">
+        {loading && (
+          <div className="space-y-2" aria-busy>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-[4.5rem] animate-pulse rounded-lg border border-line bg-surface" />
+            ))}
+          </div>
+        )}
 
         {board && (
           <>
@@ -73,116 +155,118 @@ export default function UserDashboardPage() {
                 and they are the thing a portal cannot tell you. */}
             {board.datedChanges.length > 0 && (
               <section>
-                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-3">
-                  <CalendarClock className="w-4 h-4" />
-                  Coming up
-                </h2>
-                <div className="space-y-3">
-                  {board.datedChanges.map((change, i) => (
-                    <Card
-                      key={i}
-                      className={`p-4 ${change.daysAway <= 14 ? "border-amber-300 bg-amber-50" : ""}`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-900">{change.headline}</p>
-                          <p className="text-sm text-slate-600 mt-0.5">{change.detail}</p>
-                          {change.sourceUrl && (
-                            <a
-                              href={change.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-teal-700 hover:underline mt-1 inline-block"
+                <SectionHead
+                  icon={CalendarClock}
+                  title="Coming up"
+                  note="Restrictions with a date on them. Each changes the answer for every property in its area on the day it lands."
+                />
+                <div className="space-y-2">
+                  {board.datedChanges.map((change, i) => {
+                    const imminent = change.daysAway <= 14
+                    return (
+                      <Panel key={i} className={imminent ? "border-warn-line bg-warn-soft" : ""}>
+                        <div className="flex items-stretch">
+                          {/* The count is the decision, so it gets a column of
+                              its own and the largest type on the page. */}
+                          <div
+                            className={`flex w-[5.5rem] shrink-0 flex-col items-center justify-center border-r px-2 py-4 ${
+                              imminent ? "border-warn-line" : "border-line"
+                            }`}
+                          >
+                            <span
+                              className={`tnum text-[1.75rem] font-bold leading-none tracking-tight ${
+                                imminent ? "text-warn" : "text-brand"
+                              }`}
                             >
-                              Council source
-                            </a>
-                          )}
+                              {change.daysAway}
+                            </span>
+                            <span className="mt-1 text-[0.6875rem] font-medium uppercase tracking-wide text-ink-faint">
+                              {change.daysAway === 1 ? "day" : "days"}
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1 px-4 py-3">
+                            <div className="flex items-baseline justify-between gap-3">
+                              <p className="text-[0.9375rem] font-semibold leading-snug text-ink">
+                                {change.headline}
+                              </p>
+                              <span className="tnum shrink-0 text-[0.75rem] text-ink-faint">
+                                {change.date}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-muted">
+                              {change.detail}
+                            </p>
+                            {change.sourceUrl && (
+                              <a
+                                href={change.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1.5 inline-flex items-center gap-1 text-[0.75rem] font-medium text-brand hover:underline"
+                              >
+                                Council source
+                                <ArrowRight className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-2xl font-bold text-slate-900">{change.daysAway}</p>
-                          <p className="text-xs text-slate-500">{change.daysAway === 1 ? "day" : "days"}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{change.date}</p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Panel>
+                    )
+                  })}
                 </div>
               </section>
             )}
 
-            {/* Named addresses, not a count. Thirteen properties with days left
-                is actionable; "13" is a number to look at. */}
-            {board.expiringSoon.length > 0 && (
-              <section>
-                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
-                  <KeyRound className="w-4 h-4" />
-                  Licences running out
-                </h2>
-                <p className="text-sm text-slate-500 mb-3">
-                  A renewal deadline is the owner&rsquo;s deadline too.
-                </p>
-                <Card className="divide-y divide-slate-100">
-                  {board.expiringSoon.map((licence) => (
-                    <button
-                      key={licence.id}
-                      onClick={() => router.push(`/hmo-check?address=${encodeURIComponent(licence.address)}`)}
-                      className="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between gap-3"
-                    >
-                      <span className="min-w-0">
-                        <span className="block font-medium text-slate-900 truncate">{licence.address}</span>
-                        <span className="block text-xs text-slate-500">
-                          {[licence.postcode, licence.council].filter(Boolean).join(" · ")}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span
-                          className={`block text-sm font-bold ${
-                            licence.daysRemaining <= 90 ? "text-amber-700" : "text-slate-700"
-                          }`}
-                        >
-                          {licence.daysRemaining} days
-                        </span>
-                        <span className="block text-xs text-slate-400">{licence.expiry}</span>
-                      </span>
-                    </button>
-                  ))}
-                </Card>
-              </section>
-            )}
+            <div className="grid gap-8 lg:grid-cols-2">
+              {/* Named addresses, not a count. Thirteen properties with days
+                  left is actionable; "13" is a number to look at. */}
+              {board.expiringSoon.length > 0 && (
+                <section>
+                  <SectionHead
+                    icon={KeyRound}
+                    title="Licences running out"
+                    note={`A renewal deadline is the owner's deadline too.${
+                      totals.expiring > board.expiringSoon.length
+                        ? ` Showing the ${board.expiringSoon.length} soonest of ${totals.expiring}.`
+                        : ""
+                    }`}
+                  />
+                  <Panel className="divide-y divide-line overflow-hidden">
+                    {board.expiringSoon.map((licence) => (
+                      <LicenceRow
+                        key={licence.id}
+                        licence={licence}
+                        tone="soon"
+                        onOpen={() => check(licence.address)}
+                      />
+                    ))}
+                  </Panel>
+                </section>
+              )}
 
-            {board.expired.length > 0 && (
-              <section>
-                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  Licences already expired
-                </h2>
-                <p className="text-sm text-slate-500 mb-3">
-                  An operating HMO without a current licence is a problem the owner may not know they have.
-                </p>
-                <Card className="divide-y divide-slate-100">
-                  {board.expired.slice(0, 10).map((licence) => (
-                    <button
-                      key={licence.id}
-                      onClick={() => router.push(`/hmo-check?address=${encodeURIComponent(licence.address)}`)}
-                      className="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between gap-3"
-                    >
-                      <span className="min-w-0">
-                        <span className="block font-medium text-slate-900 truncate">{licence.address}</span>
-                        <span className="block text-xs text-slate-500">
-                          {[licence.postcode, licence.council].filter(Boolean).join(" · ")}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-sm font-bold text-red-600">
-                          {Math.abs(licence.daysRemaining)} days ago
-                        </span>
-                        <span className="block text-xs text-slate-400">{licence.expiry}</span>
-                      </span>
-                    </button>
-                  ))}
-                </Card>
-              </section>
-            )}
+              {board.expired.length > 0 && (
+                <section>
+                  <SectionHead
+                    icon={AlertTriangle}
+                    title="Licences already expired"
+                    note={`An operating HMO without a current licence is a problem the owner may not know they have.${
+                      totals.expired > Math.min(board.expired.length, 10)
+                        ? ` Showing the ${Math.min(board.expired.length, 10)} most recent of ${totals.expired}.`
+                        : ""
+                    }`}
+                  />
+                  <Panel className="divide-y divide-line overflow-hidden">
+                    {board.expired.slice(0, 10).map((licence) => (
+                      <LicenceRow
+                        key={licence.id}
+                        licence={licence}
+                        tone="expired"
+                        onOpen={() => check(licence.address)}
+                      />
+                    ))}
+                  </Panel>
+                </section>
+              )}
+            </div>
 
             {/* Shown to users, not hidden. Someone deciding how much weight to
                 put on a report deserves to know how much of the estate is
@@ -190,51 +274,57 @@ export default function UserDashboardPage() {
                 certain than it is. */}
             {board.coverage.length > 0 && (
               <section>
-                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 mb-1">
-                  <Search className="w-4 h-4" />
-                  What we have not verified
-                </h2>
-                <p className="text-sm text-slate-500 mb-3">
-                  Gaps in our coverage, so you know how far to trust a report.
-                </p>
-                <Card className="p-4 space-y-3">
+                <SectionHead
+                  icon={Search}
+                  title="What we have not verified"
+                  note="Gaps in our coverage, so you know how far to trust a report."
+                />
+                <Panel className="divide-y divide-line">
                   {board.coverage.map((gap, i) => {
                     const pct = gap.total > 0 ? Math.round((gap.count / gap.total) * 100) : 0
                     return (
-                      <div key={i}>
+                      <div key={i} className="px-4 py-3.5">
                         <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-sm font-medium text-slate-800">{gap.label}</span>
-                          <span className="text-sm text-slate-500 shrink-0">
-                            {gap.count.toLocaleString()} of {gap.total.toLocaleString()} ({pct}%)
+                          <span className="text-[0.875rem] font-medium text-ink">{gap.label}</span>
+                          <span className="tnum shrink-0 text-[0.8125rem] text-ink-subtle">
+                            {gap.count.toLocaleString()}
+                            <span className="text-ink-faint"> of {gap.total.toLocaleString()}</span>
+                            <span className="ml-2 font-semibold text-ink-muted">{pct}%</span>
                           </span>
                         </div>
-                        <div className="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
-                          <div className="h-full bg-slate-400 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-sunken">
+                          <div
+                            className="h-full rounded-full bg-ink-faint transition-[width] duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{gap.note}</p>
+                        <p className="mt-1.5 text-[0.75rem] leading-relaxed text-ink-subtle">{gap.note}</p>
                       </div>
                     )
                   })}
-                </Card>
+                </Panel>
               </section>
             )}
 
             {board.datedChanges.length === 0 &&
               board.expiringSoon.length === 0 &&
               board.expired.length === 0 && (
-                <Card className="p-8 text-center">
-                  <p className="font-medium text-slate-900">Nothing needs attention today</p>
-                  <p className="text-sm text-slate-600 mt-1">
+                <Panel className="px-6 py-12 text-center">
+                  <p className="text-[0.9375rem] font-semibold text-ink">Nothing needs attention today</p>
+                  <p className="mx-auto mt-1 max-w-md text-[0.8125rem] leading-relaxed text-ink-subtle">
                     No restrictions commencing and no licences running out in the next eight months.
                   </p>
-                  <Button className="mt-4 bg-teal-600 hover:bg-teal-700" onClick={() => router.push("/map")}>
-                    Browse properties <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Card>
+                  <div className="mt-5 flex justify-center">
+                    <ShellButton href="/map" variant="primary">
+                      Browse properties
+                      <ArrowRight className="h-4 w-4" />
+                    </ShellButton>
+                  </div>
+                </Panel>
               )}
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

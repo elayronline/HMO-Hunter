@@ -151,12 +151,40 @@ export function assessConversion(input: ConversionInput): ConversionAssessment {
     if (step.status === "planning_permission_required") {
       blockers.push("HMO Article 4 in force — C3 to C4 needs planning permission")
     }
-  } else if (input.useClass === "C4" || input.useClass === "sui_generis") {
+  } else if (input.useClass === "unknown") {
+    // The class is not established, but the route still matters — this is the
+    // ordinary case for an unlicensed house, and dropping the section would
+    // leave the reader with nothing where the answer is "probably, if". So the
+    // route is shown on a stated condition rather than on an assumption
+    // presented as fact.
+    const step = hmoStep(input)
+    steps.push({
+      ...step,
+      note: `If this is currently a C3 dwellinghouse — which we have not established — ${
+        step.note.charAt(0).toLowerCase() + step.note.slice(1)
+      }`,
+    })
+    if (step.status === "planning_permission_required") {
+      blockers.push("HMO Article 4 in force — C3 to C4 needs planning permission")
+    }
+    openQuestions.push(
+      "The property's current lawful use is not established. If it is already in HMO use, no change of use is needed; if it is something other than a dwellinghouse, the route above does not apply. The council's planning records will settle it."
+    )
+  } else if (
+    input.useClass === "C4" ||
+    input.useClass === "sui_generis" ||
+    input.useClass === "hmo_unspecified"
+  ) {
     return {
       wholeRoutePermitted: true,
       steps: [],
       blockers: [],
-      openQuestions: ["Already in HMO use — no change of use is needed."],
+      openQuestions:
+        input.useClass === "hmo_unspecified"
+          ? [
+              "Already in HMO use, so no change of use is needed. Whether that use is C4 or sui generis is not established — it matters if the number of occupants is ever increased, because moving into sui generis needs planning permission.",
+            ]
+          : ["Already in HMO use — no change of use is needed."],
     }
   } else {
     return {

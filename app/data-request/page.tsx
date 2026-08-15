@@ -16,6 +16,7 @@ export default function DataRequestPage() {
     reason: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [reference, setReference] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -39,6 +40,13 @@ export default function DataRequestPage() {
         throw new Error(data.error || "Failed to submit request")
       }
 
+      // The reference comes from the stored row. What stood here generated one
+      // in the browser at render time: it matched nothing in the database, and
+      // changed every time the component re-rendered, so a person quoting it
+      // back on a statutory data request would have been quoting a number that
+      // never existed.
+      const result = await response.json().catch(() => null)
+      setReference(result?.reference ?? null)
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit request")
@@ -56,9 +64,9 @@ export default function DataRequestPage() {
           <p className="text-gray-600 mb-6">
             We have received your data request. We will process it within 30 days and contact you at the email address provided.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Reference: {new Date().toISOString().split("T")[0]}-{Math.random().toString(36).substring(2, 8).toUpperCase()}
-          </p>
+          {reference && (
+            <p className="text-sm text-gray-500 mb-6">Reference: {reference}</p>
+          )}
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"

@@ -238,3 +238,124 @@ describe("planning precedent appears if and only if it applies", () => {
     expect(rate.note).toContain("Too few decisions")
   })
 })
+
+/**
+ * Provenance has to survive contact with a reader. These are the cases where a
+ * figure was being asserted more strongly than the thing behind it justified.
+ */
+describe("nothing is asserted more strongly than its source allows", () => {
+  it("does not call a price an asking price when nothing is being asked", () => {
+    const r = buildHmoCheckReport(
+      input({ listing_type: "rent", licensed_hmo: true, purchase_price: 425_000 }),
+      NOW
+    )
+    const money = r.sections.find((s) => s.title === "Money")!
+    const price = money.facts.find((f) => f.value.includes("425,000"))!
+    expect(price.label).toBe("Estimated value")
+    expect(price.confidence).toBe("inferred")
+    expect(price.source).toBeNull()
+    expect(price.note).toContain("not on the market")
+  })
+
+  it("still calls a real listing's price an asking price", () => {
+    const r = buildHmoCheckReport(input({ listing_type: "purchase", purchase_price: 300_000 }), NOW)
+    const money = r.sections.find((s) => s.title === "Money")!
+    const price = money.facts.find((f) => f.label === "Asking price")!
+    expect(price.confidence).toBe("recorded")
+    expect(price.source).toBe("Listing")
+  })
+
+  // The report gets exported as a PDF and shown to third parties. An internal
+  // provenance token in it is both opaque and falsely authoritative.
+  it("never shows a raw internal source identifier", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", article_4_source: "legacy:pre-migration" }),
+      NOW
+    )
+    expect(JSON.stringify(r)).not.toContain("legacy:pre-migration")
+  })
+
+  it("downgrades a planning position carried over from an earlier record", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", article_4_source: "legacy:pre-migration" }),
+      NOW
+    )
+    const fact = r.sections.find((s) => s.title === "Planning restrictions")!.facts[0]
+    expect(fact.confidence).toBe("inferred")
+    expect(fact.note).toContain("confirm it with the council")
+  })
+
+  it("keeps a dataset-matched position at recorded", () => {
+    const r = buildHmoCheckReport(
+      input({ article_4_status: "in_force", article_4_source: "planning.data.gov.uk" }),
+      NOW
+    )
+    const fact = r.sections.find((s) => s.title === "Planning restrictions")!.facts[0]
+    expect(fact.confidence).toBe("recorded")
+    expect(fact.source).toContain("planning.data.gov.uk")
+  })
+
+  it("says an indicative rent comes from an average, not from the property", () => {
+    const r = buildHmoCheckReport(
+      input({ city: "Leeds", estimated_rent_per_room: 575, bedrooms: 5 }),
+      NOW
+    )
+    const rent = r.sections
+      .find((s) => s.title === "Money")!
+      .facts.find((f) => f.label === "Indicative gross rent")!
+    expect(rent.note).toContain("average room rent for Leeds")
+    expect(rent.note).toContain("not from this property's own letting history")
+  })
+})
+
+/**
+ * Most of the estate is outside the cities we hold a rate for, so this wording
+ * is not an edge case — it is what the majority of reports say.
+ */
+describe("the indicative rent says how specific it actually is", () => {
+  it("names the city when the rate is that city's own average", () => {
+    const r = buildHmoCheckReport(
+      input({ city: "Manchester", estimated_rent_per_room: 650, bedrooms: 5 }),
+      NOW
+    )
+    const rent = r.sections
+      .find((s) => s.title === "Money")!
+      .facts.find((f) => f.label === "Indicative gross rent")!
+    expect(rent.note).toContain("average room rent for Manchester")
+  })
+
+  it("says national, and warns it is not local, where we hold no city rate", () => {
+    const r = buildHmoCheckReport(
+      input({ city: "Rutland", estimated_rent_per_room: 525, bedrooms: 5 }),
+      NOW
+    )
+    const rent = r.sections
+      .find((s) => s.title === "Money")!
+      .facts.find((f) => f.label === "Indicative gross rent")!
+    expect(rent.note).toContain("single national average")
+    expect(rent.note).toContain("not specific to this area")
+    expect(rent.note).not.toContain("average room rent for")
+  })
+
+  // A city we know, carrying a rent that is not that city's rate, is stale data
+  // from before the averages were made deterministic. It must not be described
+  // as that city's average, because it is not one.
+  it("does not claim a city average for a rent that is not the city's rate", () => {
+    const r = buildHmoCheckReport(
+      input({ city: "Manchester", estimated_rent_per_room: 731, bedrooms: 5 }),
+      NOW
+    )
+    const rent = r.sections
+      .find((s) => s.title === "Money")!
+      .facts.find((f) => f.label === "Indicative gross rent")!
+    expect(rent.note).toContain("single national average")
+  })
+
+  it("does not claim a city average when no city is recorded", () => {
+    const r = buildHmoCheckReport(input({ estimated_rent_per_room: 525, bedrooms: 5 }), NOW)
+    const rent = r.sections
+      .find((s) => s.title === "Money")!
+      .facts.find((f) => f.label === "Indicative gross rent")!
+    expect(rent.note).toContain("single national average")
+  })
+})

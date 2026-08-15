@@ -19,7 +19,6 @@ import {
   Trees,
   BarChart3,
   Info,
-  PoundSterling,
   Percent,
   Target,
   Users,
@@ -67,19 +66,29 @@ import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
 import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
-import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
 import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
 import { BroadbandBadge } from "@/components/broadband-badge"
 import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
-import { DEFAULT_LICENCE_TYPES } from "@/lib/types/licences"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
 import { HelpCircle, Shield, Menu } from "lucide-react"
 import { CreditBalance } from "@/components/credit-balance"
+import { Checkbox } from "@/components/ui/checkbox"
+import { CurrentUsePanel } from "@/components/current-use-panel"
+import {
+  SOURCING_LABELS,
+  sourcingCategory,
+  SOURCING_DESCRIPTIONS,
+  PRICE_SLIDER_MIN,
+  PRICE_SLIDER_MAX,
+  inSegment,
+  type CategorisableProperty,
+  type SourcingCategory,
+} from "@/lib/properties/category"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
@@ -103,10 +112,14 @@ export default function HMOHunterPage() {
 
   const [selectedLocation, setSelectedLocation] = useState<SearchLocation>(DEFAULT_LOCATION)
 
-  const [priceRange, setPriceRange] = useState([50000, 2000000])
+  const [priceRange, setPriceRange] = useState([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+  const [sourcingCategories, setSourcingCategories] = useState<SourcingCategory[]>([
+    "existing_off_market",
+    "for_sale_hmo",
+    "change_of_use",
+  ])
   const priceRangeKey = priceRange.join(",")
-  const [propertyTypes, setPropertyTypes] = useState<string[]>(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
-  const propertyTypesKey = propertyTypes.join(",")
+  const sourcingKey = sourcingCategories.join(",")
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<
     "include" | "exclude" | "confirmed_clear" | "only"
@@ -121,17 +134,32 @@ export default function HMOHunterPage() {
   const [licenceExpiryYear, setLicenceExpiryYear] = useState<number>(new Date().getFullYear())
 
   // Segment filter - main category tabs for clearer UX
-  const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "opportunities" | "restricted">(() => {
+  const [activeSegment, setActiveSegment] = useState<"all" | "licensed" | "expired" | "conversion" | "restricted">(() => {
     const param = searchParams.get("segment")
-    if (param === "licensed" || param === "expired" || param === "opportunities" || param === "restricted") return param
+    if (param === "licensed" || param === "expired" || param === "conversion" || param === "restricted") return param
     return "all"
   })
 
-  // Potential HMO filters - show all but highlight opportunities
-  const [showPotentialHMOs, setShowPotentialHMOs] = useState(true)
-  const [hmoClassificationFilter, setHmoClassificationFilter] = useState<"ready_to_go" | "value_add" | null>(null)
+  /*
+   * "Show Potential HMOs" stood here, a PRO-badged switch that rendered
+   * checked={false} beside the word "Locked" for free users while its state
+   * was true and all 931 change-of-use properties were on screen. It also did
+   * the same job as the "Potential change of use" sourcing checkbox — both
+   * returned exactly 592 properties when turned off — so it was a second,
+   * lying control for a filter that already had an honest one.
+   *
+   * Its nested sub-filters went with it, except the two that read something
+   * anybody published:
+   *   Classification  removed — derived from deal_score, which the product
+   *                   removed in 5396d0f, and it reads a missing EPC as "D".
+   *   Yield Band      removed — a band over estimated_yield_percentage, which
+   *                   comes from the city-average room rent.
+   *   Floor Area      kept, but matched against the measured area rather than
+   *                   the stored band; the band is guessed from bedroom count
+   *                   on the ~353 rows with no measurement.
+   *   EPC Status      kept — epc_rating is observed.
+   */
   const [floorAreaBandFilter, setFloorAreaBandFilter] = useState<"under_90" | "90_120" | "120_plus" | null>(null)
-  const [yieldBandFilter, setYieldBandFilter] = useState<"low" | "medium" | "high" | null>(null)
   const [epcBandFilter, setEpcBandFilter] = useState<"good" | "needs_upgrade" | null>(null)
 
   // Phase 6 - TA Sourcing filters
@@ -145,15 +173,12 @@ export default function HMOHunterPage() {
   const [searchExpanded, setSearchExpanded] = useState(true)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
   const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(false)
-  const [recentExpanded, setRecentExpanded] = useState(false)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showArticle4Overlay, setShowArticle4Overlay] = useState(true)
   const [comparisonMetric, setComparisonMetric] = useState<"yield" | "rent" | "bedrooms">("yield")
   const [legendExpanded, setLegendExpanded] = useState(true)
   const [showPotentialHMOLayer, setShowPotentialHMOLayer] = useState(true)
-  const [showPredictedArticle4, setShowPredictedArticle4] = useState(false)
 
   const filterDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -215,7 +240,6 @@ export default function HMOHunterPage() {
   const handleCloseRightPanel = useCallback(() => setRightPanelOpen(false), [])
   const handleToggleSearch = useCallback(() => setSearchExpanded(prev => !prev), [])
   const handleToggleFilters = useCallback(() => setFiltersExpanded(prev => !prev), [])
-  const handleToggleRecent = useCallback(() => setRecentExpanded(prev => !prev), [])
   const handleToggleLegend = useCallback(() => setLegendExpanded(prev => !prev), [])
   const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
@@ -415,36 +439,48 @@ export default function HMOHunterPage() {
     }
   }
 
+  /**
+   * The filters as they stand, in one place.
+   *
+   * There were two of these — one in the fetch effect, one in the Search
+   * button — and they had drifted. The button's copy was missing the four
+   * property-requirement filters, so pressing Search with "Min Bedrooms 6+"
+   * set went from 516 properties to 1,523 while the panel still read "6+".
+   * A single reader cannot drift from itself, which is the point of it.
+   *
+   * Anything added here must also be added to the effect's dependency list
+   * below, or a change to it will not trigger a refetch.
+   */
+  function currentFilters() {
+    return {
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1],
+      sourcingCategories,
+      city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
+      postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
+      minEpcRating,
+      article4Filter,
+      licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
+      floorAreaBand: floorAreaBandFilter,
+      epcBand: epcBandFilter,
+      hasFiber: broadbandFilter === "fiber" ? true : undefined,
+      minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
+      hasOwnerData: ownerDataFilter || undefined,
+      licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
+      licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
+      licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
+      minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
+      minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
+      isFurnished: isFurnished || undefined,
+      hasParking: hasParking || undefined,
+    }
+  }
+
   useEffect(() => {
     async function fetchProperties() {
       setLoading(true)
       try {
-        const data = await getProperties({
-          minPrice: priceRange[0],
-          maxPrice: priceRange[1],
-          propertyTypes,
-          city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
-          postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
-          minEpcRating,
-          article4Filter,
-          licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
-          showPotentialHMOs,
-          hmoClassification: hmoClassificationFilter,
-          floorAreaBand: floorAreaBandFilter,
-          yieldBand: yieldBandFilter,
-          epcBand: epcBandFilter,
-          hasFiber: broadbandFilter === "fiber" ? true : undefined,
-          minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
-          hasOwnerData: ownerDataFilter || undefined,
-          licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
-          licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
-          licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
-          // Phase 6 - TA Sourcing filters
-          minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
-          minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
-          isFurnished: isFurnished || undefined,
-          hasParking: hasParking || undefined,
-        })
+        const data = await getProperties(currentFilters())
         setProperties(data)
       } catch (error) {
         if (error instanceof Error) {
@@ -485,15 +521,12 @@ export default function HMOHunterPage() {
     }
   }, [
     priceRangeKey,
-    propertyTypesKey,
+    sourcingKey,
     selectedLocation,
     minEpcRating,
     article4Filter,
     licenceTypeFilter,
-    showPotentialHMOs,
-    hmoClassificationFilter,
     floorAreaBandFilter,
-    yieldBandFilter,
     epcBandFilter,
     broadbandFilter,
     ownerDataFilter,
@@ -507,33 +540,21 @@ export default function HMOHunterPage() {
     hasParking,
   ])
 
+  /**
+   * The Search button. Filters already refetch on change, so this only skips
+   * the debounce — it must never apply a different set from the one the panel
+   * is showing, which is why it reads the same currentFilters().
+   */
   const handleSearch = async () => {
     setLoading(true)
     try {
-      const data = await getProperties({
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1],
-        propertyTypes,
-        city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
-        postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
-        minEpcRating,
-        article4Filter,
-        licenceTypeFilter: licenceTypeFilter !== "all" ? licenceTypeFilter : undefined,
-        showPotentialHMOs,
-        hmoClassification: hmoClassificationFilter,
-        floorAreaBand: floorAreaBandFilter,
-        yieldBand: yieldBandFilter,
-        epcBand: epcBandFilter,
-        hasFiber: broadbandFilter === "fiber" ? true : undefined,
-        minBroadbandSpeed: broadbandFilter === "superfast" ? 30 : broadbandFilter === "any" ? 1 : undefined,
-        hasOwnerData: ownerDataFilter || undefined,
-        licenceExpiryStartMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[0] : undefined,
-        licenceExpiryEndMonth: licenceExpiryEnabled ? licenceExpiryMonthRange[1] : undefined,
-        licenceExpiryYear: licenceExpiryEnabled ? licenceExpiryYear : undefined,
+      setProperties(await getProperties(currentFilters()))
+    } catch {
+      toast({
+        title: "Error loading properties",
+        description: "Please try again or refresh the page.",
+        variant: "destructive",
       })
-      setProperties(data)
-    } catch (error) {
-      // silently ignore
     } finally {
       setLoading(false)
     }
@@ -546,17 +567,14 @@ export default function HMOHunterPage() {
   }
 
   const handleResetFilters = () => {
-    setPriceRange([50000, 2000000])
-    setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
+    setPriceRange([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+    setSourcingCategories(["existing_off_market", "for_sale_hmo", "change_of_use"])
     setSelectedLocation(DEFAULT_LOCATION)
     setMinEpcRating(null)
     setArticle4Filter("include")
     setLicenceTypeFilter("all")
     setBroadbandFilter("all")
-    setShowPotentialHMOs(true)
-    setHmoClassificationFilter(null)
     setFloorAreaBandFilter(null)
-    setYieldBandFilter(null)
     setEpcBandFilter(null)
     setActiveSegment("all")
     setLicenceExpiryEnabled(false)
@@ -678,57 +696,32 @@ export default function HMOHunterPage() {
     }
   }
 
-  // Calculate segment counts for the category tabs
+  // Segment membership comes from inSegment() in lib/properties/category.ts so
+  // the tabs, the counts and the export all answer it the same way.
   const segmentCounts = useMemo(() => {
     const counts = {
       all: properties.length,
       licensed: 0,
       expired: 0,
-      opportunities: 0,
+      conversion: 0,
       restricted: 0,
     }
-
     for (const p of properties) {
-      // Licensed HMOs with active licence
-      if (p.licensed_hmo && p.licence_status !== "expired") {
-        counts.licensed++
-      }
-      // Expired licence HMOs
-      if (p.licence_status === "expired") {
-        counts.expired++
-      }
-      // Opportunities - potential HMOs (ready_to_go or value_add)
-      if (p.is_potential_hmo && (p.hmo_classification === "ready_to_go" || p.hmo_classification === "value_add")) {
-        counts.opportunities++
-      }
-      // Restricted - Article 4 areas
-      if (p.article_4_area) {
-        counts.restricted++
-      }
+      const c = p as CategorisableProperty & { article_4_area?: boolean | null }
+      if (inSegment(c, "licensed")) counts.licensed++
+      if (inSegment(c, "expired")) counts.expired++
+      if (inSegment(c, "conversion")) counts.conversion++
+      if (inSegment(c, "restricted")) counts.restricted++
     }
-
     return counts
   }, [properties])
 
   // Filter properties based on active segment
   const segmentFilteredProperties = useMemo(() => {
     if (activeSegment === "all") return properties
-
-    const filtered = properties.filter(p => {
-      switch (activeSegment) {
-        case "licensed":
-          return p.licensed_hmo && p.licence_status !== "expired"
-        case "expired":
-          return p.licence_status === "expired"
-        case "opportunities":
-          return p.is_potential_hmo && (p.hmo_classification === "ready_to_go" || p.hmo_classification === "value_add")
-        case "restricted":
-          return p.article_4_area
-        default:
-          return true
-      }
-    })
-    return filtered
+    return properties.filter((p) =>
+      inSegment(p as CategorisableProperty & { article_4_area?: boolean | null }, activeSegment)
+    )
   }, [properties, activeSegment])
 
   const displayProperties = segmentFilteredProperties
@@ -761,10 +754,25 @@ export default function HMOHunterPage() {
           />
         </div>
 
-        {/* Desktop navigation */}
+        {/* Desktop navigation.
+            "Home" and "Properties" were buttons with no handler — furniture that
+            looked navigable and did nothing. "Deals" is gone with the pipeline:
+            this product sources and verifies, and a deal tracker is a different
+            job that was never finished. */}
         <nav className="hidden md:flex items-center gap-8">
-          <button className="text-slate-600 hover:text-slate-900 text-sm font-medium">Home</button>
-          <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Properties</button>
+          <button
+            onClick={() => router.push("/user-dashboard")}
+            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
+          >
+            Attention
+          </button>
+          <button className="text-teal-600 text-sm font-medium">Properties</button>
+          <button
+            onClick={() => router.push("/hmo-check")}
+            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
+          >
+            Address check
+          </button>
           <button
             onClick={handleNavigateToSaved}
             className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
@@ -776,13 +784,6 @@ export default function HMOHunterPage() {
                 {savedProperties.length}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => router.push("/pipeline")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
-          >
-            <Briefcase className="w-4 h-4" />
-            Deals
           </button>
         </nav>
 
@@ -859,7 +860,7 @@ export default function HMOHunterPage() {
         )}
 
         {/* Mobile overlay backdrop */}
-        {leftPanelOpen && viewMode === "map" && (
+        {leftPanelOpen && (
           <div
             className="md:hidden fixed inset-0 bg-black/50 z-40"
             onClick={handleCloseLeftPanel}
@@ -867,8 +868,13 @@ export default function HMOHunterPage() {
           />
         )}
 
-        {/* Left Sidebar - Fixed overlay on mobile, normal sidebar on desktop (hidden in list view) */}
-        {leftPanelOpen && viewMode === "map" && (
+        {/* Left Sidebar - fixed overlay on mobile, normal sidebar on desktop.
+            It used to be map-only, which left the list view able to filter by
+            location and nothing else: no sourcing categories, no EPC, no
+            Article 4, no licence type, no advanced filters, no saved searches
+            and no reset. Whatever had been set on the map stayed applied there
+            with no way to see or change it. */}
+        {leftPanelOpen && (
         <aside className="fixed md:relative top-[56px] md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
@@ -907,8 +913,8 @@ export default function HMOHunterPage() {
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      min={50000}
-                      max={2000000}
+                      min={PRICE_SLIDER_MIN}
+                      max={PRICE_SLIDER_MAX}
                       step={10000}
                       className="mb-3"
                     />
@@ -920,24 +926,49 @@ export default function HMOHunterPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-2 block">Property Type</label>
-                  <Select
-                    defaultValue="all"
-                    onValueChange={(value) => {
-                      if (value === "all") setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
-                      else if (value === "flat") setPropertyTypes(["Flat", "Studio"])
-                      else if (value === "house") setPropertyTypes(["House", "Bungalow"])
-                    }}
-                  >
-                    <SelectTrigger className="w-full bg-white border-teal-200 focus:border-teal-500 focus:ring-teal-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Property Types</SelectItem>
-                      <SelectItem value="flat">Flats & Studios</SelectItem>
-                      <SelectItem value="house">Houses & Bungalows</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Built form — flat, house, bungalow — was never the question
+                      a sourcer starts from, and "All Property Types" told them
+                      nothing. What actually decides the work is which of three
+                      jobs a property represents, so that is what this selects.
+                      The three partition the served stock exactly; see
+                      sourcingCategory() in lib/properties/category.ts. */}
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">
+                    Kind of opportunity
+                  </label>
+                  <div className="space-y-1.5">
+                    {(Object.keys(SOURCING_LABELS) as SourcingCategory[]).map((key) => {
+                      const checked = sourcingCategories.includes(key)
+                      return (
+                        <label
+                          key={key}
+                          className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 p-2.5 transition-colors hover:border-teal-300 hover:bg-teal-50/40"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v: boolean | "indeterminate") =>
+                              setSourcingCategories((prev) =>
+                                v === true ? [...prev, key] : prev.filter((c) => c !== key)
+                              )
+                            }
+                            className="mt-0.5 shrink-0"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-xs font-semibold text-slate-800">
+                              {SOURCING_LABELS[key]}
+                            </span>
+                            <span className="mt-0.5 block text-[10px] leading-relaxed text-slate-500">
+                              {SOURCING_DESCRIPTIONS[key]}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                    {sourcingCategories.length === 0 && (
+                      <p className="text-[10px] text-amber-700">
+                        Nothing selected, so nothing will show. Pick at least one.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* The Purchase / R2HMO toggle stood here. Everything the
@@ -976,7 +1007,7 @@ export default function HMOHunterPage() {
           <SavedSearches
             currentFilters={{
               priceRange,
-              propertyTypes,
+              sourcingCategories,
               selectedLocation,
               minEpcRating,
               article4Filter,
@@ -984,10 +1015,7 @@ export default function HMOHunterPage() {
               broadbandFilter,
               ownerDataFilter,
               activeSegment,
-              showPotentialHMOs,
-              hmoClassificationFilter,
               floorAreaBandFilter,
-              yieldBandFilter,
               epcBandFilter,
               // Phase 6 - TA Sourcing
               minBedrooms,
@@ -997,7 +1025,12 @@ export default function HMOHunterPage() {
             }}
             onLoadFilters={(filters: SearchFilters) => {
               setPriceRange(filters.priceRange)
-              setPropertyTypes(filters.propertyTypes)
+              // Searches saved before the sourcing categories existed carry the
+              // old built-form list instead. Leave the current selection alone
+              // rather than restoring a filter the search never recorded.
+              if (filters.sourcingCategories?.length) {
+                setSourcingCategories(filters.sourcingCategories as SourcingCategory[])
+              }
               setSelectedLocation(filters.selectedLocation)
               setMinEpcRating(filters.minEpcRating as any)
               setArticle4Filter(filters.article4Filter as any)
@@ -1005,10 +1038,7 @@ export default function HMOHunterPage() {
               setBroadbandFilter(filters.broadbandFilter as any)
               setOwnerDataFilter(filters.ownerDataFilter)
               setActiveSegment(filters.activeSegment as any)
-              setShowPotentialHMOs(filters.showPotentialHMOs)
-              setHmoClassificationFilter(filters.hmoClassificationFilter as any)
               setFloorAreaBandFilter(filters.floorAreaBandFilter as any)
-              setYieldBandFilter(filters.yieldBandFilter as any)
               setEpcBandFilter(filters.epcBandFilter as any)
               // Phase 6 - TA Sourcing
               if (filters.minBedrooms !== undefined) setMinBedrooms(filters.minBedrooms)
@@ -1108,32 +1138,6 @@ export default function HMOHunterPage() {
                     )}
                 </div>
 
-                {/* Predicted Future Article 4 — Premium Toggle */}
-                <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-slate-800">Future Article 4 Risk</span>
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-200 px-1.5 py-0.5 rounded-full shrink-0">
-                            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                            </svg>
-                            PRO
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Predictive overlay on map</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={showPredictedArticle4}
-                      onCheckedChange={setShowPredictedArticle4}
-                      className="data-[state=checked]:bg-amber-500 shrink-0"
-                    />
-                  </div>
-                </div>
-
                 {/* Advanced Filters Toggle */}
                 {(() => {
                   const activeCount = [
@@ -1195,16 +1199,19 @@ export default function HMOHunterPage() {
                       <SelectValue placeholder="All Licence Types" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* Mandatory / Additional / Selective / Scottish / NI
+                          and an "Article 4 Direction" that is not a licence at
+                          all stood below here. Every one of them queried
+                          property_licences, a table that does not exist, so
+                          the action swallowed the error and returned zero:
+                          picking the commonest HMO licence in the country
+                          emptied the page. Nothing records licence type per
+                          property yet, so the honest list is the four states
+                          the properties table can actually answer for. */}
                       <SelectItem value="all">All Licence Types</SelectItem>
                       <SelectItem value="any_licensed">Any Licensed HMO</SelectItem>
                       <SelectItem value="expired_licence">Expired Licence Only</SelectItem>
                       <SelectItem value="unlicensed">Unlicensed Only</SelectItem>
-                      <SelectItem value="---" disabled>───────────────</SelectItem>
-                      {DEFAULT_LICENCE_TYPES.filter(t => t.is_active).map((type) => (
-                        <SelectItem key={type.code} value={type.code}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1223,14 +1230,11 @@ export default function HMOHunterPage() {
                         className="data-[state=checked]:bg-amber-500"
                       />
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-amber-600 hover:text-amber-700 h-7"
-                        onClick={() => {/* Show upgrade modal */}}
-                      >
-                        Upgrade
-                      </Button>
+                      // Was a button labelled "Upgrade" with an empty onClick.
+                      // There is no upgrade flow to send anyone to, and a
+                      // control that does nothing when pressed is worse than
+                      // a label that never invited the press.
+                      <span className="text-xs text-slate-400">Not on your plan</span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mb-2">Filter by licence expiry month range</p>
@@ -1351,137 +1355,62 @@ export default function HMOHunterPage() {
                         onCheckedChange={setOwnerDataFilter}
                       />
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-amber-600 hover:text-amber-700 h-7"
-                        onClick={() => {/* Show upgrade modal */}}
-                      >
-                        Upgrade
-                      </Button>
+                      // Was a button labelled "Upgrade" with an empty onClick.
+                      // There is no upgrade flow to send anyone to, and a
+                      // control that does nothing when pressed is worse than
+                      // a label that never invited the press.
+                      <span className="text-xs text-slate-400">Not on your plan</span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-1">Show only listings with title owner information</p>
                 </div>
 
-                {/* Potential HMO Toggle - Pro Feature */}
-                <div className="pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-700">Show Potential HMOs</span>
-                      <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
-                    </div>
-                    {isPremiumUser ? (
-                      <Switch
-                        checked={showPotentialHMOs}
-                        onCheckedChange={setShowPotentialHMOs}
-                        className="data-[state=checked]:bg-amber-500"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Locked</span>
-                        <div className="relative">
-                          <Switch
-                            checked={false}
-                            disabled
-                            className="opacity-50 cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-                    )}
+                {/* Property size and EPC. These were nested under the
+                    PRO-gated "Show Potential HMOs" switch, so a free user
+                    could not reach them at all — while the data that switch
+                    claimed to gate was on their screen regardless. Both read
+                    published values, so neither is gated. */}
+                <div className="pt-3 border-t border-slate-100 space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 mb-1.5 block">Floor Area</label>
+                    <Select
+                      value={floorAreaBandFilter || "all"}
+                      onValueChange={(value) => setFloorAreaBandFilter(value === "all" ? null : value as any)}
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                        <SelectValue placeholder="All Sizes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sizes</SelectItem>
+                        <SelectItem value="under_90">Under 90 m²</SelectItem>
+                        <SelectItem value="90_120">90-120 m²</SelectItem>
+                        <SelectItem value="120_plus">120+ m²</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                      Matches the measured floor area. Properties with no
+                      measurement on record are not returned.
+                    </p>
                   </div>
 
-                  {!isPremiumUser && (
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3 mb-3">
-                      <p className="text-xs text-amber-800 mb-2">
-                        Unlock HMO investment analysis with Pro
-                      </p>
-                      <Button
-                        size="sm"
-                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs"
-                      >
-                        Upgrade to Pro
-                      </Button>
-                    </div>
-                  )}
-
-                  {showPotentialHMOs && isPremiumUser && (
-                    <div className="space-y-3 pl-2 border-l-2 border-amber-200">
-                      {/* HMO Classification */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Classification</label>
-                        <Select
-                          value={hmoClassificationFilter || "all"}
-                          onValueChange={(value) => setHmoClassificationFilter(value === "all" ? null : value as any)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
-                            <SelectValue placeholder="All Classifications" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Classifications</SelectItem>
-                            <SelectItem value="ready_to_go">Ready to Go</SelectItem>
-                            <SelectItem value="value_add">Value-Add</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Floor Area Band */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Floor Area</label>
-                        <Select
-                          value={floorAreaBandFilter || "all"}
-                          onValueChange={(value) => setFloorAreaBandFilter(value === "all" ? null : value as any)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
-                            <SelectValue placeholder="All Sizes" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Sizes</SelectItem>
-                            <SelectItem value="under_90">Under 90 m²</SelectItem>
-                            <SelectItem value="90_120">90-120 m²</SelectItem>
-                            <SelectItem value="120_plus">120+ m²</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Yield Band */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">Yield Band</label>
-                        <Select
-                          value={yieldBandFilter || "all"}
-                          onValueChange={(value) => setYieldBandFilter(value === "all" ? null : value as any)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
-                            <SelectValue placeholder="All Yields" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Yields</SelectItem>
-                            <SelectItem value="high">High (8%+)</SelectItem>
-                            <SelectItem value="medium">Medium (5-8%)</SelectItem>
-                            <SelectItem value="low">Low (&lt;5%)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* EPC Band */}
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 mb-1.5 block">EPC Status</label>
-                        <Select
-                          value={epcBandFilter || "all"}
-                          onValueChange={(value) => setEpcBandFilter(value === "all" ? null : value as any)}
-                        >
-                          <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
-                            <SelectValue placeholder="All EPC" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All EPC Status</SelectItem>
-                            <SelectItem value="good">Compliant (C/D)</SelectItem>
-                            <SelectItem value="needs_upgrade">Needs Upgrade (E/F/G)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 mb-1.5 block">EPC Status</label>
+                    <Select
+                      value={epcBandFilter || "all"}
+                      onValueChange={(value) => setEpcBandFilter(value === "all" ? null : value as any)}
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200 h-8 text-xs">
+                        <SelectValue placeholder="All EPC" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All EPC Status</SelectItem>
+                        {/* Said "Compliant (C/D)" while the query matched
+                            A, B, C and D. The label is the query now. */}
+                        <SelectItem value="good">A to D</SelectItem>
+                        <SelectItem value="needs_upgrade">Needs upgrade (E/F/G)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 </>)}
@@ -1489,23 +1418,8 @@ export default function HMOHunterPage() {
             )}
           </div>
 
-          {/* Recent Searches */}
-          <div className="p-4 border-b border-slate-200">
-            <button
-              onClick={handleToggleRecent}
-              className="flex items-center justify-between w-full"
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-teal-600" />
-                <span className="font-semibold text-sm text-slate-900">Recent Searches</span>
-              </div>
-              {recentExpanded ? (
-                <ChevronUp className="w-4 h-4 text-slate-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              )}
-            </button>
-          </div>
+          {/* "Recent Searches" was a header that toggled a piece of
+              state and rendered nothing underneath it, in any state. */}
 
         </aside>
         )}
@@ -1531,9 +1445,9 @@ export default function HMOHunterPage() {
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "expired" ? "bg-amber-500 text-white" : "text-amber-700 hover:bg-amber-50"}`}>
                     <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
                   </button>
-                  <button role="tab" aria-selected={activeSegment === "opportunities"} onClick={() => setActiveSegment("opportunities")}
-                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "opportunities" ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"}`}>
-                    <TrendingUp className="w-3.5 h-3.5" /> Opportunities <span className="opacity-70">{segmentCounts.opportunities}</span>
+                  <button role="tab" aria-selected={activeSegment === "conversion"} onClick={() => setActiveSegment("conversion")}
+                    className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "conversion" ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"}`}>
+                    <TrendingUp className="w-3.5 h-3.5" /> Change of use <span className="opacity-70">{segmentCounts.conversion}</span>
                   </button>
                   <button role="tab" aria-selected={activeSegment === "restricted"} onClick={() => setActiveSegment("restricted")}
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "restricted" ? "bg-red-600 text-white" : "text-red-600 hover:bg-red-50"}`}>
@@ -1549,65 +1463,32 @@ export default function HMOHunterPage() {
                   </button>
                 </div>
               </div>
-              {/* Row 2: Mobile filter toggle + key filters */}
-              <div className="md:hidden flex items-center justify-between px-3 py-2 border-b border-slate-100">
+              {/* Row 2: how many, and how to get at the filters.
+                  This row used to carry its own location box, price readout and
+                  a "Property Type" select — a second filter for the same thing
+                  the sidebar already filters, on built form rather than the
+                  sourcing categories, uncontrolled so it never reflected a
+                  reset, and with no counterpart in map view. Picking "Houses"
+                  dropped 445 properties (every HMO-typed row among them) and
+                  the filter stayed applied, invisible, after switching to the
+                  map. The sidebar is the one place filters live now, and it
+                  renders in both views. */}
+              <div className="flex items-center gap-3 px-3 md:px-4 py-2 overflow-x-auto scrollbar-hide">
                 <button
-                  onClick={() => setMobileFiltersOpen(prev => !prev)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                  onClick={handleOpenLeftPanel}
+                  className={`shrink-0 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 ${leftPanelOpen ? "md:hidden" : ""}`}
                 >
                   <Search className="w-3.5 h-3.5" />
                   Filters
-                  {mobileFiltersOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500"><span className="font-semibold text-slate-700">{displayProperties.length}</span></span>
-                </div>
-              </div>
-              <div className={`${mobileFiltersOpen ? "flex" : "hidden"} md:flex items-center gap-3 px-3 md:px-4 py-2 overflow-x-auto scrollbar-hide`}>
-                <div className="shrink-0 w-48">
-                  <LocationSearch
-                    selectedLocation={selectedLocation}
-                    onLocationChange={setSelectedLocation}
-                  />
-                </div>
-                <div className="shrink-0">
-                  <Select
-                    defaultValue="all"
-                    onValueChange={(value) => {
-                      if (value === "all") setPropertyTypes(["HMO", "Flat", "House", "Bungalow", "Studio", "Other"])
-                      else if (value === "flat") setPropertyTypes(["Flat", "Studio"])
-                      else if (value === "house") setPropertyTypes(["House", "Bungalow"])
-                    }}
-                  >
-                    <SelectTrigger className="w-[140px] h-8 text-xs bg-white border-slate-200">
-                      <SelectValue placeholder="Property Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="flat">Flats & Studios</SelectItem>
-                      <SelectItem value="house">Houses</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-600">
-                  <PoundSterling className="w-3 h-3" />
-                  <span>{priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}</span>
-                </div>
-                <div className="shrink-0 hidden md:block text-xs text-slate-500">
+                <div className="shrink-0 text-xs text-slate-500">
                   <span className="font-semibold text-slate-700">{displayProperties.length}</span> properties
                 </div>
                 {user && displayProperties.length > 0 && (
                   <div className="shrink-0">
                     <ExportButton
-                      filters={{
-                        city: selectedLocation.name,
-                        minPrice: priceRange[0],
-                        maxPrice: priceRange[1],
-                        minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
-                        minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
-                        isFurnished: isFurnished || undefined,
-                        hasParking: hasParking || undefined,
-                      }}
+                      filters={currentFilters()}
+                      segment={activeSegment}
                       disabled={loading}
                       isAdmin={user.user_metadata?.is_admin === true}
                     />
@@ -1658,15 +1539,15 @@ export default function HMOHunterPage() {
             </button>
             <button
               role="tab"
-              aria-selected={activeSegment === "opportunities"}
-              onClick={() => setActiveSegment("opportunities")}
+              aria-selected={activeSegment === "conversion"}
+              onClick={() => setActiveSegment("conversion")}
               className={`shrink-0 whitespace-nowrap px-3 py-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 ${
-                activeSegment === "opportunities"
+                activeSegment === "conversion"
                   ? "bg-green-600 text-white shadow-sm"
                   : "text-green-700 hover:bg-green-50"
               }`}
             >
-              <TrendingUp className="w-3.5 h-3.5" /> Opportunities <span className="opacity-70">{segmentCounts.opportunities}</span>
+              <TrendingUp className="w-3.5 h-3.5" /> Change of use <span className="opacity-70">{segmentCounts.conversion}</span>
             </button>
             <button
               role="tab"
@@ -1728,15 +1609,8 @@ export default function HMOHunterPage() {
             </div>
             {user && displayProperties.length > 0 && (
               <ExportButton
-                filters={{
-                  city: selectedLocation.name,
-                  minPrice: priceRange[0],
-                  maxPrice: priceRange[1],
-                  minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
-                  minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
-                  isFurnished: isFurnished || undefined,
-                  hasParking: hasParking || undefined,
-                }}
+                filters={currentFilters()}
+                segment={activeSegment}
                 disabled={loading}
                 isAdmin={user.user_metadata?.is_admin === true}
               />
@@ -1769,7 +1643,6 @@ export default function HMOHunterPage() {
                 loading={loading}
                 showArticle4Overlay={showArticle4Overlay}
                 showPotentialHMOLayer={showPotentialHMOLayer}
-                showPredictedArticle4={showPredictedArticle4}
               />
             </>
           ) : (
@@ -1800,11 +1673,11 @@ export default function HMOHunterPage() {
             </button>
             {legendExpanded && (
               <div className="px-4 pb-4 space-y-3">
-                {/* READY TO OPERATE */}
+                {/* IN HMO USE */}
                 <div className="pb-2.5 border-b border-slate-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">Ready to Operate</span>
-                    <span className="text-[10px] text-slate-400">Rent immediately</span>
+                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">In HMO use</span>
+                    <span className="text-[10px] text-slate-400">Licence in force</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-teal-700"></div>
@@ -1813,11 +1686,11 @@ export default function HMOHunterPage() {
                   </div>
                 </div>
 
-                {/* REQUIRES ACTION */}
+                {/* LICENCE LAPSED */}
                 <div className="pb-2.5 border-b border-slate-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Requires Action</span>
-                    <span className="text-[10px] text-slate-400">Needs renewal</span>
+                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Licence lapsed</span>
+                    <span className="text-[10px] text-slate-400">Enforcement risk for the owner</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
@@ -1829,23 +1702,23 @@ export default function HMOHunterPage() {
                 {/* OPPORTUNITIES */}
                 <div className="pb-2.5 border-b border-slate-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Opportunities</span>
-                    <span className="text-[10px] text-slate-400">Conversion potential</span>
+                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
+                    <span className="text-[10px] text-slate-400">No HMO use today</span>
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-4 h-4 rounded-full bg-green-600 border-2 border-green-700"></div>
-                      <span className="text-xs text-slate-600">Ready to Go</span>
-                      <span className="text-[10px] text-green-600 ml-auto">Minimal work</span>
+                      <span className="text-xs text-slate-600">House</span>
+                      <span className="text-[10px] text-green-600 ml-auto">C3 to C4 route</span>
                     </div>
                     <div className="flex items-center gap-2.5">
                       <div className="w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-green-500"></div>
-                      <span className="text-xs text-slate-600">Value-Add</span>
-                      <span className="text-[10px] text-green-600 ml-auto">Some work</span>
+                      <span className="text-xs text-slate-600">Commercial</span>
+                      <span className="text-[10px] text-green-600 ml-auto">Class MA route</span>
                     </div>
                   </div>
                   <div className="mt-1.5 text-[10px] text-slate-400">
-                    <span>{segmentCounts.opportunities} opportunities</span>
+                    <span>{segmentCounts.conversion} with no HMO use today</span>
                     <span className="ml-2 text-slate-300">|</span>
                     <span className="ml-2">Larger = more contact info</span>
                   </div>
@@ -1889,67 +1762,10 @@ export default function HMOHunterPage() {
                   )}
                 </div>
 
-                {/* PREDICTED ARTICLE 4 — PREMIUM */}
-                <div className="space-y-1.5 pt-2.5 border-t border-slate-100">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Predicted Risk</span>
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">
-                        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                        PRO
-                      </span>
-                    </div>
-                    <Switch
-                      checked={showPredictedArticle4}
-                      onCheckedChange={setShowPredictedArticle4}
-                      className="data-[state=checked]:bg-amber-500 scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-amber-400 border-2 border-amber-600 border-dashed"></div>
-                    <span className="text-xs text-slate-600">Future Article 4 Risk</span>
-                  </div>
-                  {showPredictedArticle4 && (
-                    <>
-                      <div className="space-y-1 mt-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-1.5 rounded-full bg-amber-500"></div>
-                          <span className="text-[10px] text-slate-500">High risk (70+)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-1.5 rounded-full bg-amber-400"></div>
-                          <span className="text-[10px] text-slate-500">Medium risk (50-69)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-1.5 rounded-full bg-amber-200"></div>
-                          <span className="text-[10px] text-slate-500">Low risk (35-49)</span>
-                        </div>
-                      </div>
-                      <div className="pt-1 mt-1 border-t border-slate-200">
-                        <span className="text-[10px] text-slate-400">
-                          Based on HMO density, licensing patterns & council trends
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
               </div>
             )}
           </Card>}
 
-          {/* Add Property button */}
-          <div className="absolute bottom-4 md:bottom-8 right-2 md:right-8 z-20">
-            <Button className="rounded-full h-12 md:h-14 px-4 md:px-6 bg-slate-400 hover:bg-slate-400 shadow-xl text-white font-medium cursor-not-allowed opacity-80 text-sm md:text-base" disabled>
-              <Plus className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Add Property</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-            <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
-              Coming Soon
-            </span>
-          </div>
         </main>
 
         {/* Right Sidebar */}
@@ -2140,65 +1956,39 @@ export default function HMOHunterPage() {
               </div>
 
               {/* Purchase-specific info */}
-              {selectedProperty.listing_type === "purchase" && (
-                <div className="mb-6 grid grid-cols-2 gap-4 p-4 bg-teal-50 rounded-lg">
-                  {selectedProperty.tenure && (
-                    <div>
-                      <div className="text-xs text-slate-600 mb-1">Tenure</div>
-                      <div className="text-sm font-medium text-slate-900 capitalize">{selectedProperty.tenure}</div>
-                    </div>
-                  )}
-                  {selectedProperty.estimated_rent_per_room && (
-                    <div>
-                      <div className="text-xs text-slate-600 mb-1">Est. Rent per Room</div>
-                      <div className="text-sm font-medium text-slate-900">
-                        £{selectedProperty.estimated_rent_per_room}/pcm
-                      </div>
-                    </div>
-                  )}
-                  {selectedProperty.licensed_hmo && (
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-2 text-sm text-teal-700 font-medium">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Licensed HMO
-                      </div>
-                      {(selectedProperty.licence_start_date || selectedProperty.licence_end_date) && (
-                        <div className="mt-1 ml-6 text-xs text-slate-600 space-y-0.5">
-                          {selectedProperty.licence_start_date && (
-                            <div>Licence Start: {new Date(selectedProperty.licence_start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</div>
-                          )}
-                          {selectedProperty.licence_end_date && (
-                            <div className={new Date(selectedProperty.licence_end_date) < new Date() ? "text-red-600 font-medium" : ""}>
-                              Licence End: {new Date(selectedProperty.licence_end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                              {new Date(selectedProperty.licence_end_date) < new Date() && " (Expired)"}
-                            </div>
-                          )}
+              {/* Current use, shown for every property rather than only for
+                  purchase listings. The old block was gated on listing_type
+                  === "purchase", so all 457 off-market licensed HMOs displayed
+                  no licence information whatsoever. */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-slate-900 mb-3">Current use</h4>
+                <CurrentUsePanel property={selectedProperty} />
+              </div>
+
+              {selectedProperty.listing_type === "purchase" &&
+                (selectedProperty.tenure || selectedProperty.estimated_rent_per_room) && (
+                  <div className="mb-6 grid grid-cols-2 gap-4 p-4 bg-teal-50 rounded-lg">
+                    {selectedProperty.tenure && (
+                      <div>
+                        <div className="text-xs text-slate-600 mb-1">Tenure</div>
+                        <div className="text-sm font-medium text-slate-900 capitalize">
+                          {selectedProperty.tenure}
                         </div>
-                      )}
-                    </div>
-                  )}
-                  {selectedProperty.licence_status === "expired" && !selectedProperty.licensed_hmo && (
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Expired HMO Licence
                       </div>
-                      {selectedProperty.licence_end_date && (
-                        <div className="mt-1 ml-6 text-xs text-amber-700">
-                          Licence Expired: {new Date(selectedProperty.licence_end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    )}
+                    {selectedProperty.estimated_rent_per_room && (
+                      <div>
+                        <div className="text-xs text-slate-600 mb-1">Indicative rent per room</div>
+                        <div className="text-sm font-medium text-slate-900">
+                          £{selectedProperty.estimated_rent_per_room}/pcm
                         </div>
-                      )}
-                      <div className="mt-2 ml-6 text-xs text-slate-600 bg-amber-50 p-2 rounded">
-                        This property previously held an HMO licence that has now expired. Contact the owner for current licensing status.
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          City average, not this property&rsquo;s letting history.
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
 
               {/* Property Features */}
               <div className="mb-6">
@@ -2376,11 +2166,6 @@ export default function HMOHunterPage() {
               <div className="mb-6">
                 <h4 className="font-semibold text-slate-900 mb-3">Title Owner & Licence Holder</h4>
                 <OwnerInformationSection property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
-              </div>
-
-              {/* Yield Calculator - Premium feature */}
-              <div className="mb-6">
-                <PremiumYieldCalculator property={selectedProperty} isPremium={isPremiumUser} />
               </div>
 
               {/* Potential HMO Analysis in Full Details - Pro Feature */}

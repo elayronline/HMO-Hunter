@@ -32,7 +32,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
 import { EPCBadge } from "@/components/epc-badge"
-import { PremiumYieldCalculator } from "@/components/premium-yield-calculator"
 import { AgentContactCard } from "@/components/agent-contact-card"
 import { AreaStatisticsCard } from "@/components/area-statistics-card"
 import { SoldPriceHistory } from "@/components/sold-price-history"
@@ -329,9 +328,6 @@ export function PropertyDetailCard({
           {/* ANALYSIS TAB */}
           {activeTab === "analysis" && (
             <>
-              {(true) && (
-                <PremiumYieldCalculator property={property} isPremium={isPremium} />
-              )}
               <AreaStatisticsCard postcode={property.postcode} />
               <SoldPriceHistory postcode={property.postcode} currentPrice={property.purchase_price || property.price_pcm || undefined} />
             </>

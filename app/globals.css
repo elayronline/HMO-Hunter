@@ -100,8 +100,8 @@
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, "SF Mono", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -403,4 +403,95 @@
     opacity: 0.85;
     transition: opacity 0.1s;
   }
+}
+
+/*
+ * Surface, edge and elevation.
+ *
+ * A dense professional tool is read for long stretches, so the palette is built
+ * from a narrow band of near-neutrals with one accent, rather than from boxes
+ * that each fight for attention. Depth comes from a hairline border plus a
+ * barely-there shadow; anything heavier reads as consumer software.
+ *
+ * The ink ramp is warm-shifted very slightly off pure slate so that large areas
+ * of text do not look blue under a white surface.
+ */
+:root {
+  --app-bg: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-sunken: #F2F4F7;
+  --surface-inset: #FAFBFC;
+
+  --line: #E4E7EC;
+  --line-strong: #D0D5DD;
+
+  --ink: #101828;
+  --ink-muted: #475467;
+  --ink-subtle: #667085;
+  --ink-faint: #98A2B3;
+
+  --brand: #0F766E;
+  --brand-hover: #115E56;
+  --brand-soft: #ECFBF7;
+  --brand-line: #99E3D4;
+
+  --warn: #B54708;
+  --warn-soft: #FFFAEB;
+  --warn-line: #FEDF89;
+  --danger: #B42318;
+  --danger-soft: #FEF3F2;
+  --danger-line: #FECDCA;
+
+  --elev-1: 0 1px 2px 0 rgb(16 24 40 / 0.04);
+  --elev-2: 0 1px 3px 0 rgb(16 24 40 / 0.06), 0 1px 2px -1px rgb(16 24 40 / 0.04);
+  --elev-3: 0 4px 12px -2px rgb(16 24 40 / 0.08), 0 2px 4px -2px rgb(16 24 40 / 0.04);
+
+  --shell-width: 15rem;
+}
+
+@theme inline {
+  --color-app-bg: var(--app-bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inset: var(--surface-inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-faint: var(--ink-faint);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+}
+
+/*
+ * Figures are data and should read as data. Tabular numerals stop a column of
+ * day counts or prices from shifting as the digits change.
+ */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+}
+
+/* One focus treatment everywhere, visible against every surface. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

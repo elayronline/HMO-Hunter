@@ -85,6 +85,83 @@ export interface CategorisableProperty {
 }
 
 /**
+ * Which licence columns may be read, and which must never be.
+ *
+ * The table holds two apparent licence terms and two apparent references, and
+ * only one pair was ever published by anybody:
+ *
+ *   hmo_licence_expiry     313 rows, 255 distinct values   OBSERVED
+ *   hmo_licence_reference  335 rows, 314 distinct values   OBSERVED
+ *                          e.g. 24/02862/HMOMAN, 2023/01386/HMO/PS, HAC-117637-1
+ *
+ *   licence_end_date       252 rows,   6 distinct values   FABRICATED
+ *   licence_start_date     252 rows,   6 distinct values   FABRICATED
+ *   licence_id             252 rows, 100% XXX-HMO-<md5>    FABRICATED
+ *   max_occupants          252 rows, 100% bedrooms + 1     FABRICATED
+ *
+ * The second group was written by scripts/012_populate_licence_term_data.sql,
+ * which stamps one hardcoded start/end pair per city onto every licensed row
+ * in it — "licence terms are typically 5 years, with staggered start dates" —
+ * synthesises the reference from MD5(address), and sets occupancy by formula.
+ * Six distinct end dates across 252 properties is the tell: real licences do
+ * not expire on six days.
+ *
+ * A card that reads the second group prints "Licence BRS-HMO-a43039 · expired
+ * Jun 2025 · 6 occupants" — a reference, a date and an occupancy figure, none
+ * of which any council published, rendered in the same line as ones that were.
+ * See CLAUDE.md: absent is a legitimate answer, a plausible placeholder is not.
+ *
+ * So there is one licence date on this platform and these return it. The rows
+ * still carry the seeded columns; nothing may read them.
+ */
+export interface LicenceEvidence {
+  hmo_licence_expiry?: string | null
+  hmo_licence_reference?: string | null
+}
+
+/** The published expiry date, or null. Never the seeded licence_end_date. */
+export function licenceExpiry(property: LicenceEvidence): string | null {
+  return property.hmo_licence_expiry ?? null
+}
+
+/** The category tabs on the map and list, and the rows an export must contain. */
+export type Segment = "all" | "licensed" | "expired" | "conversion" | "restricted"
+
+/**
+ * Whether a property belongs under a segment tab.
+ *
+ * Shared rather than reimplemented because the export used to answer this
+ * question — and every other filter question — with its own SQL, and so
+ * returned a different set from the one on screen. An export that disagrees
+ * with the page it was taken from is worse than no export.
+ */
+export function inSegment(
+  property: CategorisableProperty & { article_4_area?: boolean | null },
+  segment: Segment,
+  now: Date = new Date()
+): boolean {
+  switch (segment) {
+    case "all":
+      return true
+    case "licensed":
+    case "expired": {
+      if (!property.licensed_hmo && property.licence_status !== "expired") return false
+      const expired = categorise(property, now).licence === "licence_expired"
+      return segment === "expired" ? expired : !expired
+    }
+    case "conversion":
+      return sourcingCategory(property) === "change_of_use"
+    case "restricted":
+      return Boolean(property.article_4_area)
+  }
+}
+
+/** The council's own reference, or null. Never the seeded licence_id. */
+export function licenceReference(property: LicenceEvidence): string | null {
+  return property.hmo_licence_reference ?? null
+}
+
+/**
  * Sources that publish live advertisements. A row from one of these with a
  * rental listing type really is on the market to let today.
  *
@@ -212,3 +289,61 @@ export const LICENCE_LABELS: Record<LicenceState, string> = {
   licence_undated: "Licensed, no expiry date",
   unlicensed: "No licence",
 }
+
+/**
+ * What kind of sourcing job a property represents.
+ *
+ * The two axes above describe a property accurately but they do not answer the
+ * question a sourcer actually starts from, which is "what am I looking at and
+ * what would I have to do about it". Three answers cover the whole served set,
+ * and they need different work: an existing HMO nobody is selling means finding
+ * the owner; one that is listed means moving on a live opportunity; anything
+ * else means testing whether a planning route exists at all.
+ *
+ * This replaces the old "Opportunities" bucket on the map, which matched 1,189
+ * of 1,193 properties and so told a user nothing.
+ */
+export type SourcingCategory =
+  /** An existing HMO with licence evidence, not listed for sale. */
+  | "existing_off_market"
+  /** An existing HMO listed for purchase. */
+  | "for_sale_hmo"
+  /** No HMO use today — the opportunity is a change of use. */
+  | "change_of_use"
+
+export const SOURCING_LABELS: Record<SourcingCategory, string> = {
+  existing_off_market: "Existing off-market HMOs",
+  for_sale_hmo: "HMOs listed for sale",
+  change_of_use: "Potential change of use",
+}
+
+export const SOURCING_DESCRIPTIONS: Record<SourcingCategory, string> = {
+  existing_off_market:
+    "Operating or recently licensed HMOs with no live sale listing. The approach is to the owner, so the work is tracing them.",
+  for_sale_hmo:
+    "Existing HMOs on the market to buy. Already in HMO use, so the planning question is whether that use is lawful and continuing.",
+  change_of_use:
+    "Houses and commercial buildings with no HMO use today. Whether these are opportunities at all turns on the planning route — see the conversion assessment.",
+}
+
+/**
+ * Licence evidence is what makes something an existing HMO rather than a
+ * candidate. An expired or undated licence still counts: the building was in
+ * HMO use, which is the fact a change-of-use question turns on.
+ */
+function hasHmoUse(property: CategorisableProperty): boolean {
+  return Boolean(property.licensed_hmo) || property.licence_status === "expired"
+}
+
+export function sourcingCategory(property: CategorisableProperty): SourcingCategory {
+  if (!hasHmoUse(property)) return "change_of_use"
+  return property.listing_type === "purchase" ? "for_sale_hmo" : "existing_off_market"
+}
+
+/**
+ * The top of the price slider. At this value the filter is off rather than
+ * clamped: a slider that cannot express "no maximum" silently hides everything
+ * above its own range.
+ */
+export const PRICE_SLIDER_MAX = 2_000_000
+export const PRICE_SLIDER_MIN = 50_000

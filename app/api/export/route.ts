@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { exportRequestSchema } from "@/lib/validation/schemas"
+import { propertiesForExport } from "@/lib/export/query"
+import { toCsv } from "@/lib/export/rows"
 
 // POST - Export properties to CSV
 export async function POST(request: NextRequest) {
@@ -20,11 +22,25 @@ export async function POST(request: NextRequest) {
     return validation.error
   }
 
-  const { propertyIds, filters } = validation.data
+  const { propertyIds, filters, segment } = validation.data
 
   try {
+    // Fetch first, charge second.
+    //
+    // Credits were taken before the query ran and never given back when it
+    // failed — and it always failed, on a select naming nine columns that do
+    // not exist. Every export attempt in the product's history cost 10 credits
+    // and returned an error. Nothing here is charged for until there are rows
+    // to hand over.
+    const properties = await propertiesForExport(filters, segment, propertyIds)
 
-    // Deduct 10 credits for CSV export
+    if (properties.length === 0) {
+      return NextResponse.json(
+        { error: "No properties match these filters, so there is nothing to export." },
+        { status: 400 }
+      )
+    }
+
     const creditResult = await deductCredits(user.id, 'csv_export')
     if (!creditResult.success) {
       return NextResponse.json({
@@ -35,157 +51,17 @@ export async function POST(request: NextRequest) {
       }, { status: 429 })
     }
 
-    // Build query based on filters or specific IDs
-    let query = supabase
-      .from('properties')
-      .select(`
-        id,
-        address,
-        postcode,
-        city,
-        listing_type,
-        purchase_price,
-        price_pcm,
-        bedrooms,
-        bathrooms,
-        property_type,
-        hmo_status,
-        hmo_licence_number,
-        hmo_licence_start,
-        hmo_licence_end,
-        hmo_max_occupants,
-        epc_rating,
-        epc_floor_area,
-        owner_name,
-        owner_company_name,
-        owner_company_number,
-        licence_holder_name,
-        licence_holder_company,
-        deal_score,
-        gross_yield,
-        source_url,
-        created_at,
-        updated_at
-      `)
+    // No row cap. The old 500 was applied silently against a page that says
+    // 1,523, so the file was short by a thousand properties with nothing to
+    // say so. A CSV of the whole set is a few hundred kilobytes.
+    const csv = toCsv(properties)
 
-    // If specific IDs provided, use those
-    if (propertyIds && propertyIds.length > 0) {
-      query = query.in('id', propertyIds)
-    } else if (filters) {
-      // Apply filters
-      if (filters.listingType) {
-        query = query.eq('listing_type', filters.listingType)
-      }
-      if (filters.city && filters.city !== 'All Cities') {
-        query = query.eq('city', filters.city)
-      }
-      if (filters.minPrice) {
-        if (filters.listingType === 'rent') {
-          query = query.gte('price_pcm', filters.minPrice)
-        } else {
-          query = query.gte('purchase_price', filters.minPrice)
-        }
-      }
-      if (filters.maxPrice) {
-        if (filters.listingType === 'rent') {
-          query = query.lte('price_pcm', filters.maxPrice)
-        } else {
-          query = query.lte('purchase_price', filters.maxPrice)
-        }
-      }
-      // Phase 6 - TA Sourcing filters
-      if (filters.minBedrooms) {
-        query = query.gte('bedrooms', filters.minBedrooms)
-      }
-      if (filters.minBathrooms) {
-        query = query.gte('bathrooms', filters.minBathrooms)
-      }
-      if (filters.isFurnished === true) {
-        query = query.eq('is_furnished', true)
-      }
-      if (filters.hasParking === true) {
-        query = query.eq('has_parking', true)
-      }
-    }
-
-    // Limit to 500 rows max
-    query = query.limit(500)
-
-    const { data: properties, error } = await query
-
-    if (error) {
-      console.error("[Export] Error fetching properties:", error)
-      return NextResponse.json({ error: "Failed to fetch properties" }, { status: 500 })
-    }
-
-    if (!properties || properties.length === 0) {
-      return NextResponse.json({ error: "No properties to export" }, { status: 400 })
-    }
-
-    // Convert to CSV
-    const headers = [
-      'Address',
-      'Postcode',
-      'City',
-      'Type',
-      'Price',
-      'Bedrooms',
-      'Bathrooms',
-      'Property Type',
-      'HMO Status',
-      'Licence Number',
-      'Licence Start',
-      'Licence End',
-      'Max Occupants',
-      'EPC Rating',
-      'Floor Area (sqm)',
-      'Owner Name',
-      'Owner Company',
-      'Company Number',
-      'Licence Holder',
-      'Deal Score',
-      'Gross Yield (%)',
-      'LHA Weekly Rate',
-      'LHA Monthly Rate',
-      'Source URL'
-    ]
-
-    const rows = properties.map(p => [
-      escapeCsvValue(p.address),
-      escapeCsvValue(p.postcode),
-      escapeCsvValue(p.city),
-      p.listing_type === 'purchase' ? 'For Sale' : 'To Rent',
-      p.listing_type === 'purchase' ? p.purchase_price : p.price_pcm,
-      p.bedrooms,
-      p.bathrooms,
-      escapeCsvValue(p.property_type),
-      escapeCsvValue(p.hmo_status),
-      escapeCsvValue(p.hmo_licence_number),
-      p.hmo_licence_start ? new Date(p.hmo_licence_start).toLocaleDateString() : '',
-      p.hmo_licence_end ? new Date(p.hmo_licence_end).toLocaleDateString() : '',
-      p.hmo_max_occupants,
-      p.epc_rating,
-      p.epc_floor_area,
-      escapeCsvValue(p.owner_name),
-      escapeCsvValue(p.owner_company_name),
-      p.owner_company_number,
-      escapeCsvValue(p.licence_holder_name),
-      p.deal_score,
-      p.gross_yield ? p.gross_yield.toFixed(2) : '',
-      escapeCsvValue(p.source_url)
-    ])
-
-    const csv = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n')
-
-    // Return CSV with proper headers
     return new NextResponse(csv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="hmo-hunter-export-${new Date().toISOString().split('T')[0]}.csv"`,
+        'X-Export-Rows': String(properties.length),
         'X-Credits-Remaining': String(creditResult.credits_remaining ?? 0),
         'X-Credits-Warning': creditResult.warning || '',
       }
@@ -194,14 +70,4 @@ export async function POST(request: NextRequest) {
     console.error("[Export] Error:", error)
     return NextResponse.json({ error: "Export failed" }, { status: 500 })
   }
-}
-
-function escapeCsvValue(value: string | null | undefined): string {
-  if (!value) return ''
-  // Escape quotes and wrap in quotes if contains comma, quote, or newline
-  const escaped = String(value).replace(/"/g, '""')
-  if (escaped.includes(',') || escaped.includes('"') || escaped.includes('\n')) {
-    return `"${escaped}"`
-  }
-  return escaped
 }

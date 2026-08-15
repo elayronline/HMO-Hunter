@@ -123,6 +123,35 @@ export async function POST() {
       directionsWritten = directionRows.length
     }
 
+    // Upserting alone lets the table accumulate directions that have since
+    // stopped qualifying — because the feed dropped them, or because the HMO
+    // pattern was tightened to reject a false positive. The council summary
+    // gets corrected on the next sync but the child row survives, and the
+    // detail API reads that table directly, so a rejected direction carries on
+    // being served as in force. That is the exact failure this product exists
+    // to prevent, so the write is made authoritative rather than additive.
+    //
+    // Skipped when the build produced no directions at all: the councils guard
+    // above already fails closed on an unreachable source, and an empty set
+    // here is far more likely to be a broken parse than a real national repeal.
+    let directionsRemoved = 0
+    if (directionRows.length > 0) {
+      const keep = directionRows.map((d) => d.entity)
+      const { data: removed, error: pruneError } = await supabase
+        .from("article4_directions")
+        .delete()
+        .not("entity", "in", `(${keep.join(",")})`)
+        .select("entity")
+
+      if (pruneError) {
+        return NextResponse.json(
+          { error: pruneError.message, hint: "Directions upserted but stale rows not pruned" },
+          { status: 500 }
+        )
+      }
+      directionsRemoved = removed?.length ?? 0
+    }
+
     const counts = registry.reduce<Record<string, number>>((acc, c) => {
       acc[c.coverageLevel] = (acc[c.coverageLevel] ?? 0) + 1
       return acc
@@ -132,6 +161,7 @@ export async function POST() {
       success: true,
       councilsWritten: registry.length,
       directionsWritten,
+      directionsRemoved,
       byCoverageLevel: counts,
       documentUrls: registry.reduce((sum, c) => sum + c.documentUrls.length, 0),
     })

@@ -31,6 +31,16 @@ export type UseClass =
   | "C4"
   /** Large HMO: 7 or more unrelated occupants. No class of its own. */
   | "sui_generis"
+  /**
+   * In HMO use, but which side of the C4 / sui generis line is not established.
+   *
+   * Its own value rather than a guess at C4, because the two are not degrees of
+   * the same thing: C4 can be reached from C3 by permitted development and sui
+   * generis never can. Naming one when the register published no occupancy told
+   * 347 properties they had a permitted route that may not exist — 131 of them
+   * while displaying seven or more bedrooms beside the words "small HMO".
+   */
+  | "hmo_unspecified"
   /** Commercial, business and service — the starting point for a conversion. */
   | "E"
   /** Nothing in the data supports a view. */
@@ -70,10 +80,18 @@ export interface UseClassInput {
  */
 const SUI_GENERIS_FROM = 7
 
+/**
+ * Commercial types, matching the set categorisation uses. Kept as a type check
+ * rather than guessed from a missing bedroom count: a house with no bedrooms
+ * recorded is a gap in the data, not a shop.
+ */
+const COMMERCIAL_TYPES = new Set(["commercial", "office", "retail", "class e"])
+
 export function assessUseClass(input: UseClassInput): UseClassAssessment {
   const occupants = input.max_occupants ?? null
   const beds = input.bedrooms ?? null
   const licensed = Boolean(input.licensed_hmo) || input.licence_status === "expired"
+  const type = input.property_type?.trim().toLowerCase()
 
   // A licence is the strongest evidence available: a council granted it against
   // a stated maximum occupancy, so both the HMO use and its size are recorded.
@@ -82,7 +100,7 @@ export function assessUseClass(input: UseClassInput): UseClassAssessment {
       ? {
           useClass: "sui_generis",
           basis: "recorded",
-          reason: `Licensed for ${occupants} occupants, which is above the ${SUI_GENERIS_FROM}-occupant threshold, so the use is sui generis rather than C4.`,
+          reason: `Licensed for ${occupants} occupants, which is at or above the ${SUI_GENERIS_FROM}-occupant threshold, so the use is sui generis rather than C4.`,
         }
       : {
           useClass: "C4",
@@ -91,42 +109,53 @@ export function assessUseClass(input: UseClassInput): UseClassAssessment {
         }
   }
 
+  // Licensed, but the register published no maximum occupancy. The HMO use is
+  // recorded; its size is not. Guessing C4 here would assert a permitted
+  // development route that sui generis does not have.
   if (licensed) {
+    const bedNote =
+      beds !== null && beds >= SUI_GENERIS_FROM
+        ? ` The listing shows ${beds} bedrooms, which points towards sui generis, but bedrooms are not occupants and the council published no figure.`
+        : ""
     return {
-      useClass: "C4",
-      basis: "inferred",
-      reason:
-        "Holds an HMO licence but the register gives no maximum occupancy, so the class cannot be separated from sui generis. C4 is the smaller claim of the two.",
+      useClass: "hmo_unspecified",
+      basis: "recorded",
+      reason: `An HMO licence is recorded, so the property is in HMO use. The register gives no maximum occupancy, so whether that use is C4 or sui generis is not established — and the difference decides whether a permitted development route exists at all.${bedNote}`,
     }
   }
 
-  if (occupants !== null && occupants >= SUI_GENERIS_FROM) {
+  // Commercial stock. The starting point for a Class MA conversion, and until
+  // now unreachable: property_type was an input this function never read, so
+  // the commercial route in conversion.ts could never fire.
+  if (type && COMMERCIAL_TYPES.has(type)) {
     return {
-      useClass: "sui_generis",
-      basis: "inferred",
-      reason: `Recorded occupancy of ${occupants} is above the ${SUI_GENERIS_FROM}-occupant threshold, though no licence confirms the use.`,
+      useClass: "E",
+      basis: "recorded",
+      reason: `Recorded as ${input.property_type}, which falls in Class E — the starting point for a Class MA conversion to residential.`,
     }
   }
 
-  if (beds !== null && beds > 0) {
-    if (beds <= 2) {
-      return {
-        useClass: "C3",
-        basis: "inferred",
-        reason: `${beds} bedroom${beds === 1 ? "" : "s"}, which cannot house the three unrelated occupants a C4 HMO requires.`,
-      }
-    }
+  // A property too small to be a C4 at all. This is a physical constraint
+  // rather than a reading of the data, which is why it survives the rule
+  // against inferring: three unrelated occupants will not fit in two bedrooms.
+  if (beds !== null && beds > 0 && beds <= 2) {
     return {
       useClass: "C3",
       basis: "inferred",
-      reason: `${beds} bedrooms, but nothing records it as being in HMO use — a house of this size is C3 until it is let to three or more unrelated occupants.`,
+      reason: `${beds} bedroom${beds === 1 ? "" : "s"}, which cannot house the three unrelated occupants a C4 HMO requires, so the use is C3.`,
     }
   }
 
+  // Everything else is a guess and is no longer made. A five-bedroom house with
+  // no licence may be a family home or an unlicensed HMO, and the data does not
+  // say which. Naming C3 read as a fact and was frequently wrong.
   return {
     useClass: "unknown",
     basis: "none",
-    reason: "No occupancy, bedroom count or licence to reason from.",
+    reason:
+      beds !== null && beds > 0
+        ? `${beds} bedrooms, but nothing records the current use and no licence is held. A house this size could be a single dwelling or an unlicensed HMO — the data does not distinguish them, so the class is not established.`
+        : "No licence, occupancy or bedroom count to establish a use class from.",
   }
 }
 
@@ -135,6 +164,7 @@ export const USE_CLASS_LABELS: Record<UseClass, string> = {
   C3: "C3 — dwellinghouse",
   C4: "C4 — small HMO",
   sui_generis: "Sui generis — large HMO",
+  hmo_unspecified: "HMO — size class not established",
   E: "Class E — commercial",
   unknown: "Use class unknown",
 }

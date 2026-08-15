@@ -31,6 +31,7 @@
 import { assessUseClass, USE_CLASS_LABELS, type UseClassInput } from "@/lib/properties/use-class"
 import { assessConversion, type ConversionAssessment } from "@/lib/properties/conversion"
 import { categorise, MARKET_LABELS, LICENCE_LABELS, type CategorisableProperty } from "@/lib/properties/category"
+import { roomRent } from "@/lib/properties/room-rents"
 
 export type Confidence = "verified" | "recorded" | "inferred" | "unknown"
 
@@ -88,6 +89,8 @@ export interface HmoCheckReport {
 
 export interface HmoCheckInput extends CategorisableProperty, UseClassInput {
   address?: string | null
+  /** Needed to say whether the indicative rent is a city or a national figure. */
+  city?: string | null
   postcode?: string | null
   bedrooms?: number | null
   bathrooms?: number | null
@@ -125,9 +128,31 @@ export interface HmoCheckInput extends CategorisableProperty, UseClassInput {
 const DISCLAIMER =
   "This report summarises what our sources record about this address. It is not a planning or legal opinion, and it is not a substitute for confirming the position with the local planning authority. Where a fact is marked inferred or unknown, treat it as a question to ask rather than an answer to rely on."
 
+/**
+ * Provenance identifiers are internal. This report gets exported as a PDF and
+ * shown to lenders, vendors and agents, so a raw token like
+ * "legacy:pre-migration" appearing under a planning restriction is both opaque
+ * and quietly misleading — it reads like a system rather than a source.
+ */
+const LEGACY_SOURCE = "legacy:pre-migration"
+
+function sourceLabel(source: string | null | undefined): string | null {
+  if (!source) return null
+  if (source.startsWith("http")) return source
+  if (source === LEGACY_SOURCE) return "An earlier record, not re-checked"
+  if (source === "planning.data.gov.uk") return "National planning dataset (planning.data.gov.uk)"
+  return source
+}
+
 function article4Section(input: HmoCheckInput): ReportSection {
   const facts: ReportFact[] = []
   const status = input.article_4_status ?? "unknown"
+
+  // A position carried over from the old boolean column was never the result of
+  // a check against a published boundary. Presenting it as recorded would give
+  // it the same weight as a dataset match, which is the overstatement this
+  // report is built to avoid.
+  const isLegacy = input.article_4_source === LEGACY_SOURCE
 
   // The most important line in the report. A boolean here would be a lie: the
   // national dataset holds 72 HMO areas across 38 councils, so its silence is
@@ -139,16 +164,18 @@ function article4Section(input: HmoCheckInput): ReportSection {
       value: input.article_4_area_name
         ? `In force — ${input.article_4_area_name}`
         : "In force for this council",
-      confidence: input.councilVerifiedQuote ? "verified" : "recorded",
-      source: input.councilVerifiedUrl ?? input.article_4_source ?? null,
-      note: "Converting to an HMO here needs planning permission. Permitted development does not apply.",
+      confidence: input.councilVerifiedQuote ? "verified" : isLegacy ? "inferred" : "recorded",
+      source: input.councilVerifiedUrl ?? sourceLabel(input.article_4_source),
+      note: isLegacy
+        ? "Converting to an HMO here needs planning permission. This position was carried over from an earlier record rather than matched against a published boundary, so confirm it with the council before relying on it."
+        : "Converting to an HMO here needs planning permission. Permitted development does not apply.",
     })
   } else if (status === "none_found") {
     facts.push({
       label: "Article 4 direction",
       value: "None found in a council that publishes its directions",
       confidence: "recorded",
-      source: input.article_4_source ?? null,
+      source: sourceLabel(input.article_4_source),
       note: "This council publishes testable boundaries and this address falls outside them. That is a real negative rather than an absence of data.",
     })
   } else {
@@ -176,7 +203,7 @@ function article4Section(input: HmoCheckInput): ReportSection {
       label: "Last checked",
       value: input.article_4_checked_at.slice(0, 10),
       confidence: "recorded",
-      source: input.article_4_source ?? null,
+      source: sourceLabel(input.article_4_source),
     })
   }
 
@@ -331,12 +358,20 @@ function buildingSection(input: HmoCheckInput): ReportSection {
 function moneySection(input: HmoCheckInput): ReportSection {
   const facts: ReportFact[] = []
 
+  // A price only means "asking price" when something is actually being asked.
+  // Licence register records are not listings, and any figure attached to one
+  // came from an estimate rather than a vendor — presenting it as recorded from
+  // a listing would assert a fact about a sale that is not happening.
   if (input.purchase_price != null) {
+    const isListed = input.listing_type === "purchase"
     facts.push({
-      label: "Asking price",
+      label: isListed ? "Asking price" : "Estimated value",
       value: `£${input.purchase_price.toLocaleString()}`,
-      confidence: "recorded",
-      source: "Listing",
+      confidence: isListed ? "recorded" : "inferred",
+      source: isListed ? "Listing" : null,
+      note: isListed
+        ? undefined
+        : "This property is not on the market, so no asking price exists. This figure is an estimate and should not be treated as a valuation or as evidence of what it would sell for.",
     })
   }
 
@@ -350,14 +385,22 @@ function moneySection(input: HmoCheckInput): ReportSection {
     })
   }
 
+  // Most of the estate falls outside the cities we hold a rate for, so the
+  // wording has to distinguish the two. Describing a single national figure as
+  // "the average for this city" would overstate the majority of reports, and
+  // this one number is what a reader builds their whole case on.
   if (input.estimated_rent_per_room != null && input.bedrooms) {
     const gross = input.estimated_rent_per_room * input.bedrooms * 12
+    const basis = roomRent(input.city)
+    const fromCity = basis.basis === "city" && basis.rate === input.estimated_rent_per_room
     facts.push({
       label: "Indicative gross rent",
       value: `£${gross.toLocaleString()} a year at £${input.estimated_rent_per_room} per room`,
       confidence: "inferred",
       source: null,
-      note: "Built from a per-room estimate and the current bedroom count. It is a starting point for your own numbers, not a valuation.",
+      note: fromCity
+        ? `Built from the average room rent for ${basis.city} and the current bedroom count — not from this property's own letting history. It is a starting point for your own numbers, not a valuation.`
+        : "Built from a single national average room rent, because we hold no rate for this location, and the current bedroom count. It is not specific to this area and not a valuation — treat it as the roughest of the figures here and replace it with a local comparable before relying on it.",
     })
   }
 

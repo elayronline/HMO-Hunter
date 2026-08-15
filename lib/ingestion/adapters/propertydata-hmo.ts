@@ -7,6 +7,23 @@ import { SourceAdapter, type PropertyListing } from "@/lib/types/ingestion"
  * Uses the /national-hmo-register endpoint to fetch licensed HMO properties
  * API docs: https://propertydata.co.uk/api
  */
+/**
+ * A stable identifier for a register record that carries no reference of its own.
+ *
+ * The only requirements are that it is the same on every run for the same
+ * property, and different for two properties. Postcode plus normalised address
+ * satisfies both, and stays legible in the database when someone is working out
+ * where a row came from.
+ */
+export function stableId(postcode: string, address: string): string {
+  const slug = address
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60)
+  return `PD-${postcode.replace(/\s/g, "").toUpperCase()}-${slug}`
+}
+
 export class PropertyDataHMOAdapter extends SourceAdapter {
   name = "PropertyData HMO"
   type = "hmo_register" as const
@@ -175,7 +192,13 @@ export class PropertyDataHMOAdapter extends SourceAdapter {
             bedrooms: bedrooms,
             bathrooms: Math.ceil(bedrooms / 2.5),
             description: `Licensed HMO property registered with ${council || "local council"}. Reference: ${record.reference || "N/A"}. Licence expires: ${record.licence_expiry || "N/A"}.`,
-            external_id: record.reference || `PD-${propertyPostcode.replace(/\s/g, "")}-${Date.now()}`,
+            // Derived from the address, never from the clock. A timestamped
+            // fallback mints a fresh id for the same register record on every
+            // run, so the upsert key can never match and each sync lays down
+            // another copy of the same property. Keying on postcode and address
+            // makes the same record resolve to the same row indefinitely, while
+            // still separating two unreferenced licences in one postcode.
+            external_id: record.reference || stableId(propertyPostcode, cleanAddress),
             source_url: `https://propertydata.co.uk`,
             licence_id: record.reference,
             licence_end_date: record.licence_expiry,
