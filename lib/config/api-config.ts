@@ -29,7 +29,11 @@ export const apiConfig = {
 
   patma: {
     apiKey: process.env.PATMA_API_KEY,
-    baseUrl: process.env.PATMA_API_URL || "https://api.patma.co.uk/v1",
+    // PATMA_BASE_URL, not PATMA_API_URL — and app.patma.co.uk/api, not
+    // api.patma.co.uk/v1. This read a variable nobody sets and fell back to a
+    // different host from the one lib/ingestion/adapters/patma.ts uses, so the
+    // endpoint depended on which module you arrived through.
+    baseUrl: process.env.PATMA_BASE_URL || "https://app.patma.co.uk/api",
     enabled: !!process.env.PATMA_API_KEY,
     rateLimit: {
       requestsPerMinute: 100,
@@ -105,6 +109,23 @@ export const apiConfig = {
       determinationCheck: "/v3/determinations/check",
       properties: "/v3/properties",
       licences: "/v3/licences",
+    },
+  },
+
+  // EPC Open Data Communities (Free, registration required)
+  //
+  // Two credentials, not one. The API uses HTTP Basic with the registered
+  // email as the username, so a key on its own authenticates nothing —
+  // enabled has to require both or the status board reports "connected" for
+  // an integration that sends `undefined:key` on every call.
+  epc: {
+    apiKey: process.env.EPC_API_KEY,
+    email: process.env.EPC_API_EMAIL,
+    baseUrl: "https://epc.opendatacommunities.org/api/v1",
+    enabled: !!process.env.EPC_API_KEY && !!process.env.EPC_API_EMAIL,
+    rateLimit: {
+      requestsPerMinute: 60,
+      requestsPerDay: 10000,
     },
   },
 
@@ -292,6 +313,16 @@ export function getApiStatus() {
         name: "Kamma API",
         status: apiConfig.kamma.enabled ? "connected" : "not_configured",
         description: "HMO licensing compliance and determination checks",
+      },
+      epc: {
+        enabled: apiConfig.epc.enabled,
+        name: "EPC Open Data Communities",
+        status: apiConfig.epc.enabled
+          ? "connected"
+          : apiConfig.epc.apiKey
+            ? "incomplete"
+            : "not_configured",
+        description: "Energy performance certificates. Needs EPC_API_KEY and EPC_API_EMAIL — Basic auth uses the registered email as the username.",
       },
       ofcom: {
         enabled: apiConfig.ofcom.enabled,
