@@ -70,7 +70,7 @@ export interface UseClassInput {
    *
    * Deliberately not named max_occupants. That column exists on every property
    * row and holds bedrooms + 1 on all 252 rows that have a value — a formula
-   * from scripts/012_populate_licence_term_data.sql, not a council's figure.
+   * from scripts/DO_NOT_RUN_012_populate_licence_term_data.sql, not a council's figure.
    * Callers pass whole property rows, so a field of that name would have been
    * picked up at runtime whatever the type said, and the branch below grades
    * its conclusion "recorded": the report was telling a buyer "Licensed for 6

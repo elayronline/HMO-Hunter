@@ -99,7 +99,7 @@ export interface CategorisableProperty {
  *   licence_id             252 rows, 100% XXX-HMO-<md5>    FABRICATED
  *   max_occupants          252 rows, 100% bedrooms + 1     FABRICATED
  *
- * The second group was written by scripts/012_populate_licence_term_data.sql,
+ * The second group was written by scripts/DO_NOT_RUN_012_populate_licence_term_data.sql,
  * which stamps one hardcoded start/end pair per city onto every licensed row
  * in it — "licence terms are typically 5 years, with staggered start dates" —
  * synthesises the reference from MD5(address), and sets occupancy by formula.
