@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react"
 import {
-  Shield,
-  Calendar,
-  Users,
-  FileText,
-  Building2,
-  RefreshCw,
-  CheckCircle2,
   AlertTriangle,
-  XCircle,
+  Building2,
+  Calendar,
+  CheckCircle2,
   Clock,
   ExternalLink,
+  FileText,
+  HelpCircle,
+  RefreshCw,
+  Shield,
+  Users,
+  XCircle,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,25 @@ export function LicenceDetailsCard({ propertyId, className }: LicenceDetailsCard
   const [licences, setLicences] = useState<LicenceData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /**
+   * Whether the licence register is wired up at all.
+   *
+   * /api/licences answers 200 with { licences: [], tableNotFound: true } when
+   * property_licences is absent — scripts/010_add_licence_types_table.sql has
+   * never been run, so that is every request. This component ignored the flag
+   * and read the empty array, which made it announce "No licences found for
+   * this property" on all 2,958 properties, 594 of them flagged as licensed
+   * HMOs and 335 carrying a published council reference.
+   *
+   * On 89 Mary Datchelor Close it printed that a few hundred pixels above a
+   * panel reading "Licence Active · SWK-506461372524 · Valid until
+   * 24/09/2027". Two panels, one page, opposite claims — and the one asserting
+   * the absence was the one that had never looked.
+   *
+   * Not looking and finding nothing are different answers, so they get
+   * different states.
+   */
+  const [registerUnavailable, setRegisterUnavailable] = useState(false)
 
   const fetchLicences = async () => {
     setLoading(true)
@@ -53,6 +73,7 @@ export function LicenceDetailsCard({ propertyId, className }: LicenceDetailsCard
       const response = await fetch(`/api/licences?property_id=${propertyId}`)
       if (!response.ok) throw new Error("Failed to fetch licences")
       const data = await response.json()
+      setRegisterUnavailable(Boolean(data.tableNotFound))
       setLicences(data.licences || [])
     } catch (err) {
       setError("Unable to load licence details")
@@ -167,11 +188,25 @@ export function LicenceDetailsCard({ propertyId, className }: LicenceDetailsCard
           </div>
         </div>
         <CardContent className="py-8 text-center">
-          <Shield className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-600">No licences found for this property</p>
-          <p className="text-xs text-slate-400 mt-1">
-            Licence data is sourced from council HMO registers
-          </p>
+          {registerUnavailable ? (
+            <>
+              <HelpCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-600">Licence register not connected</p>
+              <p className="text-xs text-slate-400 mt-1">
+                This property has not been checked against a council licence
+                register. Any licence shown elsewhere on this page comes from
+                the property record.
+              </p>
+            </>
+          ) : (
+            <>
+              <Shield className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-600">No licences found for this property</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Licence data is sourced from council HMO registers
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     )
