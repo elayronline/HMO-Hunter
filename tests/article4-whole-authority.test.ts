@@ -23,6 +23,7 @@ const councils = (curatedJson as any).councils as {
     commencedOn: string | null
     endedOn: string | null
     coversWholeAuthority?: boolean
+    sourceUrl: string
     quote: string
   }[]
 }[]
@@ -122,16 +123,38 @@ describe("matching a planning authority name to a curated council", () => {
 })
 
 /**
- * Southampton is kept as a worked example rather than a passing note. Its
- * extent read "City-wide", but the quoted wording states no extent at all and
- * the national feed publishes partial polygons that left 86 Southampton
- * properties as none_found. Two sources disagreeing is the signal to stop, not
- * to pick the one that claims more.
+ * Southampton is kept as the worked example of how a disagreement gets settled.
+ *
+ * Its extent originally read "City-wide" on the strength of a council page
+ * summary, while the quoted wording stated no extent at all and the national
+ * feed published partial polygons that left 86 Southampton properties as
+ * none_found. Two sources disagreeing is the signal to stop, not to pick the
+ * one that claims more — so the flag came off and stayed off until someone read
+ * the direction itself.
+ *
+ * The direction settles it. Schedule 2 designates "All those properties
+ * situated within the administrative area of Southampton City Council", and the
+ * attached plan is the city boundary map. The feed was the incomplete party.
+ * The record now cites that document rather than a page summarising it.
  */
-describe("Southampton stays unflagged until it is re-verified", () => {
-  it("is not treated as whole-authority", () => {
-    const southampton = councils.find((c) => c.slug === "southampton")!
-    expect(southampton.directions.some((d) => d.coversWholeAuthority)).toBe(false)
-    expect(wholeAuthorityDirectionInForce("Southampton")).toBeNull()
+describe("Southampton, re-verified against the direction itself", () => {
+  const southampton = councils.find((c) => c.slug === "southampton")!
+  const direction = southampton.directions.find((d) => d.coversWholeAuthority)
+
+  it("is treated as whole-authority", () => {
+    expect(direction).toBeTruthy()
+    expect(wholeAuthorityDirectionInForce("Southampton")).not.toBeNull()
+  })
+
+  it("cites the direction document and the extent wording that settles it", () => {
+    expect(direction!.quote).toContain("administrative area of Southampton City Council")
+    expect(direction!.sourceUrl).toContain("southampton.gov.uk")
+    // Recorded from the document's own commencement clause, not inferred.
+    expect(direction!.commencedOn).toBe("2012-03-23")
+  })
+
+  it("was not in force before it commenced", () => {
+    expect(wholeAuthorityDirectionInForce("Southampton", new Date("2012-03-22"))).toBeNull()
+    expect(wholeAuthorityDirectionInForce("Southampton", new Date("2012-03-24"))).not.toBeNull()
   })
 })
