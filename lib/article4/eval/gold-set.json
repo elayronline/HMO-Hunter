@@ -1577,6 +1577,48 @@
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T18:45:00.000Z",
       "notes": "Introduced April 2012 per the council's related SPD pages; this page states no date, so left null."
+    },
+    {
+      "slug": "westminster",
+      "name": "Westminster",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": false,
+        "forceState": "none",
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.westminster.gov.uk/planning-building-control-and-environmental-regulations/planning-applications/make-application/find-out-if-you-need-planning-permission/article-4-directions-westminster",
+        "quote": "We have made a number of Article 4 Directions which remove permitted development rights for some types of development in some parts of Westminster. We have also removed permitted development rights in eight conservation areas."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T22:40:00.000Z",
+      "notes": "The council enumerates its directions: basement development city-wide, Class E to C3 inside and outside the Central Activities Zone, and eight conservation areas. None concerns HMOs and the page nowhere mentions C4. Established by absence from the council’s own complete list rather than an explicit statement."
+    },
+    {
+      "slug": "hackney",
+      "name": "Hackney",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": false,
+        "forceState": "none",
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://hackney.gov.uk/article-4-directions/",
+        "quote": "An Article 4 Direction (A4D) is part of planning legislation that allows us to remove permitted development rights including changes of use from an area or a particular property in certain limited situations where it is necessary to protect local amenity or the well being of an area."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T22:40:00.000Z",
+      "notes": "The council enumerates its directions: Class E to C3 in designated industrial areas, the CAZ, City Fringe and town centres, district and local shopping centres, Class B8 to C3, launderette to C3, a public house, and four conservation areas. None concerns HMOs and the page nowhere mentions C4. Established by absence from the council’s own complete list rather than an explicit statement."
     }
   ]
 }
