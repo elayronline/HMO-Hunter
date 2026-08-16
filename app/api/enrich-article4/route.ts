@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import {
+  ARTICLE4_SOURCE_COUNCIL_BOUNDARY,
   classifyArticle4,
   fetchCoveredCouncilKeys,
   normaliseCouncilName,
@@ -13,6 +14,10 @@ import {
   curatedNegativeFor,
   wholeAuthorityDirectionInForce,
 } from "@/lib/article4/curated"
+import {
+  hmoFeaturesFor,
+  publishesCompleteBoundary,
+} from "@/lib/article4/council-boundaries"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -232,6 +237,8 @@ export async function POST(request: Request) {
     let curatedOverlayApplied = 0
     /** Rows cleared by a council confirming it operates no HMO direction. */
     let curatedNegativeApplied = 0
+    /** Rows decided by a boundary the council publishes itself. */
+    let councilBoundaryApplied = 0
     const results: { address: string; city: string; status: string; area: string | null }[] = []
 
     for (let i = 0; i < properties.length; i += LPA_CONCURRENCY) {
@@ -261,13 +268,58 @@ export async function POST(request: Request) {
           }
 
           const lpa = await lpaFor(property.longitude, property.latitude)
-          const councilCovered = lpa ? coveredCouncilKeys.has(normaliseCouncilName(lpa.name)) : null
+
+          // Boundaries the council publishes itself, tested exactly as the feed's
+          // are. Leeds designates named wards plus part of one more, which no
+          // list of ward names can express — but its own polygon can, and it
+          // carries the direction's reference and commencement date with it.
+          let councilBoundaryName: string | null = null
+          const councilPublishesBoundary = lpa?.name
+            ? publishesCompleteBoundary(lpa.name)
+            : false
+
+          if (lpa?.name && !matchedAreaName && councilPublishesBoundary) {
+            for (const feature of hmoFeaturesFor(lpa.name)) {
+              try {
+                const geom = feature.geometry
+                if (geom?.type === "MultiPolygon") {
+                  if (pointInMultiPolygon(point, geom.coordinates)) {
+                    councilBoundaryName = feature.properties?.NAME || feature.properties?.REFERENCE
+                    break
+                  }
+                } else if (geom?.type === "Polygon") {
+                  if (pointInPolygonWithHoles(point, geom.coordinates)) {
+                    councilBoundaryName = feature.properties?.NAME || feature.properties?.REFERENCE
+                    break
+                  }
+                }
+              } catch {
+                continue
+              }
+            }
+          }
+
+          // A council publishing a complete boundary is covered in the sense
+          // classifyArticle4 means: a miss inside it has been tested against the
+          // authority's own definition of the area, so it is a negative rather
+          // than a silence.
+          const inFeed = lpa ? coveredCouncilKeys.has(normaliseCouncilName(lpa.name)) : false
+          const councilCovered = lpa ? inFeed || councilPublishesBoundary : null
+
+          // Provenance follows whichever source actually decided it, and that
+          // includes the negatives: a Leeds property outside A4D01 was cleared
+          // by Leeds' own polygon, not by the national feed, and recording the
+          // feed there would credit a source that holds nothing for Leeds.
+          const decidedByCouncilBoundary =
+            !matchedAreaName && councilPublishesBoundary && !inFeed
 
           let result = classifyArticle4({
-            matchedAreaName,
+            matchedAreaName: matchedAreaName ?? councilBoundaryName,
             council: lpa?.name ?? null,
             councilCovered,
+            source: decidedByCouncilBoundary ? ARTICLE4_SOURCE_COUNCIL_BOUNDARY : undefined,
           })
+          if (councilBoundaryName && !matchedAreaName) councilBoundaryApplied++
 
           // The curated overlay, applied only where it can decide a point.
           //
@@ -356,6 +408,7 @@ export async function POST(request: Request) {
       failed,
       curatedOverlayApplied,
       curatedNegativeApplied,
+      councilBoundaryApplied,
       /** Pass back as `afterId` to continue from where this batch stopped. */
       lastId: properties.length ? properties[properties.length - 1].id : null,
       counts,
