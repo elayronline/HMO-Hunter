@@ -18,6 +18,13 @@ export type Article4Status = "in_force" | "none_found" | "unknown"
 
 export const ARTICLE4_SOURCE_PLANNING_DATA = "planning.data.gov.uk"
 
+/**
+ * A boundary the council publishes itself, tested the same way as a feed one.
+ * Distinct from `council-verified`, which is a hand-read page with no geometry:
+ * this one decided an individual point.
+ */
+export const ARTICLE4_SOURCE_COUNCIL_BOUNDARY = "council-boundary"
+
 const PLANNING_DATA_ENTITY = "https://www.planning.data.gov.uk/entity.json"
 const PLANNING_DATA_ORG = "https://www.planning.data.gov.uk/entity"
 
