@@ -59,6 +59,21 @@ export const CITY_ROOM_RENTS: Record<string, { min: number; max: number; avg: nu
   "_default": { min: 425, max: 625, avg: 525 },
 }
 
+/**
+ * Councils whose name is not the city name this table is keyed on.
+ *
+ * The planning authority is the more reliable of the two identifiers we hold —
+ * it was resolved from the property's own coordinates — but it carries
+ * statutory decoration the table does not.
+ */
+const COUNCIL_TO_CITY: Record<string, string> = {
+  "Bristol, City of": "Bristol",
+  "Brighton and Hove": "Brighton",
+  "Newcastle upon Tyne": "Newcastle",
+  "Kingston upon Hull, City of": "Hull",
+  "City of Edinburgh": "Edinburgh",
+}
+
 /** Where an indicative rent came from, so a reader can weigh it. */
 export type RentBasis = "city" | "national"
 
@@ -67,19 +82,63 @@ export interface RoomRent {
   basis: RentBasis
   /** The city the rate was matched on, where one was. */
   city: string | null
+  /**
+   * Which identifier produced the match. The rate is a city average either way
+   * — this says how the city was established, not how good the number is.
+   */
+  matchedOn?: "city" | "council"
 }
 
 /**
- * The indicative room rent for a city, and how specific it actually is.
+ * The indicative room rent for a property, and how specific it actually is.
  *
  * A recognised city gets its own average. Everything else gets a single national
  * figure — which is a legitimate starting point, but it is not "the average for
  * this city", and the difference matters to someone deciding how much weight to
- * put on it. Most of the estate falls into the second case, so quietly
- * presenting the two the same way would overstate the majority of reports.
+ * put on it.
+ *
+ * WHY THE COUNCIL IS CONSULTED
+ *
+ * `city` on a property is whatever the listing supplied, and for most of the
+ * estate that is a county: "West Yorkshire" for Leeds, "Oxfordshire" for Oxford,
+ * "Berkshire" for Reading, "South Yorkshire" for Sheffield. None of those is a
+ * key in this table, so 1,306 properties took the national figure while the
+ * table already held an average for the city they are actually in. That was not
+ * a gap in coverage, it was a lookup asking the wrong question — and it made the
+ * weakest number in the product look like the commonest answer.
+ *
+ * The planning authority is the better identifier, because it was resolved from
+ * the property's own coordinates rather than typed into a listing. It is
+ * consulted second so that a city name that does match is never overridden, and
+ * because Scottish and Welsh properties have no planning authority resolved but
+ * do carry a usable city.
+ *
+ * Nothing here changes a rate. The averages are the same figures they always
+ * were; they are simply found now.
  */
-export function roomRent(city: string | null | undefined): RoomRent {
-  const matched = city ? CITY_ROOM_RENTS[city] : undefined
-  if (matched) return { rate: matched.avg, basis: "city", city: city as string }
+export function roomRent(
+  city: string | null | undefined,
+  council?: string | null
+): RoomRent {
+  const byCity = city ? CITY_ROOM_RENTS[city] : undefined
+  if (byCity) {
+    return { rate: byCity.avg, basis: "city", city: city as string, matchedOn: "city" }
+  }
+
+  const cityFromCouncil = council
+    ? CITY_ROOM_RENTS[council]
+      ? council
+      : COUNCIL_TO_CITY[council]
+    : undefined
+
+  if (cityFromCouncil && CITY_ROOM_RENTS[cityFromCouncil]) {
+    return {
+      rate: CITY_ROOM_RENTS[cityFromCouncil].avg,
+      basis: "city",
+      city: cityFromCouncil,
+      matchedOn: "council",
+    }
+  }
+
   return { rate: CITY_ROOM_RENTS["_default"].avg, basis: "national", city: null }
 }

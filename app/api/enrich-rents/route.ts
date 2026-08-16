@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // Fetch properties needing rent data
     let query = supabaseAdmin
       .from("properties")
-      .select("id, address, city, bedrooms, listing_type, price_pcm, estimated_rent_per_room, purchase_price")
+      .select("id, address, city, article_4_council, bedrooms, listing_type, price_pcm, estimated_rent_per_room, purchase_price")
       .eq("is_stale", false)
 
     if (city) {
@@ -44,6 +44,16 @@ export async function POST(request: Request) {
     if (!forceUpdate) {
       // Only get properties without proper rent data
       query = query.or("estimated_rent_per_room.is.null,estimated_rent_per_room.eq.0")
+    }
+
+    // Ordered and cursored, for the same reason /api/enrich-article4 is: the
+    // default pass shrinks its own candidate set each batch and advances on its
+    // own, but a forceUpdate has no such filter and would return the same rows
+    // on every call, making it incapable of covering more than `limit`
+    // properties however often it ran.
+    query = query.order("id", { ascending: true })
+    if (typeof body.afterId === "string" && body.afterId) {
+      query = query.gt("id", body.afterId)
     }
 
     query = query.limit(limit)
@@ -80,7 +90,7 @@ export async function POST(request: Request) {
     // Process each property
     for (const property of properties) {
       try {
-        const rent = roomRent(property.city)
+        const rent = roomRent(property.city, property.article_4_council)
         const bedrooms = property.bedrooms || 4
         const totalRent = rent.rate * bedrooms
 
@@ -151,6 +161,8 @@ export async function POST(request: Request) {
       log,
       updated,
       failed,
+      /** Pass back as `afterId` to continue from where this batch stopped. */
+      lastId: properties.length ? properties[properties.length - 1].id : null,
       summary: {
         processed: properties.length,
         enriched: updated.length,
