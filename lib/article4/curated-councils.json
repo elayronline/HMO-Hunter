@@ -190,6 +190,23 @@
       "verifiedAt": "2026-08-16T23:30:00.000Z"
     },
     {
+      "slug": "broxtowe",
+      "name": "Broxtowe",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "Beeston HMO Article 4 direction",
+          "extent": "Parts of Beeston and Beeston Rylands only — not borough-wide",
+          "commencedOn": "2022-03-26",
+          "endedOn": null,
+          "sourceUrl": "https://www.broxtowe.gov.uk/media/8307/site-notice-article-4.pdf",
+          "quote": "BROXTOWE BOROUGH COUNCIL: BEESTON ARTICLE 4 DIRECTION 2021 — RESTRICTIONS ON CHANGES OF USE FROM DWELLINGHOUSES TO HOUSES IN MULTIPLE OCCUPATION. The Council has made a direction which would remove the permitted development rights ..."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-17T00:00:00.000Z"
+    },
+    {
       "slug": "burnley",
       "name": "Burnley",
       "gssCode": "E07000117",
@@ -643,6 +660,23 @@
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "lambeth",
+      "name": "Lambeth",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — two Streatham wards",
+          "extent": "Streatham Common & Vale and Streatham St Leonard’s wards only — not borough-wide",
+          "commencedOn": "2025-08-11",
+          "endedOn": null,
+          "sourceUrl": "https://www.lambeth.gov.uk/planning-building-control/planning-policy-guidance/article-4-direction-withdrawing-class-lb-permitted-development-right-change-use-dwellinghouses-use",
+          "quote": "Article 4 Direction withdrawing Class L(b) permitted development right for change of use from dwellinghouses (Use Class C3) to small HMOs (Use Class C4) within the wards of Streatham Common & Vale and Streatham St Leonard’s. ... The Direction came into force on 11 August 2025."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-17T00:00:00.000Z"
     },
     {
       "slug": "lancaster",

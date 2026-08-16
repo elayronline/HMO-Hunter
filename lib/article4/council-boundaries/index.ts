@@ -34,6 +34,35 @@
  * fields — Leeds ships the direction's reference, its commencement date and the
  * permitted development right it removes, which is the provenance a disputed
  * result gets settled against.
+ *
+ * CHECKED, AND NOT AVAILABLE — recorded so the search is not repeated
+ *
+ * These were the largest remaining sets of unknown properties as at 2026-08-17,
+ * and none of them can be resolved this way today:
+ *
+ *   Reading (110)     Astun iShare. No map source in the page JavaScript and a
+ *                     getows capabilities request returns 500. Direction and
+ *                     modification notice are PDFs and a viewer only.
+ *   Liverpool (97)    data.gov.uk lists one resource, an INSPIRE WMS last
+ *                     updated in 2015 — before the eleven-ward direction that
+ *                     came into force on 17 June 2021. The council's open data
+ *                     hub carries no Article 4 dataset.
+ *   Broxtowe (52)     The Beeston area is published as a PDF map.
+ *   Lambeth (42)      The council publishes an "Article 4" layer, and it is
+ *                     conservation areas — nine features, CA5, CA31, CA62 and
+ *                     the like. The Streatham HMO direction is not in it.
+ *                     Registering that file would have marked conservation-area
+ *                     properties as HMO-restricted and cleared the rest of the
+ *                     borough, and neither the rights nor the area-type filter
+ *                     would have caught it, because those features carry
+ *                     neither field. Check what a layer contains, not what it
+ *                     is called.
+ *   Camden (38)       Every camden.gov.uk route returns 403.
+ *
+ * Where a direction is real but its extent is not testable, the record belongs
+ * in curated-councils.json without geometry — as Lambeth's and Broxtowe's now
+ * do. That states the council restricts somewhere without pretending to decide
+ * a property.
  */
 
 import leedsJson from "./leeds.json"
