@@ -273,6 +273,16 @@ export async function POST(request: Request) {
           // are. Leeds designates named wards plus part of one more, which no
           // list of ward names can express — but its own polygon can, and it
           // carries the direction's reference and commencement date with it.
+          // The match is a boolean, and the label is derived from it afterwards.
+          //
+          // Reading the two off one value inverted a result: Sheffield's feature
+          // carries neither NAME nor REFERENCE, so a successful point-in-polygon
+          // test produced `undefined`, which then read as "no match" and fell
+          // through to the negative branch. Every one of its 132 properties was
+          // recorded as cleared by the very boundary that contained it. A
+          // publisher omitting a label must never be able to flip a positive
+          // into a negative, so nothing downstream depends on the name existing.
+          let matchedCouncilBoundary = false
           let councilBoundaryName: string | null = null
           const councilPublishesBoundary = lpa?.name
             ? publishesCompleteBoundary(lpa.name)
@@ -282,16 +292,22 @@ export async function POST(request: Request) {
             for (const feature of hmoFeaturesFor(lpa.name)) {
               try {
                 const geom = feature.geometry
-                if (geom?.type === "MultiPolygon") {
-                  if (pointInMultiPolygon(point, geom.coordinates)) {
-                    councilBoundaryName = feature.properties?.NAME || feature.properties?.REFERENCE
-                    break
-                  }
-                } else if (geom?.type === "Polygon") {
-                  if (pointInPolygonWithHoles(point, geom.coordinates)) {
-                    councilBoundaryName = feature.properties?.NAME || feature.properties?.REFERENCE
-                    break
-                  }
+                const hit =
+                  geom?.type === "MultiPolygon"
+                    ? pointInMultiPolygon(point, geom.coordinates)
+                    : geom?.type === "Polygon"
+                      ? pointInPolygonWithHoles(point, geom.coordinates)
+                      : false
+
+                if (hit) {
+                  matchedCouncilBoundary = true
+                  const props = feature.properties ?? {}
+                  councilBoundaryName =
+                    props.NAME ||
+                    props.REFERENCE ||
+                    props.typearea ||
+                    `HMO Article 4 area published by ${lpa.name}`
+                  break
                 }
               } catch {
                 continue
@@ -314,12 +330,12 @@ export async function POST(request: Request) {
             !matchedAreaName && councilPublishesBoundary && !inFeed
 
           let result = classifyArticle4({
-            matchedAreaName: matchedAreaName ?? councilBoundaryName,
+            matchedAreaName: matchedAreaName ?? (matchedCouncilBoundary ? councilBoundaryName : null),
             council: lpa?.name ?? null,
             councilCovered,
             source: decidedByCouncilBoundary ? ARTICLE4_SOURCE_COUNCIL_BOUNDARY : undefined,
           })
-          if (councilBoundaryName && !matchedAreaName) councilBoundaryApplied++
+          if (matchedCouncilBoundary && !matchedAreaName) councilBoundaryApplied++
 
           // The curated overlay, applied only where it can decide a point.
           //

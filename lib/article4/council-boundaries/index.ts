@@ -37,6 +37,7 @@
  */
 
 import leedsJson from "./leeds.json"
+import sheffieldJson from "./sheffield.json"
 
 /** Part 3 Class L is the C3 dwellinghouse to C4 HMO right. */
 const HMO_PD_RIGHT = "3L"
@@ -51,6 +52,13 @@ export interface CouncilBoundarySource {
   fetchedOn: string
   /** The council's own page describing the direction. */
   documentationUrl: string
+  /**
+   * When the direction commenced, where the features do not carry it
+   * themselves. Leeds stamps START_DATE on the geometry; Sheffield publishes
+   * the area with no dates at all, so it is recorded here rather than left to
+   * be assumed. Informational — a registered boundary is a current one.
+   */
+  commencedOn?: string
   features: any[]
 }
 
@@ -65,6 +73,21 @@ export const COUNCIL_BOUNDARY_SOURCES: CouncilBoundarySource[] = [
     documentationUrl:
       "https://www.leeds.gov.uk/planning/planning-policy/supplementary-planning-documents-and-guidance/houses-in-multiple-occupation-article-4-direction",
     features: (leedsJson as any).features ?? [],
+  },
+  {
+    council: "Sheffield",
+    slug: "sheffield",
+    sourceUrl:
+      "https://sheffieldcitycouncil.cloud.esriuk.com/server/rest/services/AGOL/OpenData1/FeatureServer/22/query?outFields=*&where=1%3D1&outSR=4326&f=geojson",
+    licence: "Open Government Licence v3.0",
+    fetchedOn: "2026-08-16",
+    documentationUrl: "https://www.sheffield.gov.uk/conservation",
+    // The direction was made on 9 December 2010. The published feature carries
+    // no dates, so it is recorded here; every feature in this layer is the HMO
+    // area, which the council labels typearea "HMO" and describes as "Change of
+    // use from C3 (Dwellinghouse) to C4 (HMO) restricted".
+    commencedOn: "2010-12-09",
+    features: (sheffieldJson as any).features ?? [],
   },
 ]
 
@@ -96,11 +119,20 @@ export function hmoFeaturesFor(
   if (!source) return []
 
   return source.features.filter((f) => {
-    const rights = f?.properties?.PERMITTED_DEVELOPMENT_RIGHTS
+    const props = f?.properties ?? {}
+
     // Where the publisher names the right, insist it is the HMO one — these
-    // layers can carry other Article 4 areas. Where it says nothing, the layer
-    // is registered above as an HMO layer and that is what it is.
+    // layers can carry Article 4 areas for other permitted development rights,
+    // and a conservation-area polygon read as an HMO restriction would invent
+    // one. Leeds names it in PERMITTED_DEVELOPMENT_RIGHTS, Sheffield labels the
+    // area type instead. Where a layer says neither, the registry entry above
+    // vouches for it.
+    const rights = props.PERMITTED_DEVELOPMENT_RIGHTS
     if (typeof rights === "string" && !rights.includes(HMO_PD_RIGHT)) return false
+
+    const areaType = props.typearea ?? props.TYPEAREA
+    if (typeof areaType === "string" && !/hmo/i.test(areaType)) return false
+
     return featureInForceOn(f, now)
   })
 }

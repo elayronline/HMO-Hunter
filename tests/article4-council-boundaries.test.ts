@@ -84,7 +84,10 @@ describe("Leeds", () => {
 
   it("publishes a complete boundary, which is what licenses a negative", () => {
     expect(publishesCompleteBoundary("Leeds")).toBe(true)
-    expect(publishesCompleteBoundary("Sheffield")).toBe(false)
+    // A council with no registered boundary must not gain one by accident,
+    // since that is what would turn its unknowns into negatives.
+    expect(publishesCompleteBoundary("Reading")).toBe(false)
+    expect(publishesCompleteBoundary("Manchester")).toBe(false)
   })
 
   /**
@@ -112,5 +115,54 @@ describe("Leeds", () => {
     const [f] = hmoFeaturesFor("Leeds")
     expect(featureInForceOn(f, new Date("2012-02-09"))).toBe(false)
     expect(featureInForceOn(f, new Date("2012-02-11"))).toBe(true)
+  })
+})
+
+/**
+ * Sheffield publishes the area with no dates and no permitted-development-right
+ * field, labelling the area type instead. It is the case that shows the two
+ * guards are not interchangeable: the right-based filter cannot see this layer
+ * at all, and the area-type filter is what keeps a non-HMO polygon out.
+ */
+describe("Sheffield", () => {
+  it("is registered with the commencement its features do not carry", () => {
+    const source = sourceForCouncil("Sheffield")
+    expect(source).toBeTruthy()
+    expect(source!.commencedOn).toBe("2010-12-09")
+    expect(publishesCompleteBoundary("Sheffield")).toBe(true)
+  })
+
+  it("keeps the HMO area and states the restriction it removes", () => {
+    const features = hmoFeaturesFor("Sheffield")
+    expect(features.length).toBeGreaterThan(0)
+    expect(features[0].properties.typearea).toMatch(/hmo/i)
+    expect(features[0].properties.restrictio).toContain("C4")
+  })
+
+  /**
+   * The regression this file exists for. Sheffield's feature carries neither
+   * NAME nor REFERENCE, and the enrichment originally read the match and the
+   * label off the same value — so a successful point-in-polygon test produced
+   * `undefined`, which fell through to the negative branch and recorded all 132
+   * Sheffield properties as cleared by the boundary that contained them.
+   *
+   * A publisher omitting a label must never be able to invert a result.
+   */
+  it("publishes no label, which must not be mistaken for no match", () => {
+    const [f] = hmoFeaturesFor("Sheffield")
+    expect(f.properties.NAME).toBeUndefined()
+    expect(f.properties.REFERENCE).toBeUndefined()
+    // Something usable still exists to describe the area with.
+    expect(f.properties.typearea || f.properties.restrictio).toBeTruthy()
+  })
+
+  it("excludes an area of another type in the same layer", () => {
+    const other = { properties: { typearea: "Conservation Area" }, geometry: null }
+    const source = sourceForCouncil("Sheffield")!
+    const withOther = { ...source, features: [...source.features, other] }
+    // Filtering is by property, not position: the extra area is dropped and the
+    // genuine one survives.
+    expect(withOther.features.length).toBe(source.features.length + 1)
+    expect(hmoFeaturesFor("Sheffield").length).toBe(source.features.length)
   })
 })
