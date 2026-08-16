@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { CompaniesHouseAdapter } from "@/lib/ingestion/enrichment/companies-house"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/enrich-companies
@@ -16,6 +17,9 @@ import { apiConfig } from "@/lib/config/api-config"
  * }
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const results: any[] = []
 

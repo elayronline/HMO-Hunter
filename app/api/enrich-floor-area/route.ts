@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 interface PropertyDataFloorAreaResponse {
   status: string
@@ -90,6 +91,9 @@ async function getPropertyByUPRN(uprn: string, apiKey: string): Promise<Property
  * Enriches properties with floor area data from PropertyData API
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

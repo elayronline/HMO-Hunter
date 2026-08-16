@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { RightmoveAdapter } from "@/lib/ingestion/adapters/rightmove"
 import type { PropertyListing } from "@/lib/types/ingestion"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/enrich-floor-plans
@@ -17,6 +18,9 @@ import type { PropertyListing } from "@/lib/types/ingestion"
  * }
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

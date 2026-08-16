@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import fs from "fs"
 import path from "path"
 import readline from "readline"
+import { requireAdmin } from "@/lib/admin-auth"
 
 // In-memory cache for OFCOM CSV data
 let broadbandCache: Map<string, BroadbandData> | null = null
@@ -51,6 +52,9 @@ export async function GET() {
  * Enrich properties with OFCOM broadband coverage data (free, no API key needed)
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

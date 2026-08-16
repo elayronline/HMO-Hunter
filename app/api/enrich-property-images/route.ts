@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const ZOOPLA_API_KEY = process.env.ZOOPLA_API_KEY || "eec9ejtet7bzzgduvjlkj1b8"
 const ZOOPLA_BASE_URL = "https://api.zoopla.co.uk/api/v1"
@@ -16,6 +17,9 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  * 3. Future requests will use stored images without API calls
  */
 export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   try {
     const body = await request.json()
     const { propertyId } = body

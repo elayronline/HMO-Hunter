@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { CITY_ROOM_RENTS, roomRent } from "@/lib/properties/room-rents"
+import { requireAdmin } from "@/lib/admin-auth"
 
 
 
@@ -15,6 +16,9 @@ import { CITY_ROOM_RENTS, roomRent } from "@/lib/properties/room-rents"
  * one. See CLAUDE.md — no user-facing value is ever generated.
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/enrich-all
  * Run all enrichment APIs sequentially on properties
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const results: Record<string, any> = {}
   const log: string[] = []
 

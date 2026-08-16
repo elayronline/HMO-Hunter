@@ -7,6 +7,7 @@ import {
   resolveLpaForPoint,
   toLegacyBoolean,
 } from "@/lib/article4/coverage"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -114,6 +115,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   try {
     const body = await request.json().catch(() => ({}))
     const limit = Math.min(body.limit || 100, 500)

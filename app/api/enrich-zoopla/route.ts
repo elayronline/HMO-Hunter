@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { apiConfig } from "@/lib/config/api-config"
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/enrich-zoopla
  * Enrich properties with Zoopla listing data and area statistics
  */
 export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   // Rate limit check - enrichment endpoints are expensive
   const rateLimitResponse = checkRateLimit(request, {
     ...RATE_LIMITS.enrichment,
