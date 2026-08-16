@@ -30,7 +30,8 @@
           "commencedOn": "2016-05-29",
           "endedOn": null,
           "sourceUrl": "https://web.archive.org/web/2026/https://www.barnet.gov.uk/planning-and-building-control/planning-policies-and-local-plan/small-houses-multiple-occupation-hmo",
-          "quote": "From 29 May 2016 planning permission is required anywhere in Barnet (Use Class C4) where between 3 and 6 unrelated people share basic amenities such as a kitchen or bathroom."
+          "quote": "From 29 May 2016 planning permission is required anywhere in Barnet (Use Class C4) where between 3 and 6 unrelated people share basic amenities such as a kitchen or bathroom.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -81,7 +82,8 @@
           "commencedOn": "2020-06-08",
           "endedOn": null,
           "sourceUrl": "https://www.birmingham.gov.uk/info/20054/local_plan_documents/1933/city-wide_article_4_direction_relating_to_houses_in_multiple_occupation_hmos/5",
-          "quote": "From Monday 8 June 2020 an Article 4 Direction applies across the entire city council area which removes permitted development rights for the conversion of C3 dwellings to C4 small HMOs."
+          "quote": "From Monday 8 June 2020 an Article 4 Direction applies across the entire city council area which removes permitted development rights for the conversion of C3 dwellings to C4 small HMOs.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -98,7 +100,8 @@
           "commencedOn": "2022-10-03",
           "endedOn": null,
           "sourceUrl": "https://www.blackpool.gov.uk/Residents/Planning-environment-and-community/Planning/Article-4-directions/HMO/Article-4-Direction-HMO.aspx",
-          "quote": "This Article 4 Direction removes the permitted development rights that allow dwelling houses (a C3 planning use) to convert into small houses in multiple occupancy (HMOs, a C4 planning use) without the need for planning permission. The Direction applies across the whole of the Blackpool borough. The Order was sealed on 1 October 2021 and confirmed on 23 February 2022. The Direction came into force on 3 October 2022."
+          "quote": "This Article 4 Direction removes the permitted development rights that allow dwelling houses (a C3 planning use) to convert into small houses in multiple occupancy (HMOs, a C4 planning use) without the need for planning permission. The Direction applies across the whole of the Blackpool borough. The Order was sealed on 1 October 2021 and confirmed on 23 February 2022. The Direction came into force on 3 October 2022.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -132,7 +135,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://www.brighton-hove.gov.uk/planning/planning-applications/planning-permission-houses-multiple-occupation",
-          "quote": "The Article 4 Direction means that you need planning permission for houses everywhere within the city to change from 'a dwelling house' (Use Class C3) to a 'House in Multiple Occupation' (Use Class C4)."
+          "quote": "The Article 4 Direction means that you need planning permission for houses everywhere within the city to change from 'a dwelling house' (Use Class C3) to a 'House in Multiple Occupation' (Use Class C4).",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -192,7 +196,8 @@
           "endedOn": null,
           "sourceUrl": "https://www.bury.gov.uk/planning-building-control/planning-permission/article-4-directions",
           "quote": "The Council has introduced an Article 4 Direction that removes the permitted development rights for the material change of use from a dwellinghouse (Use Class C3) to a small House in Multiple Occupation (Use Class C4). This means that planning permission is now required to create any new Houses in Multiple Occupation (HMOs) within the Borough. ... The Direction applies to the entire Borough of Bury and came into effect on 16 July 2026.",
-          "confirmBy": "2027-01-16"
+          "confirmBy": "2027-01-16",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -344,7 +349,8 @@
           "commencedOn": "2026-08-17",
           "endedOn": null,
           "sourceUrl": "https://www.durham.gov.uk/article/34149/News-New-Article-4-measures-confirmed-to-control-HMOs",
-          "quote": "All comments received as part of the consultation have been carefully considered and the Article 4 has now been confirmed, meaning that the new measures will come into place from Monday 17 August 2026."
+          "quote": "All comments received as part of the consultation have been carefully considered and the Article 4 has now been confirmed, meaning that the new measures will come into place from Monday 17 August 2026.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -421,7 +427,8 @@
           "commencedOn": "2012-09-24",
           "endedOn": null,
           "sourceUrl": "https://web.archive.org/web/2026/https://www.great-yarmouth.gov.uk/article/8191/Article-4-direction-houses-in-multiple-occupation",
-          "quote": "The direction removes permitted development rights for development consisting of a change of the use of a building to a use falling within Class C4 (houses in multiple occupation) from a use falling within Class C3 (dwellinghouses). Planning permission is therefore required for a change of use of this nature. The direction came into force on 24 September 2012 and applies to the whole of the Borough, with the exception of the Broads Authority executive area."
+          "quote": "The direction removes permitted development rights for development consisting of a change of the use of a building to a use falling within Class C4 (houses in multiple occupation) from a use falling within Class C3 (dwellinghouses). Planning permission is therefore required for a change of use of this nature. The direction came into force on 24 September 2012 and applies to the whole of the Borough, with the exception of the Broads Authority executive area.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -472,7 +479,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://pre.hillingdon.gov.uk/planning-policy/article-4-directions/2",
-          "quote": "It is now necessary to obtain planning permission to convert a dwelling (Use Class C3) to an HMO with 3 or more unrelated people sharing (Use Class C4) in all parts of the borough. Previously, this was only required in the wards of Brunel and Uxbridge South. ... The council decided to implement this Article 4 direction at the Full Council Meeting on 27 November 2025."
+          "quote": "It is now necessary to obtain planning permission to convert a dwelling (Use Class C3) to an HMO with 3 or more unrelated people sharing (Use Class C4) in all parts of the borough. Previously, this was only required in the wards of Brunel and Uxbridge South. ... The council decided to implement this Article 4 direction at the Full Council Meeting on 27 November 2025.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -489,7 +497,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://www.hounslow.gov.uk/planning-policy/article-4-directions",
-          "quote": "A4D.2 Dwellinghouses (C3) to small HMOs (C4) - borough-wide Article 4 Direction"
+          "quote": "A4D.2 Dwellinghouses (C3) to small HMOs (C4) - borough-wide Article 4 Direction",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -591,7 +600,8 @@
           "commencedOn": "2020-03-07",
           "endedOn": null,
           "sourceUrl": "https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords/hmo/article-4-direction-on-small-hmos",
-          "quote": "There are two Article 4 Directions covering the whole borough. The first direction covers Lewisham's Southern Wards (old ward boundaries) and has been in force since 7 March 2020. The second direction covers the remainder of the borough and came into force on 19 January 2024."
+          "quote": "There are two Article 4 Directions covering the whole borough. The first direction covers Lewisham's Southern Wards (old ward boundaries) and has been in force since 7 March 2020. The second direction covers the remainder of the borough and came into force on 19 January 2024.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -608,7 +618,8 @@
           "commencedOn": "2016-03-01",
           "endedOn": null,
           "sourceUrl": "https://www.lincoln.gov.uk/houses-multiple-occupation/hmo-article-4-formal-process",
-          "quote": "On 1st March 2016 the City of Lincoln Council introduced an Article 4 Direction within the City of Lincoln which means that you need planning permission to convert a family dwelling to a House in Multiple Occupation (HMO). ... Planning permission will therefore be required for change of use from Class C3 to C4 from 1st March 2016."
+          "quote": "On 1st March 2016 the City of Lincoln Council introduced an Article 4 Direction within the City of Lincoln which means that you need planning permission to convert a family dwelling to a House in Multiple Occupation (HMO). ... Planning permission will therefore be required for change of use from Class C3 to C4 from 1st March 2016.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -642,7 +653,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://web.archive.org/web/2026/https://www.manchester.gov.uk/info/500207/planning_and_regeneration/4847/article_4_direction_changing_the_use_of_your_property",
-          "quote": "In Manchester you need planning permission to let a house out to more than two unrelated people, if the house is currently not used as a House in Multiple Occupation. This because the Council has used a legal process called an Article 4 Direction which means that development, which in other places would not usually need planning permission, does in Manchester."
+          "quote": "In Manchester you need planning permission to let a house out to more than two unrelated people, if the house is currently not used as a House in Multiple Occupation. This because the Council has used a legal process called an Article 4 Direction which means that development, which in other places would not usually need planning permission, does in Manchester.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -676,7 +688,8 @@
           "commencedOn": "2011-12-23",
           "endedOn": null,
           "sourceUrl": "https://www.milton-keynes.gov.uk/planning-and-building/planning-policy/houses-multiple-occupation-hmo-planning-policy",
-          "quote": "Milton Keynes has introduced two Article 4 Directions withdrawing the permitted development right for a change of use to a Use Class C4 HMO. This means planning permission is required when converting a dwelling house (C3), or non-residential property, to a Use Class (C4) HMO in the following areas: the urban area (whole of the Borough excluding the wards of Hanslope Park, Olney, Sherington and Danesborough). This Article 4 Direction was introduced on 30 December 2010. the whole Borough ... This Article 4 Direction was introduced on 23 December 2011."
+          "quote": "Milton Keynes has introduced two Article 4 Directions withdrawing the permitted development right for a change of use to a Use Class C4 HMO. This means planning permission is required when converting a dwelling house (C3), or non-residential property, to a Use Class (C4) HMO in the following areas: the urban area (whole of the Borough excluding the wards of Hanslope Park, Olney, Sherington and Danesborough). This Article 4 Direction was introduced on 30 December 2010. the whole Borough ... This Article 4 Direction was introduced on 23 December 2011.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -727,7 +740,8 @@
           "commencedOn": "2026-03-02",
           "endedOn": null,
           "sourceUrl": "https://www.northwarks.gov.uk/private-rented-housing/houses-multiple-occupation/2",
-          "quote": "An Article 4 Direction came into effect on 2 March 2026 meaning all new HMO's, regardless of size will require planning permission."
+          "quote": "An Article 4 Direction came into effect on 2 March 2026 meaning all new HMO's, regardless of size will require planning permission.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -744,7 +758,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://www.nottinghamcity.gov.uk/hmopermitteddevelopment",
-          "quote": "Article 4 Direction means that you need to obtain planning permission to convert a family dwelling to an HMO with between 3 and 6 unrelated people sharing in the Nottingham area."
+          "quote": "Article 4 Direction means that you need to obtain planning permission to convert a family dwelling to an HMO with between 3 and 6 unrelated people sharing in the Nottingham area.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -761,7 +776,8 @@
           "commencedOn": "2012-02-25",
           "endedOn": null,
           "sourceUrl": "https://www.oxford.gov.uk/planning-policy/planning-control-houses-multiple-occupation",
-          "quote": "An Article 4 Direction came into force on 25 February 2012 that introduced local planning controls for HMOs in the whole Oxford City Council area."
+          "quote": "An Article 4 Direction came into force on 25 February 2012 that introduced local planning controls for HMOs in the whole Oxford City Council area.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -795,7 +811,8 @@
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://www.portsmouth.gov.uk/services/development-and-planning/planning-policy/supplementary-planning-documents/planning-houses-in-multiple-occupation/hmo-planning-permission-and-licensing-requirements/",
-          "quote": "In Portsmouth a specific direction has been introduced, an 'Article 4 Direction. This means planning permission is required for all new HMOs. In most other parts of the country a homeowner can change a family dwelling into an HMO without planning permission. This is not the case in Portsmouth."
+          "quote": "In Portsmouth a specific direction has been introduced, an 'Article 4 Direction. This means planning permission is required for all new HMOs. In most other parts of the country a homeowner can change a family dwelling into an HMO without planning permission. This is not the case in Portsmouth.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -847,7 +864,8 @@
           "endedOn": null,
           "sourceUrl": "https://www.rossendale.gov.uk/news/article/10764/supplementary-planning-guidance-to-support-article-4-direction-on-hmos",
           "quote": "Rossendale Borough Council will publish Supplementary Planning Guidance (SPG) to support the recently introduced Immediate Article 4 Direction relating to small Houses in Multiple Occupation (HMOs). ... following the introduction of the Article 4 Direction which means that planning permission is now required for any new HMO conversions that would previously have been permitted development.",
-          "confirmedOn": "2026-03-18"
+          "confirmedOn": "2026-03-18",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -898,7 +916,8 @@
           "commencedOn": "2018-09-20",
           "endedOn": null,
           "sourceUrl": "https://www.sefton.gov.uk/planning-building-control/planning-policy-including-local-plan-and-neighbourhood-planning/article-4-directions/article-4-direction-for-houses-in-multiple-occupation/",
-          "quote": "On 20th September 2017 the Council issued a 'non-immediate' Article 4 direction for HMOs in parts of Bootle, Litherland, Seaforth, Waterloo and Southport. ... The Article 4 Direction was confirmed by Cabinet on 21 June 2018. The Article 4 will be effective from 20 September 2018. ... The Council have implemented an Immediate Article 4 Direction in all remaining areas of Sefton"
+          "quote": "On 20th September 2017 the Council issued a 'non-immediate' Article 4 direction for HMOs in parts of Bootle, Litherland, Seaforth, Waterloo and Southport. ... The Article 4 Direction was confirmed by Cabinet on 21 June 2018. The Article 4 will be effective from 20 September 2018. ... The Council have implemented an Immediate Article 4 Direction in all remaining areas of Sefton",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -928,7 +947,7 @@
       "directions": [
         {
           "name": "HMO Article 4 direction — City-wide",
-          "extent": "City-wide",
+          "extent": "City-wide per the council page summary, but the quoted wording states no extent and the national feed publishes partial polygons for Southampton — needs re-verification before it can be treated as whole-authority",
           "commencedOn": null,
           "endedOn": null,
           "sourceUrl": "https://web.archive.org/web/2026/https://www.southampton.gov.uk/planning/planning-policy/supplementary-planning/planning-hmo/",
@@ -983,7 +1002,8 @@
           "commencedOn": "2013-05-31",
           "endedOn": null,
           "sourceUrl": "https://www.tendringdc.gov.uk/sub-content-pages/article-4-direction-relating-to-houses-in-multiple-occupation",
-          "quote": "On 8th December 2011, we made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995, as amended. ... We confirmed the Direction on 31st May 2013 and it came into force on that day. Planning permission is therefore now required for change of use from Class C3 to Class C4. The Article 4 Direction applies to the whole of the Tendring District."
+          "quote": "On 8th December 2011, we made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) Order 1995, as amended. ... We confirmed the Direction on 31st May 2013 and it came into force on that day. Planning permission is therefore now required for change of use from Class C3 to Class C4. The Article 4 Direction applies to the whole of the Tendring District.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -1000,7 +1020,8 @@
           "commencedOn": "2021-01-01",
           "endedOn": null,
           "sourceUrl": "https://www.towerhamlets.gov.uk/lgnl/planning_and_building_control/planning_policy_guidance/Article_4_Directions.aspx",
-          "quote": "The council has confirmed an Article 4 direction. It removes the right to convert residential dwellings (C3) to small HMOs (C4). This was approved by the Mayor in Cabinet on 29 January 2020 and came into force on 1 January 2021."
+          "quote": "The council has confirmed an Article 4 direction. It removes the right to convert residential dwellings (C3) to small HMOs (C4). This was approved by the Mayor in Cabinet on 29 January 2020 and came into force on 1 January 2021.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
@@ -1034,7 +1055,8 @@
           "commencedOn": "2017-09-14",
           "endedOn": null,
           "sourceUrl": "https://www.wolverhampton.gov.uk/planning/planning-policies/small-houses-multiple-occupation-article-4-direction",
-          "quote": "On 13 September 2016 City of Wolverhampton Council made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) (England) Order 2015 (as amended). On 13 September 2017 City of Wolverhampton Council confirmed this Direction and the Direction came into force on 14 September 2017."
+          "quote": "On 13 September 2016 City of Wolverhampton Council made a Direction under Article 4(1) of the Town and Country Planning (General Permitted Development) (England) Order 2015 (as amended). On 13 September 2017 City of Wolverhampton Council confirmed this Direction and the Direction came into force on 14 September 2017.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",

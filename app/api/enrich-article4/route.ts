@@ -8,6 +8,10 @@ import {
   toLegacyBoolean,
 } from "@/lib/article4/coverage"
 import { requireAdmin } from "@/lib/admin-auth"
+import {
+  ARTICLE4_SOURCE_COUNCIL_VERIFIED,
+  wholeAuthorityDirectionInForce,
+} from "@/lib/article4/curated"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -106,6 +110,8 @@ export async function GET() {
         body: {
           limit: "Number of properties to check (default 100, max 500)",
           forceRecheck: "Re-check rows that already have a status",
+          afterId:
+            "Cursor — pass the previous response's lastId to continue. Required to page through a forceRecheck, which is otherwise unfiltered and returns the same rows each call.",
         },
       },
     })
@@ -176,14 +182,26 @@ export async function POST(request: Request) {
     }
 
     // Get properties that need an Article 4 check
+    // Ordered by id and cursored, so a caller can page through.
+    //
+    // The default pass narrows to rows that have never been checked, and each
+    // batch shrinks the set it selects from — so repeated calls advance on
+    // their own. A forced re-check has no such filter: without an order and a
+    // cursor it returns the same rows every time, which made forceRecheck
+    // incapable of covering more than `limit` properties however often it ran.
     let query = supabase
       .from("properties")
       .select("id, latitude, longitude, address, city")
       .not("latitude", "is", null)
       .not("longitude", "is", null)
+      .order("id", { ascending: true })
 
     if (!forceRecheck) {
       query = query.is("article_4_checked_at", null)
+    }
+
+    if (typeof body.afterId === "string" && body.afterId) {
+      query = query.gt("id", body.afterId)
     }
 
     const { data: properties } = await query.limit(limit)
@@ -209,6 +227,8 @@ export async function POST(request: Request) {
     const counts = { in_force: 0, none_found: 0, unknown: 0 }
     let enriched = 0
     let failed = 0
+    /** Rows the feed could not resolve that a whole-authority curated direction did. */
+    let curatedOverlayApplied = 0
     const results: { address: string; city: string; status: string; area: string | null }[] = []
 
     for (let i = 0; i < properties.length; i += LPA_CONCURRENCY) {
@@ -240,11 +260,39 @@ export async function POST(request: Request) {
           const lpa = await lpaFor(property.longitude, property.latitude)
           const councilCovered = lpa ? coveredCouncilKeys.has(normaliseCouncilName(lpa.name)) : null
 
-          const result = classifyArticle4({
+          let result = classifyArticle4({
             matchedAreaName,
             council: lpa?.name ?? null,
             councilCovered,
           })
+
+          // The curated overlay, applied only where it can decide a point.
+          //
+          // A curated entry normally establishes that a council restricts
+          // somewhere, which cannot resolve an individual property — there is no
+          // polygon to test against, so the honest answer stays `unknown`. A
+          // direction covering the WHOLE authority is the exception: every
+          // property in the authority is inside it, so the property's authority
+          // is all we need.
+          //
+          // It runs against `none_found` as well as `unknown`. Where a council
+          // has confirmed in its own words that the whole authority is covered,
+          // the feed publishing partial polygons means the feed is incomplete,
+          // not that the property is clear — and "no Article 4 here" is the one
+          // answer that would send someone into a purchase unwarned. It still
+          // only ever adds a restriction: a feed positive is never touched.
+          if (lpa?.name && result.status !== "in_force") {
+            const whole = wholeAuthorityDirectionInForce(lpa.name)
+            if (whole) {
+              result = {
+                ...result,
+                status: "in_force",
+                areaName: whole.name,
+                source: ARTICLE4_SOURCE_COUNCIL_VERIFIED,
+              }
+              curatedOverlayApplied++
+            }
+          }
 
           const { error } = await supabase
             .from("properties")
@@ -284,6 +332,9 @@ export async function POST(request: Request) {
       message: `Checked ${enriched} properties — ${counts.in_force} in force, ${counts.none_found} none found, ${counts.unknown} unknown`,
       enriched,
       failed,
+      curatedOverlayApplied,
+      /** Pass back as `afterId` to continue from where this batch stopped. */
+      lastId: properties.length ? properties[properties.length - 1].id : null,
       counts,
       councilsCovered: coveredCouncilKeys.size,
       coverageSource,

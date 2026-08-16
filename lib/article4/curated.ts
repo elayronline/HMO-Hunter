@@ -50,6 +50,30 @@ export interface CuratedDirection {
   confirmBy?: string | null
   /** Set once confirmed, which settles it. Rossendale confirmed on 2026-03-18. */
   confirmedOn?: string | null
+  /**
+   * True only where the direction covers the ENTIRE planning authority.
+   *
+   * Set by hand, never derived from `extent`. The prose above is written for
+   * humans and reading it with a regex gets the answer backwards — "not
+   * city-wide" and "Almost city-wide" both contain "city-wide", and Sheffield's
+   * extent is literally "Designated Article 4 area only — not city-wide".
+   * Guessing here would assert a live restriction over a whole city on the
+   * strength of a substring.
+   *
+   * What it licenses: a curated entry has no polygon, so normally we can say the
+   * council restricts but not whether THIS property sits inside the boundary.
+   * Where the direction covers the whole authority that question disappears —
+   * every property in the authority is inside it — so knowing a property's
+   * planning authority is enough to conclude the restriction applies.
+   *
+   * Carve-outs that are themselves separate planning authorities do not
+   * disqualify: Brighton excludes the South Downs National Park and Great
+   * Yarmouth the Broads Authority executive area, but property there belongs to
+   * those authorities, not these. Carve-outs WITHIN the authority do disqualify
+   * — Brent excludes its Growth Areas and Salford three named wards, so neither
+   * is flagged.
+   */
+  coversWholeAuthority?: boolean
   /** The page or document the quote came from. Always the council's own. */
   sourceUrl: string
   /** Verbatim wording, so a dispute is settled against the council's words. */
@@ -98,6 +122,65 @@ export interface CuratedAssessment {
    */
   needsReconfirmation: CuratedDirection[]
   states: { direction: CuratedDirection; state: ForceState }[]
+}
+
+/**
+ * Match a planning authority name to a curated slug.
+ *
+ * The LPA name arrives from the boundary lookup in whatever form that service
+ * uses — "Bristol, City of", "Kingston upon Hull, City of", "Newcastle upon
+ * Tyne" — while the slugs here are the plain kebab-case name. Comparing the two
+ * directly silently drops exactly the councils most likely to have a direction,
+ * so the statutory decorations come off both sides first.
+ */
+function normaliseForSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/,?\s*(city|borough|district|county)\s+of\b/g, "")
+    .replace(/\b(city|borough|district|county|metropolitan|royal)\s+council\b/g, "")
+    .replace(/\bcouncil\b/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+export function curatedByCouncilName(name: string): CuratedCouncil | null {
+  const target = normaliseForSlug(name)
+  if (!target) return null
+  return (
+    curated.councils.find(
+      (c) => c.slug === target || normaliseForSlug(c.name) === target
+    ) ?? null
+  )
+}
+
+/**
+ * The whole-authority direction in force for a council on a given date, or null.
+ *
+ * This is the only curated finding strong enough to conclude something about an
+ * individual property. Everything else in this file establishes that a council
+ * restricts somewhere; without a polygon that cannot decide a point, and the
+ * honest answer stays `unknown`.
+ *
+ * Date-aware on purpose, and Durham is why: its countywide direction was
+ * recorded well before it commenced on 17 August 2026, so asking this question
+ * on 16 August returns null and on 17 August returns the direction, with nothing
+ * to run and nothing to remember.
+ */
+export function wholeAuthorityDirectionInForce(
+  slugOrName: string,
+  now: Date = new Date()
+): CuratedDirection | null {
+  const council = curatedBySlug(slugOrName) ?? curatedByCouncilName(slugOrName)
+  if (!council) return null
+
+  for (const direction of council.directions) {
+    if (!direction.coversWholeAuthority) continue
+    if (forceStateOn(direction.commencedOn, direction.endedOn, now) === "in_force") {
+      return direction
+    }
+  }
+  return null
 }
 
 /** What the curated record says about a council on a given date. */
