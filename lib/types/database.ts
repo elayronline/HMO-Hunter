@@ -115,6 +115,10 @@ export type Property = {
   contact_data_opted_out: boolean
   // Phase 4 - Potential HMO Analysis
   gross_internal_area_sqm: number | null
+  // The measured area, as distinct from the band below — which is guessed from
+  // bedroom count where nothing was measured. Read by the property route, the
+  // ingestion manager and potential-hmo-analyzer, but never declared here.
+  floor_area: number | null
   floor_area_band: "under_90" | "90_120" | "120_plus" | null
   room_count: number | null
   lettable_rooms: number | null

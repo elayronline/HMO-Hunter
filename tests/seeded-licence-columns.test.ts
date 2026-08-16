@@ -28,8 +28,7 @@ const WRITERS_AND_TYPES = [
   // Reads them, but its only consumer is /api/intelligence, which nothing calls.
   "lib/services/data-intelligence.ts",
   "lib/services/property-insights.ts",
-  // Take a `licence` object from the licences API, not a property row.
-  "components/licence-card.tsx",
+  // Takes a `licence` object from the licences API, not a property row.
   "components/licence-details-card.tsx",
 ]
 

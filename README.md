@@ -4,39 +4,70 @@ A property intelligence platform for finding and analysing HMO (House in Multipl
 
 ---
 
-## Project Status (January 2025)
+## Project Status (August 2026)
 
-### Completed Features
+### Built
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Interactive Map View | ✅ Complete | MapLibre GL with clustered markers, collapsible legend |
-| Property Filtering | ✅ Complete | Price, bedrooms, HMO status, EPC, Article 4, licence types |
-| Deal Scoring System | ✅ Complete | 0-100 score based on yield, compliance, contact availability |
-| Title Owner Section | ✅ Complete | Blue-themed card with Land Registry data |
-| Licence Holder Section | ✅ Complete | Teal-themed card with council register data |
-| Licence Type & Term Display | ✅ Complete | Shows licence type, start/end dates, max occupants |
-| Company Lookup | ✅ Complete | Links to Companies House for corporate landlords |
-| GDPR Compliance | ✅ Complete | Audit logging, opt-out system, privacy policy |
-| Property Images | ✅ Complete | Google Street View integration with accurate heading |
-| Multi-City Support | ✅ Complete | London, Manchester, Birmingham, Leeds, Bristol, etc. |
+| Feature | Notes |
+|---------|-------|
+| Interactive Map View | MapLibre GL with clustered markers, collapsible legend |
+| Property Filtering | Three sourcing categories, EPC, Article 4, licence status, floor area |
+| HMO Checker | An address in, a defensible report out (`/hmo-check`) |
+| Attention Dashboard | `/user-dashboard` — what needs attention, not four counts |
+| Title Owner Section | Land Registry data |
+| Licence Holder Section | Council register data, where a register was reachable |
+| Company Lookup | Links to Companies House for corporate landlords |
+| GDPR Compliance | Audit logging, opt-out system, privacy policy |
+| Property Images | Google Street View integration with accurate heading |
+| Saved Searches / Saved Listings | `components/saved-searches.tsx`, `/saved` |
+| Comparison, Pipeline, Viewings | Side-by-side compare, pipeline board, viewing tracker |
+| CSV Export | Exports the filtered set; verified against the database |
+| Multi-City Support | London, Manchester, Birmingham, Leeds, Bristol, etc. |
+
+**Removed on purpose — do not rebuild:**
+
+- **Deal Scoring** — a 0–100 score built partly on an invented yield. Removed in
+  `5396d0f`. The `deal_score` column still holds 1,016 stale values; nothing
+  reads them.
+- **Yield Calculator / Yield Band** — banded a yield derived from a city-average
+  room rent, which is an estimate stacked on an estimate. See the no-fabricated
+  data rule in `CLAUDE.md`.
+- **Predicted Article 4 overlay** — asserted a restriction no council had made.
 
 ### Data Sources - Current Status
 
 | Source | Purpose | Status |
 |--------|---------|--------|
 | Supabase | Database & Auth | ✅ Connected |
-| Searchland | Title/EPC/Planning | ✅ Configured (enrichment pending) |
+| Searchland | Title/EPC/Planning | ⚫ Unpaid, dark by choice |
 | Companies House | Corporate landlord details | ✅ Configured |
+| StreetData | Enrichment | ✅ Connected (was reading an empty key under a second spelling) |
+| PATMA | Enrichment | ✅ Connected (was split across two hostnames) |
+| EPC Register | EPC ratings | ⚠️ Key set, `EPC_API_EMAIL` missing — Basic auth needs both |
 | Google Street View | Property images | ✅ Working |
 | Google Custom Search | Listing images | ⚠️ 403 errors (quota/config issue) |
-| Kamma API | HMO licence registers | 🔜 Pending API access |
+| Kamma / Zoopla | HMO licence registers, listings | ⚫ Unpaid, dark by choice |
 
 ### Known Limitations
 
-- **Licence Data**: Currently using sample data for licence terms. Real data will come from Kamma API once access is granted.
-- **Property Images**: Some properties show approximate Street View angles; Custom Search API needs troubleshooting.
-- **Searchland Ingestion**: Returns 0 results for HMO endpoint (may not be correct endpoint for licence data).
+- **Cron jobs are not running.** All five in `vercel.json` compare against
+  `Bearer ${CRON_SECRET}`, which is unset in Vercel — so every scheduled run
+  returns 401. Setting it starts ingestion writing to the database and the
+  notification job sending mail; that is a deliberate decision, not a config fix.
+- **Room rents**: 764 of 1,525 properties fall back to a single national average
+  (£525) because their city is not in the 27-city table in
+  `lib/properties/room-rents.ts`. It is labelled as such, and it is the weakest
+  figure in any report that uses it.
+- **Article 4 recall is 71.2%** against the hand-verified gold set (17 misses),
+  because the national feed is voluntary and many councils never file. Measured
+  by `tests/article4-eval.test.ts`, not claimed.
+- **Licence terms**: the seeded values migration 012 invented have been cleared.
+  Where no register published a reference or dates, the property now says so.
+- **Payments are not built.** Stripe integration is deliberately deferred to the
+  end; the `stripe` package is not installed, which is the only reason
+  `npx tsc --noEmit` reports 2 errors. Premium status reads a
+  `user_metadata.is_premium` flag set by hand in the Supabase dashboard.
+- **Property Images**: some properties show approximate Street View angles.
 
 ---
 
@@ -109,23 +140,19 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_key
   - Update `lib/ingestion/adapters/` with Kamma adapter
   - Sample licence data has been cleared (`scripts/016_clear_seeded_licence_data.sql`); `scripts/DO_NOT_RUN_012_populate_licence_term_data.sql` is quarantined and must not be run again
 
-### High Priority - Core Features
+### High Priority - Decisions Waiting
 
-- [ ] **Saved Searches** - Allow users to save filter configurations for quick access
-- [ ] **Save Listings** - Enable users to save/favourite individual properties
-- [ ] **Yield Calculator** - Add ROI calculator for each listing showing:
-  - 1-year projected yield
-  - 3-year projected yield
-  - 5-year projected yield
-  - Based on purchase price, estimated rent, and running costs
+- [ ] **Set `CRON_SECRET` in Vercel** - Unblocks all five scheduled jobs at once.
+  Starts ingestion writing to the live database and the notification job sending
+  real mail, so it needs a deliberate go-ahead rather than a quiet deploy.
+- [ ] **Set `EPC_API_EMAIL`** - The EPC API uses HTTP Basic with the registered
+  email as the username, so the paid key authenticates nothing without it.
 
 ### Medium Priority - Listing Enhancements
 
-- [ ] **Floor Plans** - Pull floor plan images where available from listing sources
 - [ ] **Purchase Property View** - Stress test and optimize the purchase listing experience
-- [ ] **Premium Tier Toggle** - Add access control for HMO listings:
-  - Free tier: Limited property views
-  - Premium tier: Full HMO listing access with contact data
+- [ ] **Premium Tier Toggle** - Access control for HMO listings. Blocked on the
+  Stripe work above; the `is_premium` flag is the manual stand-in.
 
 ### Compliance & Legal
 
@@ -139,24 +166,24 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_key
 - [ ] **Integrate Paid Tracing Service** - Add phone/email lookup for individual owners
   - TraceGO API (~£30/lookup) or Find UK People (~£49/lookup)
   - Store results in `owner_contact_phone` / `owner_contact_email` fields
-- [ ] **Scheduled Data Enrichment** - Cron job to enrich properties with missing owner data
-- [ ] **User Authentication** - Restrict contact data to logged-in users
-- [ ] **Export Functionality** - CSV/Excel export of filtered properties
-- [ ] **Email Alerts** - Notify users of new properties matching criteria
 
 ### Data Quality
 
+- [ ] **Widen the room-rent table** - 764 of 1,525 properties use the single
+  national fallback (£525). Extend `lib/properties/room-rents.ts` beyond 27
+  cities, or derive from local comparables.
 - [ ] **Improve Geocoding** - Some properties have postcode-level coordinates only
 - [ ] **Council API Integration** - Connect to real council HMO register APIs (most are not public)
-- [ ] **EPC Data Enrichment** - Fetch EPC ratings for properties missing them
-- [ ] **Stale Data Cleanup** - Mark properties as stale when listings are removed
+- [ ] **Close the Article 4 gap** - 17 councils missed; curated research is the
+  only fix where the national feed holds nothing.
 
 ### UI/UX Improvements
 
+- [ ] **Put the map on `AppShell`** - `app/map/page.tsx` is ~2,200 lines with its
+  own nav inline, unlike `/user-dashboard` and `/hmo-check`.
 - [ ] **Mobile Responsive** - Optimize map and panels for mobile devices
-- [ ] **Property Comparison** - Side-by-side comparison of selected properties
-- [ ] **Activity Dashboard** - Track which properties users have contacted
-- [ ] **Notes System** - Allow users to add private notes to properties
+- [ ] **Detail panel and legend** - The right panel holds ~370px to say "Select a
+  property"; the legend floats over Wales.
 
 ---
 
@@ -176,7 +203,10 @@ Run these in Supabase SQL Editor in order:
 10. ~~`scripts/DO_NOT_RUN_012_populate_licence_term_data.sql`~~ - **DO NOT RUN.** Invented licence
     references, terms and occupancies. Cleared by `scripts/016_clear_seeded_licence_data.sql`;
     kept only as the provenance record that code comments cite by name.
-11. `scripts/016_clear_seeded_licence_data.sql` - Clears the data migration 012 invented
+11. `scripts/016_clear_seeded_licence_data.sql` - Clears the data migration 012 invented.
+    Applied to production; verified 2026-08-16 with all four seeded columns at 0 and the
+    published columns (`hmo_licence_reference`, `hmo_licence_expiry`) untouched. Safe to
+    re-run — every statement is guarded on the seeded values still being present.
 
 ---
 

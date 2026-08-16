@@ -63,14 +63,20 @@ export async function GET(request: Request) {
 
       if (error) throw error
 
-      // Flatten the joined data
-      const formattedLicences = licences?.map((l) => ({
-        ...l,
-        licence_type_name: l.licence_types?.name,
-        licence_type_description: l.licence_types?.description,
-        display_order: l.licence_types?.display_order,
-        licence_types: undefined,
-      }))
+      // Flatten the joined data. PostgREST returns the joined row as a single
+      // object for a many-to-one relationship, but the generated types widen it
+      // to an array — so narrow it rather than asserting either shape.
+      const formattedLicences = licences?.map((l) => {
+        const licenceType = Array.isArray(l.licence_types) ? l.licence_types[0] : l.licence_types
+
+        return {
+          ...l,
+          licence_type_name: licenceType?.name,
+          licence_type_description: licenceType?.description,
+          display_order: licenceType?.display_order,
+          licence_types: undefined,
+        }
+      })
 
       return NextResponse.json({ licences: formattedLicences || [] })
     }
