@@ -218,10 +218,13 @@ export const PropertyListView = memo(function PropertyListView({
           const isSaved = savedPropertyIds.has(property.id)
 
           return (
-            <Link
+            // The whole card is a link, but so is "View listing" — and an <a>
+            // inside an <a> is invalid HTML that React reports as a hydration
+            // error. The card link is an overlay sibling instead, so the two
+            // are never nested.
+            <div
               key={property.id}
-              href={`/property/${property.id}`}
-              className={`group relative text-left rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 ${
+              className={`group relative text-left rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-teal-500 focus-within:ring-offset-1 ${
                 isSelected ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-200"
               }`}
             >
@@ -297,20 +300,27 @@ export const PropertyListView = memo(function PropertyListView({
                   )}
                 </div>
 
-                {/* External link */}
+                {/* External link. Sits above the card overlay below. */}
                 {property.source_url && (
                   <a
                     href={property.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="mt-2 inline-flex items-center gap-1 text-[10px] text-teal-600 hover:text-teal-800 transition-colors"
+                    className="relative z-10 mt-2 inline-flex items-center gap-1 text-[10px] text-teal-600 hover:text-teal-800 transition-colors"
                   >
                     View listing <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
-            </Link>
+
+              {/* Last in the DOM so it paints over the static content it covers. */}
+              <Link
+                href={`/property/${property.id}`}
+                aria-label={`View details for ${property.address}`}
+                className="absolute inset-0 rounded-xl focus:outline-none"
+              />
+            </div>
           )
         })}
       </div>
