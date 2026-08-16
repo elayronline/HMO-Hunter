@@ -18,7 +18,11 @@ export class StreetDataEnrichment extends EnrichmentAdapter {
 
   constructor(apiKey?: string) {
     super()
-    this.apiKey = apiKey || process.env.STREET_DATA_API_KEY || ""
+    // STREETDATA_API_KEY, not STREET_DATA_API_KEY. One service, two spellings:
+    // the adapter in lib/ingestion/adapters/streetdata.ts reads the first and
+    // .env.example documents it, so this module was the outlier and had been
+    // silently running with an empty key against a subscription that is paid for.
+    this.apiKey = apiKey || process.env.STREETDATA_API_KEY || ""
   }
 
   async enrich(property: PropertyListing): Promise<Partial<PropertyListing>> {

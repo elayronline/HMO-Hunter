@@ -235,7 +235,7 @@ describe("sourcing category", () => {
 })
 
 /**
- * The seeded licence columns. scripts/012_populate_licence_term_data.sql wrote
+ * The seeded licence columns. scripts/DO_NOT_RUN_012_populate_licence_term_data.sql wrote
  * licence_id, licence_start_date, licence_end_date and max_occupants onto 252
  * rows from hardcoded per-city constants — six distinct end dates in total,
  * references built from MD5(address), occupancy set to bedrooms + 1. None of

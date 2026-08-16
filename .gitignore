@@ -18,6 +18,11 @@ yarn-error.log*
 
 # env files
 .env*
+# ...except the template. It documents every variable the code reads, with
+# placeholder values only, and was itself ignored by the rule above — so no
+# one cloning the repo ever saw it, which is how three integrations ended up
+# reading variable names nobody sets.
+!.env.example
 
 # vercel
 .vercel

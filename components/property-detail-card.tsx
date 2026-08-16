@@ -562,7 +562,7 @@ export function PropertyDetailCard({
                   </div>
                   {/* Licence # read licence_id and there was a "Max Occupants"
                       figure beside it. Both come from
-                      scripts/012_populate_licence_term_data.sql — the reference
+                      scripts/DO_NOT_RUN_012_populate_licence_term_data.sql — the reference
                       is MD5(address) and the occupancy is bedrooms + 1 — so
                       this panel was presenting two invented facts as register
                       data. Only the council's own reference is shown now, and

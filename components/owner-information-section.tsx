@@ -387,7 +387,7 @@ export function OwnerInformationSection({
                 {/* Was an "Existing Licence Term" row with a start date, an
                     end date and a red "(Expired)" flag, plus a Licence Number
                     and a Max Occupants figure below it. All four read the
-                    columns written by scripts/012_populate_licence_term_data.sql
+                    columns written by scripts/DO_NOT_RUN_012_populate_licence_term_data.sql
                     — six start/end pairs across 252 properties, references
                     built from MD5(address), occupancy set to bedrooms + 1. What
                     a council actually published is the reference and the expiry,

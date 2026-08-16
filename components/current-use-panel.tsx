@@ -28,7 +28,7 @@ import { CheckCircle2, AlertTriangle, HelpCircle, Building2, Clock } from "lucid
 /*
  * licence_id, licence_start_date, licence_end_date and max_occupants are
  * deliberately absent. Every value in those columns came from
- * scripts/012_populate_licence_term_data.sql — see licenceExpiry() in
+ * scripts/DO_NOT_RUN_012_populate_licence_term_data.sql — see licenceExpiry() in
  * lib/properties/category.ts — and this panel exists to show evidence a reader
  * can check against the council's register. An MD5 of the address and a
  * bedrooms + 1 occupancy are the opposite of that.

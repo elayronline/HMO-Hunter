@@ -47,7 +47,7 @@ describe("export columns", () => {
     expect(cell(p, "Licence expiry")).toBe("2025-04-30")
   })
 
-  // scripts/012_populate_licence_term_data.sql wrote these onto 252 rows.
+  // scripts/DO_NOT_RUN_012_populate_licence_term_data.sql wrote these onto 252 rows.
   it("never falls back to the seeded licence columns", () => {
     const seeded = property({
       hmo_licence_reference: null,

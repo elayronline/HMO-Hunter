@@ -1,6 +1,6 @@
 -- Migration 016: Clear the licence data invented by migration 012
 --
--- scripts/012_populate_licence_term_data.sql opens with "This adds sample
+-- scripts/DO_NOT_RUN_012_populate_licence_term_data.sql opens with "This adds sample
 -- licence dates to properties marked as Licensed HMO" and then writes, for
 -- every licensed row in each city, one hardcoded start/end pair, a reference
 -- built from MD5(address), and an occupancy of bedrooms + 1. It has been in

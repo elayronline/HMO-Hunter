@@ -107,7 +107,7 @@ COMPANIES_HOUSE_API_KEY=your_companies_house_key
 - [ ] **Kamma API Integration** - Replace sample licence data with real HMO licence register data
   - Licence holder names, start/end dates, max occupants
   - Update `lib/ingestion/adapters/` with Kamma adapter
-  - Remove sample data from `scripts/012_populate_licence_term_data.sql`
+  - Sample licence data has been cleared (`scripts/016_clear_seeded_licence_data.sql`); `scripts/DO_NOT_RUN_012_populate_licence_term_data.sql` is quarantined and must not be run again
 
 ### High Priority - Core Features
 
@@ -173,7 +173,10 @@ Run these in Supabase SQL Editor in order:
 7. `scripts/009_add_licence_holder_contact_fields.sql`
 8. `scripts/010_add_licence_types_table.sql`
 9. `scripts/011_add_licence_term_fields.sql` - Adds licence_id, start/end dates, status
-10. `scripts/012_populate_licence_term_data.sql` - **Sample data** (replace with Kamma API)
+10. ~~`scripts/DO_NOT_RUN_012_populate_licence_term_data.sql`~~ - **DO NOT RUN.** Invented licence
+    references, terms and occupancies. Cleared by `scripts/016_clear_seeded_licence_data.sql`;
+    kept only as the provenance record that code comments cite by name.
+11. `scripts/016_clear_seeded_licence_data.sql` - Clears the data migration 012 invented
 
 ---
 

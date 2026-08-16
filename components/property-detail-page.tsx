@@ -484,7 +484,7 @@ export function PropertyDetailPageClient({ property }: PropertyDetailPageClientP
                 )}
                 {/* "Max Occupants" stood here. max_occupants is bedrooms + 1
                     on all 252 rows that have it — a formula from
-                    scripts/012_populate_licence_term_data.sql, not a figure any
+                    scripts/DO_NOT_RUN_012_populate_licence_term_data.sql, not a figure any
                     council set. A licensed occupancy is exactly the sort of
                     number a buyer would rely on, so an invented one is worse
                     than none. */}
