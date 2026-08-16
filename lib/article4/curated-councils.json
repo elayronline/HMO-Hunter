@@ -308,6 +308,24 @@
       "verifiedAt": "2026-08-11T20:30:00.000Z"
     },
     {
+      "slug": "croydon",
+      "name": "Croydon",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "Borough-wide HMO Article 4 direction",
+          "extent": "Whole borough",
+          "commencedOn": "2020-01-28",
+          "endedOn": null,
+          "coversWholeAuthority": true,
+          "sourceUrl": "https://www.croydon.gov.uk/planning-and-regeneration/planning-policy/article-4-directions/small-house-multiple-occupation-hmo-conversions",
+          "quote": "The Article 4 Direction applies to the whole borough. ... The Article 4 Direction was introduced on 28 January 2019 and confirmed to come into place on 28 January 2020, a year after it was first made."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:00:00.000Z"
+    },
+    {
       "slug": "dartford",
       "name": "Dartford",
       "gssCode": "E07000107",
@@ -557,6 +575,20 @@
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z"
+    },
+    {
+      "slug": "islington",
+      "name": "Islington",
+      "gssCode": null,
+      "directions": [],
+      "noHmoArticle4": {
+        "checkedOn": "2026-08-16",
+        "sourceUrl": "https://www.islington.gov.uk/housing/private-sector-housing/landlords/property-licensing/planning-permission-and-building-control-for-hmos",
+        "quote": "In Islington, there are currently no planning restrictions on using a family home as an HMO for less than seven people, who share facilities.",
+        "note": "An explicit statement by the council that no restriction applies, not an inference from a list. Islington operates Article 4 directions for conservation areas, Class E to C3 and B1c to C3, none of which touches HMOs."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:00:00.000Z"
     },
     {
       "slug": "kingston-upon-hull",
