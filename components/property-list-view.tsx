@@ -150,11 +150,14 @@ export const PropertyListView = memo(function PropertyListView({
   const [sortKey, setSortKey] = useState<SortKey>("licence_expiry")
   const [page, setPage] = useState(1)
 
-  // Reset to page 1 when properties change
-  const prevPropertiesLength = useMemo(() => properties.length, [properties])
-  useMemo(() => {
+  // Reset to page 1 when the result set changes size — React's documented
+  // "adjusting state when a prop changes" pattern. This was a setPage() inside
+  // a useMemo, which is a set-state-during-render that can re-enter.
+  const [prevPropertiesLength, setPrevPropertiesLength] = useState(properties.length)
+  if (prevPropertiesLength !== properties.length) {
+    setPrevPropertiesLength(properties.length)
     setPage(1)
-  }, [prevPropertiesLength])
+  }
 
   const sorted = useMemo(() => {
     return [...properties].sort((a, b) => getSortValue(a, sortKey) - getSortValue(b, sortKey))
@@ -231,7 +234,7 @@ export const PropertyListView = memo(function PropertyListView({
                   longitude={property.longitude}
                   bedrooms={property.bedrooms}
                   listingType={property.listing_type}
-                  existingImages={property.images}
+                  existingImages={property.images ?? undefined}
                   width={400}
                   height={200}
                   className="h-full w-full object-cover"
@@ -295,9 +298,9 @@ export const PropertyListView = memo(function PropertyListView({
                 </div>
 
                 {/* External link */}
-                {property.url && (
+                {property.source_url && (
                   <a
-                    href={property.url}
+                    href={property.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}

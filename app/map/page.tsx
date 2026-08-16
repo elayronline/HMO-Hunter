@@ -1456,7 +1456,8 @@ export default function HMOHunterPage() {
                   </button>
                 </div>
                 <div className="flex items-center bg-slate-100 rounded-full p-0.5 ml-3 shrink-0">
-                  <button onClick={() => setViewMode("map")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${viewMode === "map" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-200"}`} aria-label="Map view">
+                  {/* This whole block renders only when viewMode is "list", so Map is never the active half. */}
+                  <button onClick={() => setViewMode("map")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all text-slate-600 hover:bg-slate-200" aria-label="Map view">
                     <Map className="w-3.5 h-3.5" /> Map
                   </button>
                   <button onClick={() => setViewMode("list")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${viewMode === "list" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-200"}`} aria-label="List view">
@@ -1581,13 +1582,10 @@ export default function HMOHunterPage() {
               >
                 <Map className="w-3.5 h-3.5" /> Map
               </button>
+              {/* This whole block renders only when viewMode is "map", so List is never the active half. */}
               <button
                 onClick={() => setViewMode("list")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  viewMode === "list"
-                    ? "bg-slate-800 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all text-slate-600 hover:bg-slate-100"
                 aria-label="List view"
               >
                 <List className="w-3.5 h-3.5" /> List

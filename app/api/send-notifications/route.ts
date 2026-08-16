@@ -127,19 +127,26 @@ export async function POST(request: Request) {
 
         const userName = userData.user.user_metadata?.full_name || "there"
         const propertyData = properties
-          .filter(p => p.property)
-          .map(p => {
-            const expiryDate = new Date(p.property!.licence_expiry!)
+          .flatMap((p) => {
+            // PostgREST returns the joined row as a single object for a
+            // many-to-one relationship; the generated types widen it to an
+            // array. Narrowing here also drops the four non-null assertions
+            // this block used to carry.
+            const property = Array.isArray(p.property) ? p.property[0] : p.property
+            const expiry = property?.licence_expiry
+            if (!property || !expiry) return []
+
+            const expiryDate = new Date(expiry)
             const daysUntilExpiry = Math.ceil(
               (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
             )
-            return {
-              address: p.property!.address || "Unknown",
-              postcode: p.property!.postcode || "",
+            return [{
+              address: property.address || "Unknown",
+              postcode: property.postcode || "",
               expiryDate: expiryDate.toLocaleDateString("en-GB"),
               daysUntilExpiry,
-              url: `https://hmohunter.co.uk/property/${p.property!.id}`,
-            }
+              url: `https://hmohunter.co.uk/property/${property.id}`,
+            }]
           })
           .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry)
 

@@ -66,19 +66,19 @@ function makeProperty(overrides: Partial<Property> = {}): Property {
     licence_start_date: "2023-01-01",
     licence_end_date: "2028-01-01",
     licence_status: "active",
-    hmo_licence_number: "LIC-001",
+    hmo_licence_reference: "LIC-001",
     hmo_licence_start: "2023-01-01",
     hmo_licence_end: "2028-01-01",
-    hmo_max_occupants: 5,
+    max_occupants: 5,
     hmo_max_households: null,
     hmo_storeys: null,
     epc_rating: "C",
-    epc_floor_area: 120,
-    epc_energy_efficiency: 72,
+    floor_area: 120,
+    epc_rating_numeric: 72,
     epc_certificate_url: "https://example.com/epc",
     owner_name: "John Smith",
-    owner_company_name: "Smith Properties Ltd",
-    owner_company_number: "12345678",
+    company_name: "Smith Properties Ltd",
+    company_number: "12345678",
     licence_holder_name: "Jane Doe",
     licence_holder_company: null,
     article_4_area: false,
@@ -98,8 +98,6 @@ function makeProperty(overrides: Partial<Property> = {}): Property {
     estimated_gross_monthly_rent: null,
     estimated_yield_percentage: null,
     compliance_complexity: null,
-    max_occupants: 5,
-    epc_rating_numeric: 72,
     deal_score_breakdown: null,
     hmo_suitability_score: null,
     ...overrides,
@@ -323,11 +321,11 @@ describe("Property Details", () => {
     })
 
     it("should have company name", () => {
-      expect(investorProperty.owner_company_name).toBe("Smith Properties Ltd")
+      expect(investorProperty.company_name).toBe("Smith Properties Ltd")
     })
 
     it("should have company number", () => {
-      expect(investorProperty.owner_company_number).toBe("12345678")
+      expect(investorProperty.company_number).toBe("12345678")
     })
 
     it("should have licence holder name (separate from owner)", () => {
@@ -370,11 +368,11 @@ describe("Operator Profile: Property Details", () => {
     licence_id: "HMO-2023-12345",
     licence_start_date: "2023-06-01",
     licence_end_date: "2028-06-01",
-    hmo_licence_number: "HMO-2023-12345",
-    hmo_max_occupants: 6,
+    hmo_licence_reference: "HMO-2023-12345",
+    max_occupants: 6,
     epc_rating: "B",
-    epc_energy_efficiency: 85,
-    epc_floor_area: 150,
+    epc_rating_numeric: 85,
+    floor_area: 150,
     epc_certificate_url: "https://epc.example.com/cert",
     article_4_area: false,
     compliance_complexity: "low",
@@ -386,7 +384,7 @@ describe("Operator Profile: Property Details", () => {
     })
 
     it("should show licence number", () => {
-      expect(operatorProperty.hmo_licence_number).toBe("HMO-2023-12345")
+      expect(operatorProperty.hmo_licence_reference).toBe("HMO-2023-12345")
     })
 
     it("should show licence start date", () => {
@@ -398,7 +396,7 @@ describe("Operator Profile: Property Details", () => {
     })
 
     it("should show max occupants", () => {
-      expect(operatorProperty.hmo_max_occupants).toBe(6)
+      expect(operatorProperty.max_occupants).toBe(6)
     })
 
     it("licence end date should be in the future (not expired)", () => {
@@ -428,7 +426,7 @@ describe("Operator Profile: Property Details", () => {
         licence_status: "none",
         licensed_hmo: false,
         licence_id: null,
-        hmo_licence_number: null,
+        hmo_licence_reference: null,
       })
       expect(p.licence_status).toBe("none")
       expect(p.licensed_hmo).toBe(false)
@@ -455,11 +453,11 @@ describe("Operator Profile: Property Details", () => {
     })
 
     it("should show EPC efficiency score", () => {
-      expect(operatorProperty.epc_energy_efficiency).toBe(85)
+      expect(operatorProperty.epc_rating_numeric).toBe(85)
     })
 
     it("should show floor area", () => {
-      expect(operatorProperty.epc_floor_area).toBe(150)
+      expect(operatorProperty.floor_area).toBe(150)
     })
 
     it("should have EPC certificate URL", () => {
@@ -515,14 +513,14 @@ describe("Operator Profile: Property Details", () => {
       expect(operatorProperty.licence_id).toBeTruthy()
       expect(operatorProperty.licence_start_date).toBeTruthy()
       expect(operatorProperty.licence_end_date).toBeTruthy()
-      expect(operatorProperty.hmo_licence_number).toBeTruthy()
-      expect(operatorProperty.hmo_max_occupants).toBeGreaterThan(0)
+      expect(operatorProperty.hmo_licence_reference).toBeTruthy()
+      expect(operatorProperty.max_occupants).toBeGreaterThan(0)
     })
 
     it("should have EPC data for compliance tracking", () => {
       expect(operatorProperty.epc_rating).toBeTruthy()
-      expect(operatorProperty.epc_energy_efficiency).toBeGreaterThan(0)
-      expect(operatorProperty.epc_floor_area).toBeGreaterThan(0)
+      expect(operatorProperty.epc_rating_numeric).toBeGreaterThan(0)
+      expect(operatorProperty.floor_area).toBeGreaterThan(0)
     })
   })
 })
@@ -725,15 +723,15 @@ describe("Cross-Profile: Same Property, Different Needs", () => {
     licensed_hmo: true,
     licence_status: "active",
     licence_end_date: "2027-06-01",
-    hmo_max_occupants: 4,
+    max_occupants: 4,
     epc_rating: "C",
     deal_score: 68,
     article_4_area: false,
     is_potential_hmo: true,
     hmo_classification: "ready_to_go",
     owner_name: "Alice Brown",
-    owner_company_name: "Brown Holdings Ltd",
-    owner_company_number: "87654321",
+    company_name: "Brown Holdings Ltd",
+    company_number: "87654321",
     licence_holder_name: "Bob Green",
   })
 
@@ -755,7 +753,7 @@ describe("Cross-Profile: Same Property, Different Needs", () => {
   })
 
   it("operator sees max occupants", () => {
-    expect(sharedProperty.hmo_max_occupants).toBe(4)
+    expect(sharedProperty.max_occupants).toBe(4)
   })
 
   it("operator sees EPC rating for compliance", () => {

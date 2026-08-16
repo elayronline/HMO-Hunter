@@ -15,7 +15,7 @@ interface CacheEntry<T> {
 
 const MAX_ENTRIES = 500 // Cap memory usage
 
-class TTLCache<T = unknown> {
+export class TTLCache<T = unknown> {
   private store = new Map<string, CacheEntry<T>>()
 
   get(key: string): T | null {

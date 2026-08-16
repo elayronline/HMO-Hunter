@@ -8,7 +8,6 @@ import {
   Bath,
   Ruler,
   Zap,
-  TrendingUp,
   MapPin,
   PoundSterling,
   CheckCircle,
@@ -32,26 +31,26 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
+// These rows come straight from the database, where every nullable column
+// arrives as `null` rather than `undefined` — so the shape has to admit it.
 interface Property {
   id: string
   address: string
   postcode: string
-  city?: string
-  purchase_price?: number
-  price_pcm?: number
-  bedrooms?: number
-  bathrooms?: number
-  floor_area_sqm?: number
-  epc_rating?: string
-  property_type?: string
-  is_hmo_licensed?: boolean
-  licence_status?: string
-  gross_yield?: number
-  deal_score?: number
-  article_4?: boolean
-  broadband_speed?: number
-  images?: string[]
-  primary_image_url?: string
+  city?: string | null
+  purchase_price?: number | null
+  price_pcm?: number | null
+  bedrooms?: number | null
+  bathrooms?: number | null
+  floor_area_sqm?: number | null
+  epc_rating?: string | null
+  property_type?: string | null
+  is_hmo_licensed?: boolean | null
+  licence_status?: string | null
+  article_4?: boolean | null
+  broadband_speed?: number | null
+  images?: string[] | null
+  primary_image_url?: string | null
 }
 
 interface PropertyComparisonProps {
@@ -68,7 +67,6 @@ const formatPrice = (price: number) => {
   return `£${price}`
 }
 
-const formatYield = (y: number) => `${y.toFixed(1)}%`
 const formatArea = (a: number) => `${Math.round(a)} m²`
 const formatSpeed = (s: number) => `${s} Mbps`
 
@@ -244,7 +242,9 @@ const PropertyCard = memo(function PropertyCard({
         <div className="flex items-center justify-between mt-1">
           <span className="text-xs text-slate-500">{property.postcode}</span>
           {property.is_hmo_licensed && (
-            <Shield className="w-3 h-3 text-emerald-500" title="Licensed HMO" />
+            <span title="Licensed HMO" className="inline-flex">
+              <Shield className="w-3 h-3 text-emerald-500" aria-label="Licensed HMO" />
+            </span>
           )}
         </div>
       </div>
@@ -253,7 +253,7 @@ const PropertyCard = memo(function PropertyCard({
 })
 
 // EPC Badge component
-const EpcBadge = memo(function EpcBadge({ rating }: { rating?: string }) {
+const EpcBadge = memo(function EpcBadge({ rating }: { rating?: string | null }) {
   if (!rating) return <span className="text-slate-300">-</span>
 
   return (
@@ -269,7 +269,7 @@ const BooleanIndicator = memo(function BooleanIndicator({
   trueLabel,
   falseLabel,
 }: {
-  value?: boolean
+  value?: boolean | null
   trueLabel?: string
   falseLabel?: string
 }) {
@@ -303,11 +303,13 @@ export function PropertyComparison({
     if (properties.length < 2) return null
 
     const getWinner = (
-      getValue: (p: Property) => number | undefined,
+      getValue: (p: Property) => number | null | undefined,
       higherIsBetter: boolean
     ) => {
       const values = properties.map((p, i) => ({ value: getValue(p), index: i }))
-      const valid = values.filter(v => v.value !== undefined)
+      // `!= null` deliberately, to drop null as well as undefined: a null price
+      // coerces to 0 in a `<` comparison and would win "best price" outright.
+      const valid = values.filter(v => v.value != null)
       if (valid.length < 2) return null
 
       const winner = valid.reduce((best, curr) =>
@@ -320,8 +322,6 @@ export function PropertyComparison({
 
     return {
       bestPrice: getWinner(p => p.purchase_price, false),
-      bestYield: getWinner(p => p.gross_yield, true),
-      bestScore: getWinner(p => p.deal_score, true),
     }
   }, [properties])
 
@@ -401,18 +401,6 @@ export function PropertyComparison({
                     Best Price: {winners.bestPrice.postcode}
                   </Badge>
                 )}
-                {winners.bestYield && (
-                  <Badge variant="outline" className="bg-white text-xs gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    Best Yield: {winners.bestYield.postcode}
-                  </Badge>
-                )}
-                {winners.bestScore && (
-                  <Badge variant="outline" className="bg-white text-xs gap-1">
-                    <Zap className="w-3 h-3" />
-                    Best Score: {winners.bestScore.postcode}
-                  </Badge>
-                )}
               </div>
             )}
           </div>
@@ -444,21 +432,6 @@ export function PropertyComparison({
                     icon={PoundSterling}
                     values={properties.map(p => p.price_pcm)}
                     formatter={formatPrice}
-                    highlightBest
-                    bestIsHigher={true}
-                  />
-                  <ComparisonRow
-                    label="Gross Yield"
-                    icon={TrendingUp}
-                    values={properties.map(p => p.gross_yield)}
-                    formatter={formatYield}
-                    highlightBest
-                    bestIsHigher={true}
-                  />
-                  <ComparisonRow
-                    label="Deal Score"
-                    icon={Zap}
-                    values={properties.map(p => p.deal_score)}
                     highlightBest
                     bestIsHigher={true}
                   />
