@@ -1619,6 +1619,48 @@
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-16T22:40:00.000Z",
       "notes": "The council enumerates its directions: Class E to C3 in designated industrial areas, the CAZ, City Fringe and town centres, district and local shopping centres, Class B8 to C3, launderette to C3, a public house, and four conservation areas. None concerns HMOs and the page nowhere mentions C4. Established by absence from the council’s own complete list rather than an explicit statement."
+    },
+    {
+      "slug": "islington",
+      "name": "Islington",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": false,
+        "forceState": "none",
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.islington.gov.uk/housing/private-sector-housing/landlords/property-licensing/planning-permission-and-building-control-for-hmos",
+        "quote": "In Islington, there are currently no planning restrictions on using a family home as an HMO for less than seven people, who share facilities."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:00:00.000Z",
+      "notes": "Council states outright that no planning restriction applies to a family home used as an HMO for fewer than seven sharers."
+    },
+    {
+      "slug": "croydon",
+      "name": "Croydon",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "whole borough",
+        "commencedOn": "2020-01-28"
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.croydon.gov.uk/planning-and-regeneration/planning-policy/article-4-directions/small-house-multiple-occupation-hmo-conversions",
+        "quote": "The Article 4 Direction applies to the whole borough. ... The Article 4 Direction was introduced on 28 January 2019 and confirmed to come into place on 28 January 2020, a year after it was first made."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:00:00.000Z",
+      "notes": "Made 28 January 2019 as a non-immediate direction, confirmed a year later. Borough-wide."
     }
   ]
 }
