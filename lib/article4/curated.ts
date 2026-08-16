@@ -11,10 +11,20 @@
  *
  * Two rules keep it safe:
  *
- *  1. **It only ever adds a restriction.** A curated entry can turn `unknown`
- *     into a known Article 4. It can never turn a feed positive into a negative,
- *     and it never produces `none_found` — absence from this file means nobody
- *     has checked yet, exactly as absence from the feed does.
+ *  1. **It never removes a restriction.** A curated entry can turn `unknown`
+ *     into a known Article 4, and it can never turn a feed positive into a
+ *     negative.
+ *
+ *     It *can* now record a negative, which the earlier rule forbade. Cambridge
+ *     is why: its own committee record asks officers only "to prepare a report
+ *     on the case for and feasibility of one or more Article 4 directions", so
+ *     115 properties there sat at `unknown` — indistinguishable from a council
+ *     nobody had looked at — while the answer was known and could not be
+ *     written down. A negative carries the same evidence as a positive (the
+ *     council's own words, a verbatim quote, a source URL) and is refused
+ *     wherever a direction is in force. Silence in this file still means nobody
+ *     has checked; a `noHmoArticle4` block is what "checked and clear" looks
+ *     like.
  *
  *  2. **It is not in the eval's prediction path.** The harness scores
  *     `buildCouncilRegistry()`, which reads the feed alone. Serving predictions
@@ -23,16 +33,35 @@
  *     wire this into `predict()`, the number stops being a measurement — see
  *     tests/article4-curated.test.ts, which asserts the separation.
  *
- * Commencement dates are stored; force is derived on read via `forceStateOn`,
- * so a direction commencing on a future date starts binding on that date with
- * no job to run and nothing to remember. Durham's countywide direction is the
- * worked example: recorded now, live from 17 August 2026.
+ * Commencement dates are stored; force is derived on read, so a direction
+ * commencing on a future date starts binding on that date with no job to run
+ * and nothing to remember. Durham's countywide direction is the worked example:
+ * recorded now, live from 17 August 2026.
+ *
+ * Where no date is stored, `forceState` has to say so explicitly. `forceStateOn`
+ * treats a missing commencement date as in force, which is right for a boundary
+ * record that only exists because a direction does, and dangerous here: it made
+ * "the council publishes no commencement date" and "nobody has established
+ * this" the same value, and it meant recording a *proposed* direction — which
+ * by definition has no commencement date — would have asserted a live
+ * restriction. Nottingham states no date anywhere on its HMO page and Hillingdon
+ * says only "December 2025", so the dateless case is not rare enough to leave
+ * implicit.
  */
 
 import curatedJson from "./curated-councils.json"
 import { forceStateOn, type CouncilRecord, type ForceState } from "./registry"
 
 export const ARTICLE4_SOURCE_COUNCIL_VERIFIED = "council-verified"
+
+/**
+ * Registry's `ForceState` is derived from dates alone, so it has exactly the
+ * three states dates can produce. Curated records come from prose and need two
+ * more: `proposed`, which no date can express because an unmade direction has
+ * no commencement, and `unknown`, for a record that states neither a date nor a
+ * force and therefore establishes nothing.
+ */
+export type CuratedForceState = ForceState | "proposed" | "unknown"
 
 export interface CuratedDirection {
   name: string
@@ -74,10 +103,43 @@ export interface CuratedDirection {
    * is flagged.
    */
   coversWholeAuthority?: boolean
+  /**
+   * Required when `commencedOn` is null; ignored when a date is present, since
+   * the date is the better evidence.
+   *
+   * `in_force` here is a positive assertion that the council describes the
+   * direction as operating while publishing no commencement date. `proposed`
+   * covers a direction announced, consulted on or agreed in principle, which
+   * binds nobody. A dateless direction with no `forceState` resolves to
+   * `unknown` and is treated as establishing nothing — the state a half-entered
+   * record should have.
+   */
+  forceState?: CuratedForceState
   /** The page or document the quote came from. Always the council's own. */
   sourceUrl: string
   /** Verbatim wording, so a dispute is settled against the council's words. */
   quote: string
+}
+
+/**
+ * Checked, and the council has no HMO Article 4 direction.
+ *
+ * Held to the same standard as a positive: the council's own page, quoted. A
+ * negative asserted loosely is worse than no record, because it tells someone
+ * there is nothing to find.
+ */
+export interface CuratedNegative {
+  /** When the council's page was read. */
+  checkedOn: string
+  sourceUrl: string
+  /** Verbatim wording establishing that no direction restricts HMOs today. */
+  quote: string
+  /**
+   * Anything coming that does not bind yet. A council with no direction today
+   * and one out to consultation is a different prospect from one with no
+   * interest, and a buyer wants to know which they are looking at.
+   */
+  note?: string
 }
 
 export interface CuratedCouncil {
@@ -85,6 +147,12 @@ export interface CuratedCouncil {
   name: string
   gssCode: string | null
   directions: CuratedDirection[]
+  /**
+   * Present only where `directions` holds nothing in force. Both at once is a
+   * contradiction rather than a nuance, so the reader below refuses it and
+   * tests/article4-negatives.test.ts fails the file.
+   */
+  noHmoArticle4?: CuratedNegative
   verifiedBy: string | null
   verifiedAt: string | null
 }
@@ -121,7 +189,57 @@ export interface CuratedAssessment {
    * entry needs re-checking rather than trusting.
    */
   needsReconfirmation: CuratedDirection[]
-  states: { direction: CuratedDirection; state: ForceState }[]
+  states: { direction: CuratedDirection; state: CuratedForceState }[]
+}
+
+/**
+ * What a single curated direction amounts to on a given date.
+ *
+ * Precedence, and the reasoning for it:
+ *
+ *  1. `proposed` wins outright. A direction announced or agreed in principle
+ *     binds nobody, and a date attached to one is a target rather than a
+ *     commencement — reading it as a date would turn an intention into a
+ *     restriction.
+ *  2. A stored `commencedOn` decides everything else, so a direction goes live
+ *     on its own date with nothing to run.
+ *  3. With no date, `forceState` must say so explicitly.
+ *  4. Otherwise `unknown` — establishing nothing, which is what a record
+ *     nobody finished should do.
+ */
+export function directionForceState(
+  direction: CuratedDirection,
+  now: Date = new Date()
+): CuratedForceState {
+  if (direction.forceState === "proposed") return "proposed"
+  if (direction.commencedOn) {
+    return forceStateOn(direction.commencedOn, direction.endedOn, now)
+  }
+  if (direction.endedOn && direction.endedOn < now.toISOString().slice(0, 10)) {
+    return "expired"
+  }
+  return direction.forceState ?? "unknown"
+}
+
+/**
+ * The council's confirmed "no HMO Article 4 here", or null.
+ *
+ * Refused where any direction is in force. A file holding both is contradicting
+ * itself, and the restriction is the answer that keeps someone safe.
+ */
+export function curatedNegativeFor(
+  slugOrName: string,
+  now: Date = new Date()
+): CuratedNegative | null {
+  const council = curatedBySlug(slugOrName) ?? curatedByCouncilName(slugOrName)
+  if (!council?.noHmoArticle4) return null
+
+  const anyInForce = council.directions.some(
+    (d) => directionForceState(d, now) === "in_force"
+  )
+  if (anyInForce) return null
+
+  return council.noHmoArticle4
 }
 
 /**
@@ -176,7 +294,7 @@ export function wholeAuthorityDirectionInForce(
 
   for (const direction of council.directions) {
     if (!direction.coversWholeAuthority) continue
-    if (forceStateOn(direction.commencedOn, direction.endedOn, now) === "in_force") {
+    if (directionForceState(direction, now) === "in_force") {
       return direction
     }
   }
@@ -187,7 +305,7 @@ export function wholeAuthorityDirectionInForce(
 export function assessCurated(council: CuratedCouncil, now: Date = new Date()): CuratedAssessment {
   const states = council.directions.map((direction) => ({
     direction,
-    state: forceStateOn(direction.commencedOn, direction.endedOn, now),
+    state: directionForceState(direction, now),
   }))
 
   const pending = states.filter((s) => s.state === "made_not_in_force").map((s) => s.direction)

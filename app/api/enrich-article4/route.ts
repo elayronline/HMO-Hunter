@@ -10,6 +10,7 @@ import {
 import { requireAdmin } from "@/lib/admin-auth"
 import {
   ARTICLE4_SOURCE_COUNCIL_VERIFIED,
+  curatedNegativeFor,
   wholeAuthorityDirectionInForce,
 } from "@/lib/article4/curated"
 
@@ -229,6 +230,8 @@ export async function POST(request: Request) {
     let failed = 0
     /** Rows the feed could not resolve that a whole-authority curated direction did. */
     let curatedOverlayApplied = 0
+    /** Rows cleared by a council confirming it operates no HMO direction. */
+    let curatedNegativeApplied = 0
     const results: { address: string; city: string; status: string; area: string | null }[] = []
 
     for (let i = 0; i < properties.length; i += LPA_CONCURRENCY) {
@@ -294,6 +297,25 @@ export async function POST(request: Request) {
             }
           }
 
+          // A council read and found to have no HMO direction. This is the one
+          // place curated research is allowed to produce a negative, and it is
+          // deliberately the weakest move available: it only ever turns
+          // `unknown` into `none_found`, never touches a positive from either
+          // source, and curatedNegativeFor refuses to answer at all where any
+          // direction is in force. Without it a checked-and-clear council is
+          // indistinguishable from one nobody has looked at.
+          if (lpa?.name && result.status === "unknown") {
+            const negative = curatedNegativeFor(lpa.name)
+            if (negative) {
+              result = {
+                ...result,
+                status: "none_found",
+                source: ARTICLE4_SOURCE_COUNCIL_VERIFIED,
+              }
+              curatedNegativeApplied++
+            }
+          }
+
           const { error } = await supabase
             .from("properties")
             .update({
@@ -333,6 +355,7 @@ export async function POST(request: Request) {
       enriched,
       failed,
       curatedOverlayApplied,
+      curatedNegativeApplied,
       /** Pass back as `afterId` to continue from where this batch stopped. */
       lastId: properties.length ? properties[properties.length - 1].id : null,
       counts,
