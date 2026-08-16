@@ -946,16 +946,17 @@
       "gssCode": "E06000045",
       "directions": [
         {
-          "name": "HMO Article 4 direction — City-wide",
-          "extent": "City-wide per the council page summary, but the quoted wording states no extent and the national feed publishes partial polygons for Southampton — needs re-verification before it can be treated as whole-authority",
-          "commencedOn": null,
+          "name": "HMO Article 4 direction — whole administrative area",
+          "extent": "City-wide — all properties within the administrative area of Southampton City Council, the attached plan being the city boundary map",
+          "commencedOn": "2012-03-23",
           "endedOn": null,
-          "sourceUrl": "https://web.archive.org/web/2026/https://www.southampton.gov.uk/planning/planning-policy/supplementary-planning/planning-hmo/",
-          "quote": "An Article 4 direction was made in March 2012 which removed permitted development rights to change a family home (C3) into a small HMO (C4)."
+          "sourceUrl": "https://www.southampton.gov.uk/media/leddnlac/article_4_tcm63-360879.pdf",
+          "quote": "All those properties situated within the administrative area of Southampton City Council and in use as dwellinghouses where such use falls within Class C3 ... and shown edged red on the attached plan. ... This Direction shall come into force on 23 March 2012.",
+          "coversWholeAuthority": true
         }
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
-      "verifiedAt": "2026-08-11T20:30:00.000Z"
+      "verifiedAt": "2026-08-16T21:00:00.000Z"
     },
     {
       "slug": "southwark",
