@@ -1745,6 +1745,48 @@
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-16T23:30:00.000Z",
       "notes": ""
+    },
+    {
+      "slug": "lambeth",
+      "name": "Lambeth",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "two Streatham wards",
+        "commencedOn": "2025-08-11"
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.lambeth.gov.uk/planning-building-control/planning-policy-guidance/article-4-direction-withdrawing-class-lb-permitted-development-right-change-use-dwellinghouses-use",
+        "quote": "Article 4 Direction withdrawing Class L(b) permitted development right for change of use from dwellinghouses (Use Class C3) to small HMOs (Use Class C4) within the wards of Streatham Common & Vale and Streatham St Leonard’s. ... The Direction came into force on 11 August 2025."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-17T00:00:00.000Z",
+      "notes": "Made 7 August 2024 as a non-immediate direction, confirmed 24 July 2025, in force 11 August 2025. Partial, so no polygon exists to decide an individual property."
+    },
+    {
+      "slug": "broxtowe",
+      "name": "Broxtowe",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "parts of Beeston and Beeston Rylands",
+        "commencedOn": "2022-03-26"
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.broxtowe.gov.uk/media/8307/site-notice-article-4.pdf",
+        "quote": "BROXTOWE BOROUGH COUNCIL: BEESTON ARTICLE 4 DIRECTION 2021 — RESTRICTIONS ON CHANGES OF USE FROM DWELLINGHOUSES TO HOUSES IN MULTIPLE OCCUPATION. The Council has made a direction which would remove the permitted development rights ..."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-17T00:00:00.000Z",
+      "notes": "The council publishes the area as a PDF map only, so the extent cannot be tested against a point."
     }
   ]
 }
