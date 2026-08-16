@@ -42,7 +42,12 @@ interface Property {
   price_pcm?: number | null
   bedrooms?: number | null
   bathrooms?: number | null
-  floor_area_sqm?: number | null
+  /**
+   * The field the rest of the app reads. This row was keyed on
+   * `floor_area_sqm`, which is not a column — so Floor Area rendered "—" for
+   * every property while the detail panel beside it showed the measurement.
+   */
+  gross_internal_area_sqm?: number | null
   epc_rating?: string | null
   property_type?: string | null
   is_hmo_licensed?: boolean | null
@@ -454,7 +459,7 @@ export function PropertyComparison({
                   <ComparisonRow
                     label="Floor Area"
                     icon={Ruler}
-                    values={properties.map(p => p.floor_area_sqm)}
+                    values={properties.map(p => p.gross_internal_area_sqm)}
                     formatter={formatArea}
                     highlightBest
                     bestIsHigher={true}
