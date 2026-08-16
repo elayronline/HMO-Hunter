@@ -1661,6 +1661,90 @@
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-16T23:00:00.000Z",
       "notes": "Made 28 January 2019 as a non-immediate direction, confirmed a year later. Borough-wide."
+    },
+    {
+      "slug": "newham",
+      "name": "Newham",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "Whole of the London Borough of Newham, save for the area then within the control of the London Legacy Development Corporation, which was a separate planning authority",
+        "commencedOn": "2013-07-31"
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.newham.gov.uk/downloads/file/863/hmo-article-4-confirmation-legal-notice",
+        "quote": "The Council confirmed the Article 4 Direction on 10 June 2013 and it will come into force on 31st July 2013. The Article 4 Direction applies to the whole of the London Borough of Newham area save for the area within the control of the London Legacy Development Corporation."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z",
+      "notes": ""
+    },
+    {
+      "slug": "greenwich",
+      "name": "Greenwich",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "Whole of the Royal Borough of Greenwich",
+        "commencedOn": "2018-09-27"
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.royalgreenwich.gov.uk/planning-and-building-control/planning-policy-and-strategy/areas-extra-planning-restrictions/current-proposed-article4-directions",
+        "quote": "Residential to HMO (C3 to C4) Article 4 direction ... across the whole of Royal Greenwich ... came into force 27 September 2018."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z",
+      "notes": ""
+    },
+    {
+      "slug": "bromley",
+      "name": "Bromley",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "known-missing",
+      "expected": {
+        "hasHmoArticle4": true,
+        "forceState": "in_force",
+        "extent": "whole borough via two directions",
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.bromley.gov.uk/planning/article-4-directions-immediate-non-immediate-remove-houses-multiple-occupation-hmo-pd-rights",
+        "quote": "Immediate Article 4 Direction covering Biggin Hill and Darwin wards ... Non-immediate Article 4 Direction covering all wards in Bromley except Biggin Hill and Darwin ... confirmed on 8 February 2022."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z",
+      "notes": "Both directions confirmed 8 February 2022. The council states no separate effective date for the non-immediate half, which reporting puts at September 2022, so no commencement date is recorded and the force state is asserted explicitly."
+    },
+    {
+      "slug": "wokingham",
+      "name": "Wokingham",
+      "gssCode": null,
+      "status": "verified",
+      "seededAs": "likely-negative",
+      "expected": {
+        "hasHmoArticle4": false,
+        "forceState": "none",
+        "extent": null,
+        "commencedOn": null
+      },
+      "evidence": {
+        "independentSource": true,
+        "sourceUrl": "https://www.wokingham.gov.uk/foi/class-c4-small-hmos-houses-multiple-occupation",
+        "quote": "The change of use of a dwelling to a small HMO (up to 6 people) does not require planning permission from the Council. ... Small HMOs ie less than 7 people don’t require planning consent (they are permitted development)."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z",
+      "notes": ""
     }
   ]
 }

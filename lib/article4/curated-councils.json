@@ -171,6 +171,25 @@
       "verifiedAt": "2026-08-11T18:45:00.000Z"
     },
     {
+      "slug": "bromley",
+      "name": "Bromley",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "HMO Article 4 directions — whole borough via two directions",
+          "extent": "Whole borough, via an immediate direction covering Biggin Hill and Darwin wards and a non-immediate direction covering every other ward",
+          "commencedOn": null,
+          "endedOn": null,
+          "forceState": "in_force",
+          "coversWholeAuthority": true,
+          "sourceUrl": "https://www.bromley.gov.uk/planning/article-4-directions-immediate-non-immediate-remove-houses-multiple-occupation-hmo-pd-rights",
+          "quote": "Immediate Article 4 Direction covering Biggin Hill and Darwin wards ... Non-immediate Article 4 Direction covering all wards in Bromley except Biggin Hill and Darwin ... confirmed on 8 February 2022."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z"
+    },
+    {
       "slug": "burnley",
       "name": "Burnley",
       "gssCode": "E07000117",
@@ -472,6 +491,24 @@
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T20:30:00.000Z"
+    },
+    {
+      "slug": "greenwich",
+      "name": "Greenwich",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Whole of the Royal Borough of Greenwich",
+          "extent": "Whole of the Royal Borough of Greenwich",
+          "commencedOn": "2018-09-27",
+          "endedOn": null,
+          "coversWholeAuthority": true,
+          "sourceUrl": "https://www.royalgreenwich.gov.uk/planning-and-building-control/planning-policy-and-strategy/areas-extra-planning-restrictions/current-proposed-article4-directions",
+          "quote": "Residential to HMO (C3 to C4) Article 4 direction ... across the whole of Royal Greenwich ... came into force 27 September 2018."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z"
     },
     {
       "slug": "hackney",
@@ -801,6 +838,24 @@
       ],
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-11T18:45:00.000Z"
+    },
+    {
+      "slug": "newham",
+      "name": "Newham",
+      "gssCode": null,
+      "directions": [
+        {
+          "name": "HMO Article 4 direction — Whole of the London Borough of Newham, save for the area then within the control of the London Legacy Development Corporation, which was a separate planning authority",
+          "extent": "Whole of the London Borough of Newham, save for the area then within the control of the London Legacy Development Corporation, which was a separate planning authority",
+          "commencedOn": "2013-07-31",
+          "endedOn": null,
+          "coversWholeAuthority": true,
+          "sourceUrl": "https://www.newham.gov.uk/downloads/file/863/hmo-article-4-confirmation-legal-notice",
+          "quote": "The Council confirmed the Article 4 Direction on 10 June 2013 and it will come into force on 31st July 2013. The Article 4 Direction applies to the whole of the London Borough of Newham area save for the area within the control of the London Legacy Development Corporation."
+        }
+      ],
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z"
     },
     {
       "slug": "north-warwickshire",
@@ -1136,6 +1191,20 @@
       },
       "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
       "verifiedAt": "2026-08-16T22:40:00.000Z"
+    },
+    {
+      "slug": "wokingham",
+      "name": "Wokingham",
+      "gssCode": null,
+      "directions": [],
+      "noHmoArticle4": {
+        "checkedOn": "2026-08-16",
+        "sourceUrl": "https://www.wokingham.gov.uk/foi/class-c4-small-hmos-houses-multiple-occupation",
+        "quote": "The change of use of a dwelling to a small HMO (up to 6 people) does not require planning permission from the Council. ... Small HMOs ie less than 7 people don’t require planning consent (they are permitted development).",
+        "note": "An explicit statement by the council, in a freedom of information response, that no permission is needed. Not an inference from a list."
+      },
+      "verifiedBy": "claude-opus-5 (researched on behalf of Alayi MacPepple-Jaja)",
+      "verifiedAt": "2026-08-16T23:30:00.000Z"
     },
     {
       "slug": "wolverhampton",
