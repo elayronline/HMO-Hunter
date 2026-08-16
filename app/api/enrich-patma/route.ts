@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const PATMA_BASE_URL = "https://app.patma.co.uk/api"
 
@@ -9,6 +10,9 @@ const PATMA_BASE_URL = "https://app.patma.co.uk/api"
  * Enrich properties with PaTMa price analytics (asking prices, sold prices)
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

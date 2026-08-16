@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 interface EPCCertificate {
   "lmk-key": string
@@ -667,6 +668,9 @@ function findMatchingCertificate(
  * Enriches properties with EPC data including floor area and certificate links
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const STREETDATA_BASE_URL = "https://api.data.street.co.uk/street-data-api/v2"
 
@@ -9,6 +10,9 @@ const STREETDATA_BASE_URL = "https://api.data.street.co.uk/street-data-api/v2"
  * Enrich properties with StreetData property details (bedrooms, year built, floor area)
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []

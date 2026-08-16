@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAdmin } from "@/lib/admin-auth"
 
 // HM Land Registry API endpoints
 const PRICE_PAID_URL = "https://landregistry.data.gov.uk/data/ppi/transaction-record.json"
@@ -47,6 +48,9 @@ export async function GET() {
  * Enrich properties with Land Registry data
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []
