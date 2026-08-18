@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { track } from "@vercel/analytics"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -87,6 +87,24 @@ import { PropertyListView } from "@/components/property-list-view"
 import { csrfFetch } from "@/lib/csrf-client"
 
 export default function HMOHunterPage() {
+  // useSearchParams needs a Suspense boundary to avoid opting the whole route
+  // into client-side rendering — the same reason /hmo-check has one.
+  //
+  // Without it the boundary is missing from the tree React derives useId from,
+  // and the server and client disagree about that tree: every generated id on
+  // this page came out different on the two sides. React does not repair
+  // attributes, so the Radix triggers in the filters panel kept a server-side
+  // aria-controls pointing at an element id the client never creates. Visually
+  // nothing was wrong, which is why it read as noise; to a screen reader the
+  // control pointed at nothing.
+  return (
+    <Suspense fallback={null}>
+      <MapPage />
+    </Suspense>
+  )
+}
+
+function MapPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
