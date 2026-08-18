@@ -81,8 +81,10 @@ export async function GET(request: NextRequest) {
       query = query.ilike("city", `%${city}%`)
     }
 
+    // Ordered by deal_score, which the product removed, and then re-sorted in
+    // memory by opportunity_score below — so the database ordering decided
+    // nothing and depended on a dead column to do it.
     const { data: fallbackData, error: fallbackError } = await query
-      .order("deal_score", { ascending: false, nullsFirst: false })
 
     if (fallbackError) {
       console.error("[OffMarket] Error fetching:", fallbackError)

@@ -62,11 +62,17 @@ const epcImprovementLabels = {
 export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremium = false }: PotentialHMODetailPanelProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
-  if (!property.is_potential_hmo || !property.hmo_classification) {
+  if (!property.is_potential_hmo) {
     return null
   }
 
-  const config = classificationConfig[property.hmo_classification]
+  // The heading used to be the hmo_classification label — "Ready to Go" or
+  // "Value-Add Opportunity". classifyProperty() sets that from a deal-score
+  // threshold, and the deal score was removed from the product, so the panel
+  // was opening with a verdict nothing is making any more. What is actually
+  // true of every property here is that it has no HMO use today, so that is
+  // what it says. classificationConfig is kept only for its icon and colour.
+  const config = classificationConfig[property.hmo_classification ?? "value_add"]
   const Icon = config.icon
 
   // Non-premium users see locked state
@@ -146,7 +152,7 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
             <Icon className="w-5 h-5" />
           </div>
           <div className="text-left">
-            <div className={`font-semibold ${config.color}`}>{config.label}</div>
+            <div className="font-semibold text-slate-800">No HMO use today</div>
             <div className="text-xs text-slate-600">
             </div>
           </div>
@@ -156,8 +162,18 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
             <div className="text-sm font-medium text-slate-900">
               {property.lettable_rooms || property.bedrooms} rooms
             </div>
-            <div className={`text-xs ${yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]}`}>
-              {property.estimated_yield_percentage || "N/A"}% yield
+            {/* This printed the literal string "N/A% yield" for 771
+                properties. The figure is also derived from the city-average
+                room rent, which is why the Yield Band filter was removed, so
+                it is labelled as an estimate where it is shown at all. */}
+            <div className={`text-xs ${
+              property.estimated_yield_percentage == null
+                ? "text-slate-400"
+                : yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]
+            }`}>
+              {property.estimated_yield_percentage == null
+                ? "Yield not known"
+                : `${property.estimated_yield_percentage}% est. yield`}
             </div>
           </div>
           {isOpen ? (
@@ -192,35 +208,63 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
                 <Users className="w-4 h-4 text-slate-500" />
                 <span className="text-xs font-medium text-slate-600">Occupancy</span>
               </div>
+              {/* Falling back to the room count prints a number of rooms under
+                  the word "occupants", which is a different claim. */}
               <div className="text-sm font-semibold text-slate-900">
-                {property.potential_occupants || property.lettable_rooms || property.bedrooms} occupants
+                {property.potential_occupants != null
+                  ? `${property.potential_occupants} occupants`
+                  : `${property.lettable_rooms || property.bedrooms} rooms`}
               </div>
+              {/* This read `x ? "Mandatory licensing required" : "Unlicensed
+                  HMO"`, so a null printed as a statement that the property is
+                  unlicensed — including on 394 properties recorded as licensed. */}
               <div className="text-xs text-slate-500 mt-1">
-                {property.requires_mandatory_licensing ? "Mandatory licensing required" : "Unlicensed HMO"}
+                {property.requires_mandatory_licensing == null
+                  ? "Licensing requirement not established"
+                  : property.requires_mandatory_licensing
+                  ? "Mandatory licensing required"
+                  : "Not subject to mandatory licensing"}
               </div>
             </div>
           </div>
 
-          {/* Compliance Status */}
+          {/* Compliance Status.
+              These three read `?? false`, `?? false` and `?? true`, so a
+              property with no measurements was told it fails space standards
+              and bathroom ratio and passes kitchen size — a compliance verdict
+              on someone's building, decided by which default happened to be
+              typed. All three columns are null on all 2,840 properties this
+              panel renders for, so every tick and cross ever shown here was
+              manufactured. Absent is now shown as absent. */}
           <div className="bg-white rounded-lg p-3">
             <h4 className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-2">
               <FileCheck className="w-4 h-4" />
               Compliance Status
             </h4>
+            {property.meets_space_standards == null &&
+            property.bathroom_ratio_compliant == null &&
+            property.kitchen_size_compliant == null ? (
+              <p className="text-xs leading-relaxed text-slate-500">
+                Not assessed. No room, bathroom or kitchen measurements are held
+                for this property, so nothing can be said about whether it meets
+                the standards.
+              </p>
+            ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <ComplianceItem
                 label="Space Standards"
-                compliant={property.meets_space_standards ?? false}
+                compliant={property.meets_space_standards}
               />
               <ComplianceItem
                 label="Bathroom Ratio"
-                compliant={property.bathroom_ratio_compliant ?? false}
+                compliant={property.bathroom_ratio_compliant}
               />
               <ComplianceItem
                 label="Kitchen Size"
-                compliant={property.kitchen_size_compliant ?? true}
+                compliant={property.kitchen_size_compliant}
               />
             </div>
+            )}
             {property.compliance_complexity && (
               <div className="mt-2 pt-2 border-t border-slate-100 text-xs">
                 <span className="text-slate-500">Compliance Complexity: </span>
@@ -279,10 +323,26 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
               </div>
               <div>
                 <div className="text-xs text-slate-500">Est. Yield</div>
-                <div className={`text-sm font-semibold ${yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]}`}>
-                  {property.estimated_yield_percentage || "N/A"}%
-                  {property.yield_band && <span className="text-xs text-slate-500 ml-1">({property.yield_band})</span>}
+                <div className={`text-sm font-semibold ${
+                  property.estimated_yield_percentage == null
+                    ? "text-slate-400"
+                    : yieldBandColors[(property.yield_band as keyof typeof yieldBandColors) || "low"]
+                }`}>
+                  {property.estimated_yield_percentage == null ? (
+                    "Not known"
+                  ) : (
+                    <>
+                      {property.estimated_yield_percentage}%
+                      {property.yield_band && <span className="text-xs text-slate-500 ml-1">({property.yield_band})</span>}
+                    </>
+                  )}
                 </div>
+                {property.estimated_yield_percentage != null && (
+                  <div className="text-[10px] leading-snug text-slate-400">
+                    From the city-average room rent, not this property&rsquo;s
+                    letting history.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -324,13 +384,33 @@ function ScoreBar({ label, score, maxScore }: { label: string; score: number; ma
   )
 }
 
-function ComplianceItem({ label, compliant }: { label: string; compliant: boolean }) {
+function ComplianceItem({
+  label,
+  compliant,
+}: {
+  label: string
+  /** null means nothing is held — never a fail. */
+  compliant: boolean | null | undefined
+}) {
+  // Three states, because a missing measurement is not a failed one.
+  const unknown = compliant == null
   return (
     <div className="text-center">
-      <div className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center ${
-        compliant ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
-      }`}>
-        {compliant ? (
+      <div
+        className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center ${
+          unknown
+            ? "bg-slate-100 text-slate-400"
+            : compliant
+            ? "bg-green-100 text-green-600"
+            : "bg-red-100 text-red-500"
+        }`}
+        title={unknown ? `${label}: not assessed` : undefined}
+      >
+        {unknown ? (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+          </svg>
+        ) : compliant ? (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
@@ -341,6 +421,7 @@ function ComplianceItem({ label, compliant }: { label: string; compliant: boolea
         )}
       </div>
       <div className="text-xs text-slate-600 mt-1">{label}</div>
+      {unknown && <div className="text-[10px] text-slate-400">Not assessed</div>}
     </div>
   )
 }

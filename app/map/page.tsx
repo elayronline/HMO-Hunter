@@ -577,6 +577,10 @@ function MapPage() {
     setAdvancedFiltersExpanded(false)
   }
 
+  // The last fallback read p.area_avg_rent, which is not a column on this
+  // table, so it never returned anything. Two of the three sources here are
+  // estimates derived from the city-average room rent — see the note on the
+  // removed Yield Band filter above — and only price_pcm is advertised.
   const getMonthlyRent = (p: Property): number => {
     if (p.price_pcm && p.price_pcm > 0) return p.price_pcm
     if (p.estimated_gross_monthly_rent && p.estimated_gross_monthly_rent > 0) return p.estimated_gross_monthly_rent
@@ -584,7 +588,6 @@ function MapPage() {
       const rooms = p.lettable_rooms || p.bedrooms || 1
       return p.estimated_rent_per_room * rooms
     }
-    if (p.area_avg_rent && p.area_avg_rent > 0) return p.area_avg_rent
     return 0
   }
 
@@ -596,12 +599,14 @@ function MapPage() {
     [properties]
   )
 
+  // Read property.rental_yield first and fell back to property.estimated_value
+  // for the divisor. Neither is a column on this table, so the first branch
+  // never fired and the divisor was always the asking price — which 63.9% of
+  // rows do not have. That is why this returns "N/A" so often, and callers must
+  // treat that as absent rather than coerce it to zero.
   const calculateROI = (property: Property) => {
-    if (property.rental_yield && property.rental_yield > 0) {
-      return property.rental_yield.toFixed(1)
-    }
     const rent = getMonthlyRent(property)
-    const price = property.purchase_price || property.estimated_value || 0
+    const price = property.purchase_price || 0
     if (rent > 0 && price > 0) {
       const annualIncome = rent * 12
       const roi = (annualIncome / price) * 100
@@ -2101,7 +2106,7 @@ function MapPage() {
               </div>
 
               {/* Potential HMO Analysis in Full Details - Pro Feature */}
-              {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
+              {selectedProperty.is_potential_hmo && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">HMO Investment Analysis</h4>
                   <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
