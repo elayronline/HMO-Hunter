@@ -420,17 +420,27 @@ export function MapInner({
       }
     }
 
-    const displayValue = isPotentialHMO && property.deal_score && !isArticle4
-      ? property.deal_score.toString()
-      : String(property.bedrooms)
+    // The number in a marker is the bedroom count, always. It used to be the
+    // deal score for 329 of them, so the same slot meant two different things
+    // depending on a property you could not see — and that score came from the
+    // scoring system that was removed from the product, which makes it a stale
+    // number presented as a live one.
+    const displayValue = String(property.bedrooms)
 
     // Enhanced title showing contact info status
     let title = ""
     if (isArticle4) {
       title = `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
     } else if (isPotentialHMO) {
-      const infoStatus = hasCompleteInfo ? "Complete Info" : hasPartialInfo ? "Partial Info" : "No Contact Info"
-      title = `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Score: ${property.deal_score} (${infoStatus})`
+      // Was "Ready to Go / Value-Add - Score: NN". Both halves came from the
+      // removed scoring system. The contact-info status is real and is what the
+      // marker's size encodes, so that is what the tooltip says.
+      const infoStatus = hasCompleteInfo
+        ? "owner and licence holder held"
+        : hasPartialInfo
+        ? "some owner detail held"
+        : "no owner contact held"
+      title = `${property.bedrooms} bed - no HMO use today (${infoStatus})`
     } else {
       title = `${property.bedrooms} bed ${property.hmo_status || "property"}`
     }

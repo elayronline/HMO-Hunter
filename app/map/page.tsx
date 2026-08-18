@@ -1631,18 +1631,28 @@ function MapPage() {
                         <span className="text-xs text-slate-500">Article 4 zone overlay</span>
                       </div>
                     )}
-                    {showArticle4Overlay && (
-                      <div className="pt-1 mt-1 border-t border-slate-200">
+                    {/* The dots and the overlay do not share a source. The
+                        overlay is the national feed's geometry; a red dot is a
+                        position recorded from whichever source decided that
+                        address — for most of them, a council's own publication,
+                        not the feed. Crediting only the feed under a red dot
+                        credited the wrong body for two thirds of them. */}
+                    <div className="pt-1 mt-1 border-t border-slate-200 space-y-0.5">
+                      <p className="text-[10px] leading-relaxed text-slate-400">
+                        Positions recorded from council publications and
+                        planning.data.gov.uk.
+                      </p>
+                      {showArticle4Overlay && (
                         <a
                           href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
+                          className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors block"
                         >
                           Overlay shapes: planning.data.gov.uk
                         </a>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1661,12 +1671,24 @@ function MapPage() {
                   </div>
                 )}
 
-                {/* CHANGE OF USE */}
-                {markerCounts.conversion > 0 && (
+                {/* CHANGE OF USE — also shown while the layer is off, or the
+                    switch would hide itself the moment you used it. */}
+                {(markerCounts.conversion > 0 || !showPotentialHMOLayer) && (
                   <div className="pb-2.5 border-b border-slate-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
-                      <span className="text-[10px] text-slate-400">No HMO use today</span>
+                    {/* This layer could not be turned off: the state existed,
+                        its setter was never called, and the legend offered no
+                        control while Article 4 had one. */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
+                        <span className="text-[10px] text-slate-400">No HMO use today</span>
+                      </div>
+                      <Switch
+                        checked={showPotentialHMOLayer}
+                        onCheckedChange={setShowPotentialHMOLayer}
+                        className="data-[state=checked]:bg-green-500 scale-75"
+                        aria-label="Show change of use markers"
+                      />
                     </div>
                     <div className="flex items-center gap-2.5">
                       <div className="w-4 h-4 rounded-full bg-green-600 border-2 border-green-700"></div>
