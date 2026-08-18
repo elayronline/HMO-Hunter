@@ -186,6 +186,9 @@ export function PropertyDetailCard({
     licensed: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
     licence_ending: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", label: "Ending soon" },
     licence_expired: { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Expired" },
+    // Amber, not red: the term we hold has run out, the register has not said
+    // the licence has.
+    licence_term_ended: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-50", label: "term ended, unconfirmed" },
     licence_undated: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", label: "Active" },
     unlicensed: { icon: AlertCircle, color: "text-slate-400", bg: "bg-slate-50", label: "None recorded" },
   }
@@ -550,7 +553,11 @@ export function PropertyDetailCard({
                       </p>
                       {publishedExpiry ? (
                         <p className="text-xs text-slate-600 mt-1">
-                          {licenceState === "licence_expired" ? "Expired" : "Valid until"}{" "}
+                          {licenceState === "licence_expired"
+                            ? "Expired"
+                            : licenceState === "licence_term_ended"
+                            ? "Term we hold ran out"
+                            : "Valid until"}{" "}
                           {new Date(publishedExpiry).toLocaleDateString("en-GB")}
                         </p>
                       ) : (

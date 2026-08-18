@@ -63,10 +63,22 @@ describe("licence state", () => {
     expect(c.daysToExpiry).toBe(51)
   })
 
-  it("is expired once the date has passed", () => {
+  // A date that has passed is our arithmetic on our copy, not a finding by the
+  // council. 83 of the 98 properties this used to call expired carried
+  // licence_status "active" from the register at the time.
+  it("says the term ran out, not that the licence expired, when only the date has passed", () => {
     const c = categorise(property({ licensed_hmo: true, hmo_licence_expiry: "2026-01-01" }), NOW)
-    expect(c.licence).toBe("licence_expired")
+    expect(c.licence).toBe("licence_term_ended")
+    expect(c.licence).not.toBe("licence_expired")
     expect(c.daysToExpiry).toBeLessThan(0)
+  })
+
+  it("does not overrule a register that still says active", () => {
+    const c = categorise(
+      property({ licensed_hmo: true, hmo_licence_expiry: "2025-10-14", licence_status: "active" }),
+      NOW
+    )
+    expect(c.licence).toBe("licence_term_ended")
   })
 
   // Nearly half the licensed stock has no date. Guessing "active" would claim a
@@ -87,10 +99,10 @@ describe("licence state", () => {
     expect(c.licence).toBe("licence_expired")
   })
 
-  it("moves a property from ending to expired as time passes, with no data change", () => {
+  it("moves a property from ending to term-ended as time passes, with no data change", () => {
     const row = property({ licensed_hmo: true, hmo_licence_expiry: "2026-09-01" })
     expect(categorise(row, new Date("2026-08-11")).licence).toBe("licence_ending")
-    expect(categorise(row, new Date("2026-09-02")).licence).toBe("licence_expired")
+    expect(categorise(row, new Date("2026-09-02")).licence).toBe("licence_term_ended")
     // ...and it was merely licensed well before the window opened.
     expect(categorise(row, new Date("2025-01-01")).licence).toBe("licensed")
   })
@@ -267,10 +279,10 @@ describe("licence evidence reads only published columns", () => {
   // The badge, the tab, the sort and the licence-type filter all turn on this
   // one derivation. When they each had their own, the Expired tab counted 15
   // and the list underneath it showed 98 cards badged expired.
-  it("derives expiry from the date, not the stored status", () => {
+  it("derives the term end from the date, and keeps it distinct from an expiry the register declared", () => {
     const ranOut = property({ licensed_hmo: true, hmo_licence_expiry: "2025-04-01" })
     expect(ranOut.licence_status).toBeNull()
-    expect(categorise(ranOut, NOW).licence).toBe("licence_expired")
+    expect(categorise(ranOut, NOW).licence).toBe("licence_term_ended")
   })
 
   it("still lets a revoked licence be expired before its date", () => {

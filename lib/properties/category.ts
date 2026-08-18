@@ -54,8 +54,19 @@ export type LicenceState =
   | "licensed"
   /** Licensed, expiring within LICENCE_ENDING_WINDOW_MONTHS. */
   | "licence_ending"
-  /** Licence date has passed, or the record says expired. */
+  /** The register itself says expired. The council's own word for it. */
   | "licence_expired"
+  /**
+   * The licence term we hold has run out, and the register has not said so.
+   *
+   * 83 of the 98 properties this platform called "licence expired" carried
+   * licence_status "active" from the register — we were contradicting our own
+   * source field, on a date a median of 0.7 years old, with no record of when
+   * the register was last read. A term that has run out in our copy is a reason
+   * to check the register; it is not a finding that the property is unlicensed,
+   * and it is certainly not an enforcement risk we can assert to an owner.
+   */
+  | "licence_term_ended"
   /**
    * Licensed, but the register gave no expiry date. Nearly half the licensed
    * stock is in this state, and it is neither active nor ending — pretending
@@ -156,7 +167,9 @@ export function inSegment(
     case "licensed":
     case "expired": {
       if (!property.licensed_hmo && property.licence_status !== "expired") return false
-      const expired = categorise(property, now).licence === "licence_expired"
+      const licence = categorise(property, now).licence
+      const expired =
+        licence === "licence_expired" || licence === "licence_term_ended"
       return segment === "expired" ? expired : !expired
     }
     case "conversion":
@@ -242,7 +255,9 @@ export function categorise(
   }
 
   if (daysToExpiry < 0) {
-    return { market, licence: "licence_expired", daysToExpiry }
+    // Not "expired" — the register did not say that. Only the term we hold has
+    // run out, which may mean it was renewed and we have not read it since.
+    return { market, licence: "licence_term_ended", daysToExpiry }
   }
 
   // ~30.44 days a month, so "6 months" lands within a day of the calendar date
@@ -301,6 +316,7 @@ export const LICENCE_LABELS: Record<LicenceState, string> = {
   licensed: "Licensed",
   licence_ending: "Licence ending",
   licence_expired: "Licence expired",
+  licence_term_ended: "Licence term ended, not confirmed",
   licence_undated: "Licensed, no expiry date",
   unlicensed: "No licence",
 }

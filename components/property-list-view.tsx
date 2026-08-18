@@ -36,15 +36,40 @@ interface PropertyListViewProps {
  * 2025" — the same failure as a stored Article 4 force state, and the reason
  * neither is stored.
  */
+/**
+ * "HMO — licence expired" made two claims and only one of them was earned.
+ *
+ * That it was an HMO is sound: 77 of the 80 off-market properties carrying the
+ * badge hold a council licence reference, and a council only licenses a
+ * property being run as one. That the licence has expired was not: none of
+ * those 80 came from the register saying so — 83 of the 98 badged properties
+ * carry licence_status "active" — and the dates are a median of 0.7 years old
+ * with nothing recording when the register was last read.
+ *
+ * So the label states what is recorded rather than what is true today, and the
+ * register's own word gets its own, stronger label.
+ */
 function getUseBadge(property: Property) {
   const { licence } = categorise(property as CategorisableProperty)
+  const end = licenceExpiry(property)
+  const until = end && !Number.isNaN(new Date(end).getTime())
+    ? new Date(end).toLocaleDateString("en-GB", { month: "short", year: "numeric" })
+    : null
   switch (licence) {
     case "licensed":
       return { label: "Existing HMO", icon: ShieldCheck, bg: "bg-teal-100", text: "text-teal-800" }
     case "licence_ending":
       return { label: "HMO — licence ending", icon: Clock, bg: "bg-amber-100", text: "text-amber-800" }
     case "licence_expired":
-      return { label: "HMO — licence expired", icon: AlertTriangle, bg: "bg-red-100", text: "text-red-700" }
+      // The register's own word, on 15 properties.
+      return { label: "HMO — recorded as expired", icon: AlertTriangle, bg: "bg-red-100", text: "text-red-700" }
+    case "licence_term_ended":
+      return {
+        label: until ? `Licensed HMO until ${until}` : "Licensed HMO — term ended",
+        icon: Clock,
+        bg: "bg-amber-100",
+        text: "text-amber-800",
+      }
     case "licence_undated":
       return { label: "Existing HMO", icon: ShieldCheck, bg: "bg-teal-100", text: "text-teal-800" }
     default:
@@ -69,15 +94,29 @@ function getUseEvidence(property: Property): string {
   if (licence === "unlicensed") return "No HMO licence on the register we hold"
   const parts: string[] = []
   const ref = licenceReference(property)
-  if (ref) parts.push(`Licence ${ref}`)
+  // Three properties carry a date with no reference. Printing the date alone
+  // offers something to act on with nothing to check it against.
+  parts.push(ref ? `Licence ${ref}` : "No licence reference published")
   const end = licenceExpiry(property)
   if (end) {
     const d = new Date(end)
     if (!Number.isNaN(d.getTime())) {
+      // "expired" here was our arithmetic, not the register's finding.
       parts.push(
-        `${d < new Date() ? "expired" : "expires"} ${d.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
+        `${d < new Date() ? "term ran out" : "expires"} ${d.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
       )
     }
+  }
+  if (licence === "licence_term_ended") {
+    // Once migration 017 is applied and a register read has happened, this can
+    // say how old the reading is. Until then it says only that the register did
+    // not make the claim — which is still more than the badge used to admit.
+    const checked = property.licence_checked_at
+    parts.push(
+      checked && !Number.isNaN(new Date(checked).getTime())
+        ? `register read ${new Date(checked).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}, not marked expired`
+        : "register has not said it expired"
+    )
   }
   return parts.length > 0 ? parts.join(" · ") : "Licensed, but the register published no reference or dates"
 }

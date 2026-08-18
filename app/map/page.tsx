@@ -1284,7 +1284,7 @@ function MapPage() {
                   </button>
                   <button role="tab" aria-selected={activeSegment === "expired"} onClick={() => setActiveSegment("expired")}
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "expired" ? "bg-amber-500 text-white" : "text-amber-700 hover:bg-amber-50"}`}>
-                    <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
+                    <Clock className="w-3.5 h-3.5" /> Licence ended <span className="opacity-70">{segmentCounts.expired}</span>
                   </button>
                   <button role="tab" aria-selected={activeSegment === "conversion"} onClick={() => setActiveSegment("conversion")}
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "conversion" ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"}`}>
@@ -1377,7 +1377,7 @@ function MapPage() {
                   : "text-amber-700 hover:bg-amber-50"
               }`}
             >
-              <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
+              <Clock className="w-3.5 h-3.5" /> Licence ended <span className="opacity-70">{segmentCounts.expired}</span>
             </button>
             <button
               role="tab"

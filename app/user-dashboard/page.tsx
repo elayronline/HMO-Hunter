@@ -247,8 +247,8 @@ export default function UserDashboardPage() {
                 <section>
                   <SectionHead
                     icon={AlertTriangle}
-                    title="Licences already expired"
-                    note={`An operating HMO without a current licence is a problem the owner may not know they have.${
+                    title="Licence terms that have run out"
+                    note={`The term we hold has ended. The register has not said these licences expired — 83 of the 98 the platform used to call expired were still marked active at source — so confirm with the council before acting on it.${
                       totals.expired > Math.min(board.expired.length, 10)
                         ? ` Showing the ${Math.min(board.expired.length, 10)} most recent of ${totals.expired}.`
                         : ""
