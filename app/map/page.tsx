@@ -1,7 +1,6 @@
 "use client"
 
 import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { track } from "@vercel/analytics"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   ChevronDown,
