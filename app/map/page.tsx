@@ -15,7 +15,6 @@ import {
   Bath,
   Wifi,
   TrainFront,
-  Heart,
   Trees,
   BarChart3,
   Info,
@@ -25,8 +24,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  LogOut,
-  User as UserIcon,
   Home,
   Key,
   X,
@@ -43,13 +40,6 @@ import { Card } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { getProperties, getPropertyById } from "../actions/properties"
 import { getSavedProperties } from "../actions/saved-properties"
 import { SavePropertyButton } from "@/components/save-property-button"
@@ -75,8 +65,8 @@ import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
-import { HelpCircle, Shield, Menu } from "lucide-react"
-import { CreditBalance } from "@/components/credit-balance"
+import { HelpCircle, SlidersHorizontal } from "lucide-react"
+import { AppShell, ShellButton } from "@/components/app-shell"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CurrentUsePanel } from "@/components/current-use-panel"
 import {
@@ -227,8 +217,6 @@ export default function HMOHunterPage() {
   }, [viewMode, activeSegment])
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
-  const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
-  const handleNavigateToSaved = useCallback(() => router.push("/saved"), [router])
   const handleOpenLeftPanel = useCallback(() => {
     setRightPanelOpen(false) // close right panel on mobile to avoid z-index conflict
     setLeftPanelOpen(true)
@@ -561,12 +549,6 @@ export default function HMOHunterPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    track("sign_out")
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }
-
   const handleResetFilters = () => {
     setPriceRange([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
     setSourcingCategories(["existing_off_market", "for_sale_hmo", "change_of_use"])
@@ -728,125 +710,38 @@ export default function HMOHunterPage() {
   const displayProperties = segmentFilteredProperties
 
   return (
-    <div className="flex flex-col h-screen bg-slate-800">
+    <AppShell
+      title="Map"
+      /* Nothing is counted until the load finishes: "0 of 0" would read as a
+         result, and an empty set is not a fact about the data yet. */
+      subtitle={
+        loading
+          ? undefined
+          : `${displayProperties.length.toLocaleString()} of ${properties.length.toLocaleString()} properties shown`
+      }
+      counts={{ saved: savedProperties.length }}
+      bleed
+      actions={
+        /* The filters live in a panel this page owns, so opening it is a page
+           action rather than navigation. On desktop the floating control inside
+           the map already does this, which is why this one is mobile-only. */
+        !leftPanelOpen ? (
+          <span className="md:hidden">
+            <ShellButton onClick={handleOpenLeftPanel}>
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+            </ShellButton>
+          </span>
+        ) : undefined
+      }
+    >
+    <div className="flex flex-col h-full bg-slate-800">
       <a
         href="#map-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
       >
         Skip to map
       </a>
-      <h1 className="sr-only">HMO Hunter Property Map</h1>
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-1.5 flex items-center justify-between" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="flex items-center gap-2">
-          {/* Mobile menu button */}
-          <button
-            onClick={handleOpenLeftPanel}
-            className="md:hidden p-2.5 rounded-lg hover:bg-slate-100 transition-colors"
-            title="Open filters"
-            aria-label="Open filters menu"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-          <img
-            src="/hmo-hunter-logo.png"
-            alt="HMO Hunter"
-            className="h-10 md:h-14 w-auto"
-          />
-        </div>
-
-        {/* Desktop navigation.
-            "Home" and "Properties" were buttons with no handler — furniture that
-            looked navigable and did nothing. "Deals" is gone with the pipeline:
-            this product sources and verifies, and a deal tracker is a different
-            job that was never finished. */}
-        <nav className="hidden md:flex items-center gap-8">
-          <button
-            onClick={() => router.push("/user-dashboard")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Attention
-          </button>
-          <button className="text-teal-600 text-sm font-medium">Properties</button>
-          <button
-            onClick={() => router.push("/hmo-check")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Address check
-          </button>
-          <button
-            onClick={handleNavigateToSaved}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
-          >
-            <Heart className="w-4 h-4" />
-            Saved
-            {savedProperties.length > 0 && (
-              <span className="bg-teal-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {savedProperties.length}
-              </span>
-            )}
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          {/* Credit balance - shown for logged in users */}
-          {user && <CreditBalance />}
-
-          {/* Premium badge - shown when user has premium subscription */}
-          {isPremiumUser && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-              <span className="text-xs font-bold text-amber-600">PRO</span>
-            </div>
-          )}
-
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5 transition-colors">
-                  <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-600" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-slate-900">{user.email}</p>
-                  <p className="text-xs text-slate-500">Signed in</p>
-                </div>
-                <DropdownMenuSeparator />
-                {user.user_metadata?.is_admin && (
-                  <DropdownMenuItem onClick={() => router.push("/admin")}>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Admin Portal
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => router.push("/pipeline?tab=profile")}>
-                  <UserIcon className="w-4 h-4 mr-2" />
-                  Sender Profile & Logo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/help")}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Help
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/faq")}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  FAQ
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button onClick={handleNavigateToLogin} className="bg-teal-600 hover:bg-teal-700 text-white">
-              Sign in
-            </Button>
-          )}
-        </div>
-      </header>
-
       <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0 }}>
         {/* Left Sidebar Toggle Button - Desktop only, map view only */}
         {!leftPanelOpen && viewMode === "map" && (
@@ -876,7 +771,7 @@ export default function HMOHunterPage() {
             and no reset. Whatever had been set on the map stayed applied there
             with no way to see or change it. */}
         {leftPanelOpen && (
-        <aside className="fixed md:relative top-[56px] md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
+        <aside className="fixed md:relative top-0 md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
             onClick={handleCloseLeftPanel}
@@ -1772,7 +1667,7 @@ export default function HMOHunterPage() {
           <>
           {/* Mobile backdrop overlay */}
           <div className="md:hidden fixed inset-0 bg-black/50 z-50" onClick={handleCloseRightPanel} aria-hidden="true" />
-          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-[56px] md:top-auto bottom-0 left-0 right-0 md:inset-auto z-[51] md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
+          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-0 md:top-auto bottom-0 left-0 right-0 md:inset-auto z-[51] md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
             {/* Close button */}
             <button
               onClick={handleCloseRightPanel}
@@ -2234,5 +2129,6 @@ export default function HMOHunterPage() {
         }}
       />
     </div>
+    </AppShell>
   )
 }
