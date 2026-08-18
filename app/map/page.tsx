@@ -1993,16 +1993,38 @@ function MapPage() {
                 </div>
               </div>
 
-              {/* Planning Restrictions Section */}
-              {(selectedProperty.article_4_area || selectedProperty.conservation_area) && (
-                <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <h4 className="font-semibold text-slate-900 mb-3">Planning Restrictions</h4>
+              {/* Planning position.
+                  This block only appeared when a restriction was in force, so a
+                  property whose Article 4 position had never been established
+                  showed the reader nothing — indistinguishable from one checked
+                  and found outside a direction. It is now shown for the
+                  unestablished case too, in slate rather than amber, because a
+                  gap in what is held is not a restriction and must not be
+                  dressed as one. */}
+              {(() => {
+                const article4InForce = selectedProperty.article_4_status === "in_force"
+                const article4Unverified =
+                  selectedProperty.article_4_status !== "in_force" &&
+                  selectedProperty.article_4_status !== "none_found"
+                if (!article4InForce && !article4Unverified && !selectedProperty.conservation_area) {
+                  return null
+                }
+                const restricted = article4InForce || selectedProperty.conservation_area
+                return (
+                <div className={`mb-6 p-4 rounded-lg border ${
+                  restricted
+                    ? "bg-amber-50 border-amber-200"
+                    : "bg-slate-50 border-slate-200"
+                }`}>
+                  <h4 className="font-semibold text-slate-900 mb-3">
+                    {restricted ? "Planning Restrictions" : "Planning Position"}
+                  </h4>
                   <div className="space-y-3">
-                    {selectedProperty.article_4_area && (
+                    {(article4InForce || article4Unverified) && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">Article 4 Direction</span>
                         <Article4Warning
-                          article4Area={selectedProperty.article_4_area}
+                          article4Status={selectedProperty.article_4_status}
                           conservationArea={selectedProperty.conservation_area}
                           listedBuildingGrade={selectedProperty.listed_building_grade}
                           planningConstraints={selectedProperty.planning_constraints}
@@ -2017,7 +2039,8 @@ function MapPage() {
                     )}
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               {/* Broadband & Connectivity */}
               <div className="mb-6 p-4 bg-slate-50 rounded-lg">

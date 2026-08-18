@@ -41,7 +41,6 @@ interface PropertyAnalyticsCardProps {
 interface AreaAverages {
   avgYield: number
   avgRentPerRoom: number
-  avgDealScore: number
   avgBedrooms: number
   minYield: number
   maxYield: number
@@ -499,7 +498,7 @@ export function PropertyAnalyticsCard({
   // Calculate area averages
   const calculateAreaAverages = (): AreaAverages => {
     if (properties.length === 0) {
-      return { avgYield: 0, avgRentPerRoom: 0, avgDealScore: 0, avgBedrooms: 0, minYield: 0, maxYield: 0 }
+      return { avgYield: 0, avgRentPerRoom: 0, avgBedrooms: 0, minYield: 0, maxYield: 0 }
     }
 
     const yields = properties.map(p => parseFloat(calculateROI(p) as string) || 0)
@@ -507,13 +506,11 @@ export function PropertyAnalyticsCard({
       const rent = getMonthlyRent(p)
       return p.bedrooms > 0 ? rent / p.bedrooms : rent
     })
-    const dealScores = properties.map(p => p.deal_score || 0)
     const bedrooms = properties.map(p => p.bedrooms || 0)
 
     return {
       avgYield: yields.reduce((a, b) => a + b, 0) / yields.length,
       avgRentPerRoom: rentsPerRoom.reduce((a, b) => a + b, 0) / rentsPerRoom.length,
-      avgDealScore: dealScores.reduce((a, b) => a + b, 0) / dealScores.length,
       avgBedrooms: bedrooms.reduce((a, b) => a + b, 0) / bedrooms.length,
       minYield: Math.min(...yields.filter(y => y > 0)),
       maxYield: Math.max(...yields),
@@ -524,7 +521,6 @@ export function PropertyAnalyticsCard({
   const propYield = parseFloat(calculateROI(property) as string) || 0
   const propRent = getMonthlyRent(property)
   const propRentPerRoom = property.bedrooms > 0 ? propRent / property.bedrooms : propRent
-  const propDealScore = property.deal_score || 0
 
   // Generate insights
   const generateInsights = () => {
@@ -548,13 +544,13 @@ export function PropertyAnalyticsCard({
       insights.push({ text: `lower rent per room (${rentDiff.toFixed(0)}%)`, type: "bad" })
     }
 
-    if (propDealScore >= 70) {
-      insights.push({ text: "has a strong deal score", type: "good" })
-    } else if (propDealScore >= 40) {
-      insights.push({ text: "has a moderate deal score", type: "neutral" })
-    } else if (propDealScore > 0) {
-      insights.push({ text: "has a low deal score", type: "bad" })
-    }
+    // "has a moderate deal score" used to be appended here, and a Deal Score
+    // metric row sat below with the tooltip "Composite score based on yield,
+    // condition, location, and market fundamentals". Nothing computes that any
+    // more — the scoring system was removed from the product and the column
+    // holds 329 frozen values between 54 and 92. A sentence describing a live
+    // judgement, and a row inviting comparison against an area average of the
+    // same dead numbers, are both worse than saying nothing.
 
     return insights
   }
@@ -683,15 +679,6 @@ export function PropertyAnalyticsCard({
             format={(v) => `£${v.toLocaleString()}`}
             tooltip="Monthly rent divided by number of bedrooms. Higher = better income per room."
             delay={0}
-          />
-          <MetricRow
-            label="Deal Score"
-            icon={Target}
-            value={propDealScore}
-            areaAverage={Math.round(area.avgDealScore)}
-            format={(v) => `${v}/100`}
-            tooltip="Composite score based on yield, condition, location, and market fundamentals."
-            delay={100}
           />
           <MetricRow
             label="Max Occupancy"
