@@ -80,6 +80,7 @@ import {
   type SourcingCategory,
 } from "@/lib/properties/category"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
+import { countMarkerBuckets } from "@/lib/properties/marker-bucket"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { Map, List } from "lucide-react"
@@ -726,6 +727,15 @@ function MapPage() {
   }, [properties, activeSegment])
 
   const displayProperties = segmentFilteredProperties
+
+  // The legend counts markers, not segments. The tabs above the map count
+  // segments, and a property can sit in more than one of those — which is
+  // exactly how the legend came to advertise a teal swatch that nothing on the
+  // map could render. See lib/properties/marker-bucket.ts.
+  const markerCounts = useMemo(
+    () => countMarkerBuckets(displayProperties, showPotentialHMOLayer),
+    [displayProperties, showPotentialHMOLayer]
+  )
 
   return (
     <AppShell
@@ -1585,94 +1595,127 @@ function MapPage() {
             </button>
             {legendExpanded && (
               <div className="px-4 pb-4 space-y-3">
-                {/* IN HMO USE */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">In HMO use</span>
-                    <span className="text-[10px] text-slate-400">Licence in force</span>
+                {/* Every row below is a count of markers on screen. A row is
+                    shown only when something is drawn in it, so the legend
+                    cannot advertise a colour this map is not using. */}
+
+                {/* RESTRICTIONS — first, because it wins every other branch */}
+                {markerCounts.article4 > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Restrictions</span>
+                        <span className="text-[10px] text-slate-400">Planning required</span>
+                      </div>
+                      <Switch
+                        checked={showArticle4Overlay}
+                        onCheckedChange={setShowArticle4Overlay}
+                        className="data-[state=checked]:bg-red-400 scale-75"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div>
+                      <span className="text-xs text-slate-600">Article 4 area</span>
+                      <span className="text-[10px] text-red-600 ml-auto">{markerCounts.article4}</span>
+                    </div>
+                    {/* Article 4 is read first, so a property here is drawn red
+                        whatever else is true of it. Saying so is the difference
+                        between a legend and a colour chart. */}
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
+                      Shown ahead of licence and conversion state, so a licensed
+                      HMO inside one of these areas is red here.
+                    </p>
+                    {showArticle4Overlay && (
+                      <div className="flex items-center gap-2.5 mt-1.5">
+                        <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
+                        <span className="text-xs text-slate-500">Article 4 zone overlay</span>
+                      </div>
+                    )}
+                    {showArticle4Overlay && (
+                      <div className="pt-1 mt-1 border-t border-slate-200">
+                        <a
+                          href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
+                        >
+                          Overlay shapes: planning.data.gov.uk
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-teal-700"></div>
-                    <span className="text-xs text-slate-600">Licensed HMO</span>
-                    <span className="text-[10px] text-teal-600 ml-auto">{segmentCounts.licensed}</span>
-                  </div>
-                </div>
+                )}
 
                 {/* LICENCE LAPSED */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Licence lapsed</span>
-                    <span className="text-[10px] text-slate-400">Enforcement risk for the owner</span>
+                {markerCounts.expired > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Licence lapsed</span>
+                      <span className="text-[10px] text-slate-400">Enforcement risk for the owner</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
+                      <span className="text-xs text-slate-600">Recorded as expired</span>
+                      <span className="text-[10px] text-amber-600 ml-auto">{markerCounts.expired}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
-                    <span className="text-xs text-slate-600">Expired Licence</span>
-                    <span className="text-[10px] text-amber-600 ml-auto">{segmentCounts.expired}</span>
-                  </div>
-                </div>
+                )}
 
-                {/* OPPORTUNITIES */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
-                    <span className="text-[10px] text-slate-400">No HMO use today</span>
-                  </div>
-                  <div className="space-y-1.5">
+                {/* CHANGE OF USE */}
+                {markerCounts.conversion > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
+                      <span className="text-[10px] text-slate-400">No HMO use today</span>
+                    </div>
                     <div className="flex items-center gap-2.5">
                       <div className="w-4 h-4 rounded-full bg-green-600 border-2 border-green-700"></div>
-                      <span className="text-xs text-slate-600">House</span>
-                      <span className="text-[10px] text-green-600 ml-auto">C3 to C4 route</span>
+                      <span className="text-xs text-slate-600">No HMO use today</span>
+                      <span className="text-[10px] text-green-600 ml-auto">{markerCounts.conversion}</span>
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-green-500"></div>
-                      <span className="text-xs text-slate-600">Commercial</span>
-                      <span className="text-[10px] text-green-600 ml-auto">Class MA route</span>
+                    {/* These markers come in two greens. The shade is decided by
+                        hmo_classification, which is a threshold on the deal
+                        score that was removed from the product — so it is not
+                        described here, because it no longer means anything a
+                        reader could act on. */}
+                    <div className="mt-1.5 text-[10px] text-slate-400">
+                      Larger green marker = more owner contact detail held
                     </div>
                   </div>
-                  <div className="mt-1.5 text-[10px] text-slate-400">
-                    <span>{segmentCounts.conversion} with no HMO use today</span>
-                    <span className="ml-2 text-slate-300">|</span>
-                    <span className="ml-2">Larger = more contact info</span>
-                  </div>
-                </div>
+                )}
 
-                {/* RESTRICTIONS */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Restrictions</span>
-                      <span className="text-[10px] text-slate-400">Planning required</span>
+                {/* IN HMO USE */}
+                {markerCounts.licensed > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">In HMO use</span>
+                      <span className="text-[10px] text-slate-400">Licence in force</span>
                     </div>
-                    <Switch
-                      checked={showArticle4Overlay}
-                      onCheckedChange={setShowArticle4Overlay}
-                      className="data-[state=checked]:bg-red-400 scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div>
-                    <span className="text-xs text-slate-600">Article 4 Area</span>
-                    <span className="text-[10px] text-red-600 ml-auto">{segmentCounts.restricted}</span>
-                  </div>
-                  {showArticle4Overlay && (
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
-                      <span className="text-xs text-slate-500">Article 4 Zone overlay</span>
+                      <div className="w-4 h-4 rounded-full bg-teal-700"></div>
+                      <span className="text-xs text-slate-600">Licensed HMO</span>
+                      <span className="text-[10px] text-teal-600 ml-auto">{markerCounts.licensed}</span>
                     </div>
-                  )}
-                  {showArticle4Overlay && (
-                    <div className="pt-1 mt-1 border-t border-slate-200">
-                      <a
-                        href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
-                      >
-                        Data: planning.data.gov.uk
-                      </a>
+                  </div>
+                )}
+
+                {/* EVERYTHING ELSE — drawn all along, never explained */}
+                {markerCounts.other > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Other</span>
+                      <span className="text-[10px] text-slate-400">Nothing recorded yet</span>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-teal-500"></div>
+                      <span className="text-xs text-slate-600">No position held</span>
+                      <span className="text-[10px] text-slate-500 ml-auto">{markerCounts.other}</span>
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-slate-400">
+                      An address we hold nothing on is unchecked, not clear.
+                    </p>
+                  </div>
+                )}
 
               </div>
             )}
