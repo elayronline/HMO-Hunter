@@ -184,13 +184,20 @@ export async function POST(request: Request) {
         log.push(`  ${property.address}: ${updateData.broadband_max_down}Mbps, fiber=${updateData.has_fiber}`)
         updated.push(property.address)
       } else {
-        // Mark as N/A - no data available (new development or not in OFCOM dataset)
-        updateData.broadband_max_down = 0  // 0 indicates N/A / no data
-        updateData.broadband_max_up = 0
-        updateData.has_fiber = false  // Set to false to prevent re-processing
-        updateData.has_superfast = false
-        updateData.broadband_superfast_down = 0
-        updateData.broadband_ultrafast_down = 0
+        // No data: the postcode is not in the OFCOM dataset, usually a new
+        // development. This used to write 0 Mbps and has_fiber false — a
+        // measured-looking zero and a definite negative, the second of them
+        // explicitly "to prevent re-processing", which is a scheduling concern
+        // being stored as a fact about a building. 106 properties still hold
+        // those values. Null says what is true: nothing is known. The check
+        // date below is what stops it being fetched again, and BroadbandBadge
+        // already renders a null trio as "unknown".
+        updateData.broadband_max_down = null
+        updateData.broadband_max_up = null
+        updateData.has_fiber = null
+        updateData.has_superfast = null
+        updateData.broadband_superfast_down = null
+        updateData.broadband_ultrafast_down = null
         log.push(`  ${property.address}: Marked as N/A (${pc} not in dataset)`)
         updated.push(property.address)
       }

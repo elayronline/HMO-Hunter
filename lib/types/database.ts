@@ -318,7 +318,6 @@ export type PropertyFilters = {
   minBedrooms?: number
   minBathrooms?: number
   isFurnished?: boolean
-  hasParking?: boolean
 }
 
 export type SavedProperty = {

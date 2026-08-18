@@ -169,7 +169,6 @@ function MapPage() {
   const [minBedrooms, setMinBedrooms] = useState<number>(0)
   const [minBathrooms, setMinBathrooms] = useState<number>(0)
   const [isFurnished, setIsFurnished] = useState(false)
-  const [hasParking, setHasParking] = useState(false)
 
   // Role selection modal state
 
@@ -467,7 +466,6 @@ function MapPage() {
       minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
       minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
       isFurnished: isFurnished || undefined,
-      hasParking: hasParking || undefined,
     }
   }
 
@@ -532,7 +530,6 @@ function MapPage() {
     minBedrooms,
     minBathrooms,
     isFurnished,
-    hasParking,
   ])
 
   /**
@@ -572,7 +569,6 @@ function MapPage() {
     setMinBedrooms(0)
     setMinBathrooms(0)
     setIsFurnished(false)
-    setHasParking(false)
     setOwnerDataFilter(false)
     setAdvancedFiltersExpanded(false)
   }
@@ -596,6 +592,14 @@ function MapPage() {
   // for the user to infer from an absent badge.
   const article4UnknownCount = useMemo(
     () => properties.filter((p) => p.article_4_status === "unknown").length,
+    [properties]
+  )
+
+  // Counts here are of the filtered set, so a count of what a filter excludes
+  // is zero as soon as that filter runs. The EPC note states the behaviour
+  // instead; this one is only printed while its own filter is off.
+  const ownerDataCount = useMemo(
+    () => properties.filter((p) => p.owner_name || p.company_name).length,
     [properties]
   )
 
@@ -862,7 +866,6 @@ function MapPage() {
               minBedrooms,
               minBathrooms,
               isFurnished,
-              hasParking,
             }}
             onLoadFilters={(filters: SearchFilters) => {
               setPriceRange(filters.priceRange)
@@ -885,7 +888,6 @@ function MapPage() {
               if (filters.minBedrooms !== undefined) setMinBedrooms(filters.minBedrooms)
               if (filters.minBathrooms !== undefined) setMinBathrooms(filters.minBathrooms)
               if (filters.isFurnished !== undefined) setIsFurnished(filters.isFurnished)
-              if (filters.hasParking !== undefined) setHasParking(filters.hasParking)
             }}
             isLoggedIn={!!user}
           />
@@ -935,6 +937,10 @@ function MapPage() {
                       <SelectItem value="E">E or better</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                    Matches the recorded rating. Properties with no EPC on
+                    record are not returned.
+                  </p>
                 </div>
 
                 {/* Article 4 Filter */}
@@ -986,7 +992,6 @@ function MapPage() {
                     licenceTypeFilter !== "all",
                     licenceExpiryEnabled,
                     isFurnished,
-                    hasParking,
                     ownerDataFilter,
                   ].filter(Boolean).length
                   return (
@@ -1051,7 +1056,7 @@ function MapPage() {
                           the properties table can actually answer for. */}
                       <SelectItem value="all">All Licence Types</SelectItem>
                       <SelectItem value="any_licensed">Any Licensed HMO</SelectItem>
-                      <SelectItem value="expired_licence">Expired Licence Only</SelectItem>
+                      <SelectItem value="expired_licence">Licence ended only</SelectItem>
                       <SelectItem value="unlicensed">Unlicensed Only</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1173,13 +1178,6 @@ function MapPage() {
                         onCheckedChange={setIsFurnished}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-600">Has Parking</span>
-                      <Switch
-                        checked={hasParking}
-                        onCheckedChange={setHasParking}
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -1203,7 +1201,12 @@ function MapPage() {
                       <span className="text-xs text-slate-400">Not on your plan</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Show only listings with title owner information</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Show only listings with title owner information
+                    {!ownerDataFilter && properties.length > 0
+                      ? ` — ${ownerDataCount} of ${properties.length} shown hold any.`
+                      : "."}
+                  </p>
                 </div>
 
                 {/* Property size and EPC. These were nested under the
@@ -1251,6 +1254,11 @@ function MapPage() {
                         <SelectItem value="needs_upgrade">Needs upgrade (E/F/G)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {epcBandFilter && (
+                      <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                        Properties with no EPC on record are not returned.
+                      </p>
+                    )}
                   </div>
                 </div>
 
