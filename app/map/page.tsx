@@ -33,7 +33,6 @@ import {
   LayoutGrid,
   Briefcase,
 } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
@@ -46,22 +45,16 @@ import { createClient } from "@/lib/supabase/client"
 import type { Property, SavedProperty } from "@/lib/types/database"
 import type { User } from "@supabase/supabase-js"
 import { PropertyGallery } from "@/components/property-gallery"
-import { FreshnessBadge } from "@/components/freshness-badge"
-import { DEFAULT_CITY, ALL_CITIES_OPTION, type UKCity } from "@/lib/data/uk-cities"
-import { LocationSearch, DEFAULT_LOCATION, type SearchLocation, cityToSearchLocation } from "@/components/location-search"
+import { LocationSearch, DEFAULT_LOCATION, type SearchLocation } from "@/components/location-search"
 import { MainMapView } from "@/components/main-map-view"
 import { EPCBadge } from "@/components/epc-badge"
 import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
-import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
-import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
 import { BroadbandBadge } from "@/components/broadband-badge"
-import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
-import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
 import { HelpCircle, SlidersHorizontal } from "lucide-react"
@@ -76,6 +69,7 @@ import {
   PRICE_SLIDER_MAX,
   inSegment,
   type CategorisableProperty,
+  type Article4Position,
   type SourcingCategory,
 } from "@/lib/properties/category"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
@@ -248,7 +242,6 @@ function MapPage() {
   const handleToggleSearch = useCallback(() => setSearchExpanded(prev => !prev), [])
   const handleToggleFilters = useCallback(() => setFiltersExpanded(prev => !prev), [])
   const handleToggleLegend = useCallback(() => setLegendExpanded(prev => !prev), [])
-  const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
 
   // Escape key handler, body scroll lock, and focus trap for full details modal
@@ -341,11 +334,6 @@ function MapPage() {
       // Silently fail - don't block property viewing
     }
   }, [user, toast])
-
-  const handleSelectProperty = useCallback((property: Property) => {
-    setSelectedProperty(property)
-    trackPropertyView(property.id)
-  }, [trackPropertyView])
 
   // Show walkthrough immediately in demo mode
   useEffect(() => {
@@ -608,17 +596,6 @@ function MapPage() {
     [properties]
   )
 
-  const calculateAverageMetric = () => {
-    if (properties.length === 0) return 0
-    const total = properties.reduce((sum, p) => {
-      const rent = getMonthlyRent(p)
-      const rooms = p.bedrooms || 1
-      return sum + rent / rooms
-    }, 0)
-    return Math.round(total / properties.length)
-  }
-
-
   const calculateROI = (property: Property) => {
     if (property.rental_yield && property.rental_yield > 0) {
       return property.rental_yield.toFixed(1)
@@ -633,70 +610,6 @@ function MapPage() {
     return "N/A"
   }
 
-  const getComparableProperties = (selected: Property): Property[] => {
-    const scored = properties
-      .filter((p) => p.id !== selected.id && p.listing_type === selected.listing_type)
-      .map((p) => {
-        let score = 0
-        if (p.city && selected.city && p.city === selected.city) score += 3
-        if (p.bedrooms === selected.bedrooms) score += 2
-        else if (Math.abs(p.bedrooms - selected.bedrooms) === 1) score += 1
-        if (selected.listing_type === "purchase") {
-          const selPrice = selected.purchase_price || selected.estimated_value || 0
-          const pPrice = p.purchase_price || p.estimated_value || 0
-          if (selPrice > 0 && pPrice > 0) {
-            const ratio = pPrice / selPrice
-            if (ratio >= 0.8 && ratio <= 1.2) score += 2
-            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
-          }
-        } else {
-          const selRent = getMonthlyRent(selected)
-          const pRent = getMonthlyRent(p)
-          if (selRent > 0 && pRent > 0) {
-            const ratio = pRent / selRent
-            if (ratio >= 0.8 && ratio <= 1.2) score += 2
-            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
-          }
-        }
-        return { property: p, score }
-      })
-    scored.sort((a, b) => b.score - a.score)
-    return scored.slice(0, 3).map((s) => s.property)
-  }
-
-  const calculateAreaAverages = () => {
-    if (properties.length === 0) return { avgYield: 0, avgDealScore: 0, avgBedrooms: 0, avgRentPerRoom: 0, minYield: 0, maxYield: 0 }
-    let totalYield = 0, totalDealScore = 0, totalBedrooms = 0, totalRentPerRoom = 0
-    let yieldCount = 0, dealScoreCount = 0
-    let minYield = Infinity, maxYield = -Infinity
-    for (const p of properties) {
-      const y = parseFloat(calculateROI(p) as string)
-      if (!isNaN(y)) {
-        totalYield += y
-        yieldCount++
-        if (y < minYield) minYield = y
-        if (y > maxYield) maxYield = y
-      }
-      if (p.deal_score != null) {
-        totalDealScore += p.deal_score
-        dealScoreCount++
-      }
-      totalBedrooms += p.bedrooms || 0
-      const rent = getMonthlyRent(p)
-      const rooms = p.bedrooms || 1
-      totalRentPerRoom += rooms > 0 ? rent / rooms : 0
-    }
-    const n = properties.length
-    return {
-      avgYield: yieldCount > 0 ? totalYield / yieldCount : 0,
-      avgDealScore: dealScoreCount > 0 ? totalDealScore / dealScoreCount : 0,
-      avgBedrooms: n > 0 ? totalBedrooms / n : 0,
-      avgRentPerRoom: n > 0 ? totalRentPerRoom / n : 0,
-      minYield: minYield === Infinity ? 0 : minYield,
-      maxYield: maxYield === -Infinity ? 0 : maxYield,
-    }
-  }
-
   // Segment membership comes from inSegment() in lib/properties/category.ts so
   // the tabs, the counts and the export all answer it the same way.
   const segmentCounts = useMemo(() => {
@@ -708,7 +621,7 @@ function MapPage() {
       restricted: 0,
     }
     for (const p of properties) {
-      const c = p as CategorisableProperty & { article_4_area?: boolean | null }
+      const c = p as CategorisableProperty & Article4Position
       if (inSegment(c, "licensed")) counts.licensed++
       if (inSegment(c, "expired")) counts.expired++
       if (inSegment(c, "conversion")) counts.conversion++
@@ -721,7 +634,7 @@ function MapPage() {
   const segmentFilteredProperties = useMemo(() => {
     if (activeSegment === "all") return properties
     return properties.filter((p) =>
-      inSegment(p as CategorisableProperty & { article_4_area?: boolean | null }, activeSegment)
+      inSegment(p as CategorisableProperty & Article4Position, activeSegment)
     )
   }, [properties, activeSegment])
 
@@ -1652,6 +1565,26 @@ function MapPage() {
                         </a>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* NOT ESTABLISHED — cuts across the buckets, so it is a note
+                    about the edge of a marker rather than a colour of its own. */}
+                {markerCounts.unverified > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Not established</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full border-2 border-dashed border-slate-400"></div>
+                      <span className="text-xs text-slate-600">Dashed edge</span>
+                      <span className="text-[10px] text-slate-500 ml-auto">{markerCounts.unverified}</span>
+                    </div>
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
+                      No Article 4 position held for the address — the council
+                      publishes nothing we can read. Not the same as checked and
+                      found outside one.
+                    </p>
                   </div>
                 )}
 

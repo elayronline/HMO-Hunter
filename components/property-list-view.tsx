@@ -278,6 +278,28 @@ export const PropertyListView = memo(function PropertyListView({
                 </div>
                 <p className="mt-0.5 ml-5 text-xs text-slate-500">{property.postcode}</p>
 
+                {/* Article 4.
+                    The list said nothing about it at all: 1,480 properties
+                    inside a direction appeared here indistinguishable from the
+                    rest, and the filter panel's own copy promised the
+                    unestablished ones would be "shown, badged as unverified"
+                    when no badge existed. On the map they are at least red.
+                    Three states, and only none_found is a checked negative, so
+                    only that one is allowed to say nothing. */}
+                {property.article_4_status === "in_force" && (
+                  <p className="mt-1.5 ml-5 inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                    <AlertTriangle className="w-3 h-3" />
+                    Article 4 — planning permission required
+                  </p>
+                )}
+                {property.article_4_status !== "in_force" &&
+                  property.article_4_status !== "none_found" && (
+                    <p className="mt-1.5 ml-5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                      <HelpCircle className="w-3 h-3" />
+                      Article 4 unverified
+                    </p>
+                  )}
+
                 {/* What justifies the badge above. */}
                 <p className="mt-1.5 ml-5 text-[11px] leading-snug text-slate-500">
                   {getUseEvidence(property)}

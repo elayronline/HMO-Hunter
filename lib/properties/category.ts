@@ -72,6 +72,16 @@ export interface PropertyCategory {
   daysToExpiry: number | null
 }
 
+/**
+ * Article 4 has three states and only one of them is a verified negative.
+ * Anything reading it as a boolean turns "unknown" into "clear".
+ */
+export interface Article4Position {
+  /** @deprecated Mirrors `article_4_status === "in_force"`. Never read a negative. */
+  article_4_area?: boolean | null
+  article_4_status?: "in_force" | "none_found" | "unknown" | null
+}
+
 /** The fields categorisation reads. Kept narrow so tests need no fixtures. */
 export interface CategorisableProperty {
   listing_type?: string | null
@@ -136,7 +146,7 @@ export type Segment = "all" | "licensed" | "expired" | "conversion" | "restricte
  * with the page it was taken from is worse than no export.
  */
 export function inSegment(
-  property: CategorisableProperty & { article_4_area?: boolean | null },
+  property: CategorisableProperty & Article4Position,
   segment: Segment,
   now: Date = new Date()
 ): boolean {
@@ -152,7 +162,12 @@ export function inSegment(
     case "conversion":
       return sourcingCategory(property) === "change_of_use"
     case "restricted":
-      return Boolean(property.article_4_area)
+      // article_4_area is deprecated and its own doc says never to filter a
+      // negative on it: the national feed covers a minority of councils, so a
+      // false there has always meant "not found in a feed that does not look
+      // here". Reading the status keeps "we have not established this" out of
+      // the answer entirely, rather than counting it as "no restriction".
+      return property.article_4_status === "in_force"
   }
 }
 

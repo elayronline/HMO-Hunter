@@ -28,10 +28,26 @@ export type MarkerBucket =
   | "other"
 
 export interface MarkerCandidate {
-  article_4_area?: boolean | null
+  article_4_status?: "in_force" | "none_found" | "unknown" | null
   licence_status?: string | null
   is_potential_hmo?: boolean | null
   hmo_status?: string | null
+}
+
+/**
+ * Whether this address has an Article 4 position at all.
+ *
+ * 942 of 2,958 properties do not: their council publishes no boundary and no
+ * page we could read, so nothing has been established either way. Drawn from
+ * the boolean they were indistinguishable from the 536 checked and found
+ * outside one, which states an answer the data does not have. The map keeps
+ * them in whatever bucket they belong to and marks the edge instead, because
+ * "we do not know" is not a category of property — it is a gap in what is held
+ * about one.
+ */
+export function article4Unverified(property: MarkerCandidate): boolean {
+  return property.article_4_status !== "in_force" &&
+    property.article_4_status !== "none_found"
 }
 
 /**
@@ -42,7 +58,7 @@ export function markerBucket(
   property: MarkerCandidate,
   showConversionLayer = true
 ): MarkerBucket {
-  if (property.article_4_area) return "article4"
+  if (property.article_4_status === "in_force") return "article4"
 
   // The marker reads the council's own word for it and nothing else. A licence
   // whose expiry date has passed is counted as lapsed by categorise(), but it
@@ -62,14 +78,19 @@ export function markerBucket(
 export function countMarkerBuckets(
   properties: MarkerCandidate[],
   showConversionLayer = true
-): Record<MarkerBucket, number> {
-  const counts: Record<MarkerBucket, number> = {
+): Record<MarkerBucket, number> & { unverified: number } {
+  const counts = {
     article4: 0,
     expired: 0,
     conversion: 0,
     licensed: 0,
     other: 0,
+    /** Cuts across the buckets rather than being one of them. */
+    unverified: 0,
   }
-  for (const p of properties) counts[markerBucket(p, showConversionLayer)]++
+  for (const p of properties) {
+    counts[markerBucket(p, showConversionLayer)]++
+    if (article4Unverified(p)) counts.unverified++
+  }
   return counts
 }
