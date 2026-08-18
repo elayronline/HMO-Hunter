@@ -391,7 +391,7 @@ function moneySection(input: HmoCheckInput): ReportSection {
   // this one number is what a reader builds their whole case on.
   if (input.estimated_rent_per_room != null && input.bedrooms) {
     const gross = input.estimated_rent_per_room * input.bedrooms * 12
-    const basis = roomRent(input.city)
+    const basis = roomRent(input.city, input.article_4_council)
     const fromCity = basis.basis === "city" && basis.rate === input.estimated_rent_per_room
     facts.push({
       label: "Indicative gross rent",
