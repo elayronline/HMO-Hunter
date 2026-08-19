@@ -1,21 +1,19 @@
 "use client"
 
 /**
- * The landing page after sign-in: what needs attention today.
+ * The landing page after sign-in, and deliberately two things only.
  *
- * It deliberately does not repeat the map. Four counts that read the same every
- * morning teach a returning user nothing, and the map already shows what exists.
- * What this can show and nothing else can is change with a date on it, and stock
- * that is running out.
+ * What has changed on the listings you saved, and which Article 4 directions
+ * arrive in the next six months. Both are change with a date on it, which is
+ * the one thing this page can tell you that the property list cannot.
  *
- * Ordering is by urgency, not by category: a restriction commencing in five days
- * sits above a licence expiring in ninety, which sits above a coverage gap that
- * has been true for months.
+ * What used to be here and is not any more: licence lists across the whole
+ * estate, and four coverage counts. Those describe the dataset rather than the
+ * reader's own work, and they read the same every morning.
  *
- * Visually the page is built around the dates. A day count is the one number on
- * screen that decides whether to act today, so it gets its own column, tabular
- * figures and the largest type here — and everything else is deliberately
- * quieter than it.
+ * The day count is the number that decides whether to act today, so it gets its
+ * own column, tabular figures, and the largest type on the row. Everything else
+ * is quieter than it on purpose.
  */
 
 import { useEffect, useState } from "react"
@@ -23,17 +21,26 @@ import { useRouter } from "next/navigation"
 import { AppShell, ShellButton } from "@/components/app-shell"
 import {
   CalendarClock,
-  KeyRound,
+  BellRing,
   AlertTriangle,
-  Search,
   FileText,
   MapIcon,
+  Bookmark,
   ArrowRight,
   ChevronRight,
 } from "lucide-react"
-import type { AttentionBoard } from "@/lib/dashboard/attention"
+import type { SavedAlert } from "@/lib/dashboard/saved-alerts"
 
-/** A section heading with its note, so the page scans in one pass. */
+/** How many alerts sit on the page before the rest are behind a link. */
+const SHOWN = 3
+
+interface DashboardPayload {
+  savedCount: number
+  alerts: SavedAlert[]
+  upcomingDirections: { council: string; date: string; daysAway: number; extent: string | null }[]
+  horizonDays: number
+}
+
 function SectionHead({
   icon: Icon,
   title,
@@ -54,79 +61,124 @@ function SectionHead({
   )
 }
 
-function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`rounded-lg border border-line bg-surface shadow-[var(--elev-1)] ${className}`}>
+    <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-[var(--elev-1)]">
       {children}
     </div>
   )
 }
 
-function LicenceRow({
-  licence,
-  tone,
-  onOpen,
-}: {
-  licence: AttentionBoard["expiringSoon"][number]
-  tone: "soon" | "expired"
-  onOpen: () => void
-}) {
-  const days = Math.abs(licence.daysRemaining)
-  const urgent = licence.daysRemaining <= 90
+/**
+ * The day column.
+ *
+ * Past and future are said in words rather than left to a minus sign, because
+ * "-412" and "412" are one character apart and mean opposite things.
+ */
+function DayCount({ daysAway }: { daysAway: number }) {
+  const past = daysAway < 0
+  const magnitude = Math.abs(daysAway)
+  return (
+    <div className="w-16 shrink-0 text-right">
+      <div
+        className={`font-mono text-xl font-bold tabular-nums leading-none ${
+          past ? "text-danger" : magnitude <= 30 ? "text-warn" : "text-ink"
+        }`}
+      >
+        {magnitude}
+      </div>
+      <div className="mt-0.5 text-[0.6875rem] uppercase tracking-wide text-ink-faint">
+        {magnitude === 1 ? (past ? "day ago" : "day") : past ? "days ago" : "days"}
+      </div>
+    </div>
+  )
+}
+
+const KIND_TONE: Record<SavedAlert["kind"], string> = {
+  article4_commencing: "text-danger",
+  licence_recorded_expired: "text-danger",
+  licence_term_ended: "text-warn",
+  licence_expiring: "text-warn",
+}
+
+function AlertRow({ alert, onOpen }: { alert: SavedAlert; onOpen: () => void }) {
   return (
     <button
+      type="button"
       onClick={onOpen}
-      className="group flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-surface-inset"
+      className="flex w-full items-start gap-4 border-b border-line px-4 py-3.5 text-left transition-colors last:border-b-0 hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
     >
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.875rem] font-medium text-ink">{licence.address}</span>
-        <span className="block truncate text-[0.75rem] text-ink-faint">
-          {[licence.postcode, licence.council].filter(Boolean).join(" · ") || "No council recorded"}
-        </span>
-      </span>
-      <span className="shrink-0 text-right">
-        <span
-          className={`tnum block text-[0.875rem] font-semibold ${
-            tone === "expired" ? "text-danger" : urgent ? "text-warn" : "text-ink-muted"
-          }`}
-        >
-          {tone === "expired" ? `${days} days ago` : `${days} days`}
-        </span>
-        <span className="tnum block text-[0.75rem] text-ink-faint">{licence.expiry}</span>
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
+      <DayCount daysAway={alert.daysAway} />
+      <div className="min-w-0 flex-1">
+        <div className={`text-[0.8125rem] font-semibold ${KIND_TONE[alert.kind]}`}>
+          {alert.headline}
+        </div>
+        <div className="mt-0.5 truncate text-sm font-medium text-ink">
+          {alert.address}
+          {alert.postcode ? <span className="text-ink-subtle"> · {alert.postcode}</span> : null}
+        </div>
+        <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-relaxed text-ink-subtle">
+          {alert.detail}
+        </p>
+      </div>
+      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-ink-faint" />
     </button>
+  )
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  body,
+  action,
+}: {
+  icon: typeof CalendarClock
+  title: string
+  body: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="px-4 py-10 text-center">
+      <Icon className="mx-auto h-5 w-5 text-ink-faint" />
+      <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
+      <p className="mx-auto mt-1 max-w-[46ch] text-[0.8125rem] leading-relaxed text-ink-subtle">
+        {body}
+      </p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
   )
 }
 
 export default function UserDashboardPage() {
   const router = useRouter()
-  const [board, setBoard] = useState<AttentionBoard | null>(null)
-  const [servedTotal, setServedTotal] = useState<number>(0)
-  const [totals, setTotals] = useState<{ expiring: number; expired: number }>({ expiring: 0, expired: 0 })
+  const [data, setData] = useState<DashboardPayload | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch("/api/dashboard")
       .then((r) => r.json())
       .then((d) => {
-        if (d.board) {
-          setBoard(d.board)
-          setServedTotal(d.servedTotal ?? 0)
-          setTotals({ expiring: d.expiringTotal ?? 0, expired: d.expiredTotal ?? 0 })
-        }
+        if (Array.isArray(d?.alerts)) setData(d as DashboardPayload)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  const check = (address: string) => router.push(`/hmo-check?address=${encodeURIComponent(address)}`)
+  const alerts = data?.alerts ?? []
+  const shown = alerts.slice(0, SHOWN)
+  const remaining = alerts.length - shown.length
+  const months = Math.round((data?.horizonDays ?? 183) / 30)
 
   return (
     <AppShell
-      title="What needs attention"
-      subtitle={servedTotal > 0 ? `${servedTotal.toLocaleString()} properties tracked` : undefined}
-      counts={{ expired: totals.expired }}
+      title="Dashboard"
+      subtitle={
+        data
+          ? data.savedCount === 0
+            ? "Nothing saved yet"
+            : `${data.savedCount} saved ${data.savedCount === 1 ? "listing" : "listings"}`
+          : undefined
+      }
       actions={
         <>
           <ShellButton href="/hmo-check">
@@ -135,194 +187,130 @@ export default function UserDashboardPage() {
           </ShellButton>
           <ShellButton href="/map" variant="primary">
             <MapIcon className="h-4 w-4" />
-            Map
+            Properties
           </ShellButton>
         </>
       }
     >
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-4xl space-y-8">
         {loading && (
           <div className="space-y-2" aria-busy>
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-[4.5rem] animate-pulse rounded-lg border border-line bg-surface" />
+              <div
+                key={i}
+                className="h-[4.5rem] animate-pulse rounded-lg border border-line bg-surface"
+              />
             ))}
           </div>
         )}
 
-        {board && (
+        {!loading && data && (
           <>
-            {/* Dated changes first. These arrive whether or not anyone looks,
-                and they are the thing a portal cannot tell you. */}
-            {board.datedChanges.length > 0 && (
-              <section>
-                <SectionHead
-                  icon={CalendarClock}
-                  title="Coming up"
-                  note="Restrictions with a date on them. Each changes the answer for every property in its area on the day it lands."
-                />
-                <div className="space-y-2">
-                  {board.datedChanges.map((change, i) => {
-                    const imminent = change.daysAway <= 14
-                    return (
-                      <Panel key={i} className={imminent ? "border-warn-line bg-warn-soft" : ""}>
-                        <div className="flex items-stretch">
-                          {/* The count is the decision, so it gets a column of
-                              its own and the largest type on the page. */}
-                          <div
-                            className={`flex w-[5.5rem] shrink-0 flex-col items-center justify-center border-r px-2 py-4 ${
-                              imminent ? "border-warn-line" : "border-line"
-                            }`}
-                          >
-                            <span
-                              className={`tnum text-[1.75rem] font-bold leading-none tracking-tight ${
-                                imminent ? "text-warn" : "text-brand"
-                              }`}
-                            >
-                              {change.daysAway}
-                            </span>
-                            <span className="mt-1 text-[0.6875rem] font-medium uppercase tracking-wide text-ink-faint">
-                              {change.daysAway === 1 ? "day" : "days"}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 px-4 py-3">
-                            <div className="flex items-baseline justify-between gap-3">
-                              <p className="text-[0.9375rem] font-semibold leading-snug text-ink">
-                                {change.headline}
-                              </p>
-                              <span className="tnum shrink-0 text-[0.75rem] text-ink-faint">
-                                {change.date}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-muted">
-                              {change.detail}
-                            </p>
-                            {change.sourceUrl && (
-                              <a
-                                href={change.sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-1.5 inline-flex items-center gap-1 text-[0.75rem] font-medium text-brand hover:underline"
-                              >
-                                Council source
-                                <ArrowRight className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </Panel>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
-
-            <div className="grid gap-8 lg:grid-cols-2">
-              {/* Named addresses, not a count. Thirteen properties with days
-                  left is actionable; "13" is a number to look at. */}
-              {board.expiringSoon.length > 0 && (
-                <section>
-                  <SectionHead
-                    icon={KeyRound}
-                    title="Licences running out"
-                    note={`A renewal deadline is the owner's deadline too.${
-                      totals.expiring > board.expiringSoon.length
-                        ? ` Showing the ${board.expiringSoon.length} soonest of ${totals.expiring}.`
-                        : ""
-                    }`}
-                  />
-                  <Panel className="divide-y divide-line overflow-hidden">
-                    {board.expiringSoon.map((licence) => (
-                      <LicenceRow
-                        key={licence.id}
-                        licence={licence}
-                        tone="soon"
-                        onOpen={() => check(licence.address)}
+            {/* Your listings first: this is the only part of the page that is
+                about the reader's own work rather than the country's. */}
+            <section>
+              <SectionHead
+                icon={BellRing}
+                title="Your saved listings"
+                note={
+                  alerts.length > 0
+                    ? `${alerts.length} ${alerts.length === 1 ? "alert" : "alerts"} — most pressing first.`
+                    : undefined
+                }
+              />
+              <Panel>
+                {shown.length > 0 ? (
+                  <>
+                    {shown.map((alert) => (
+                      <AlertRow
+                        key={`${alert.propertyId}-${alert.kind}`}
+                        alert={alert}
+                        onOpen={() => router.push(`/property/${alert.propertyId}`)}
                       />
                     ))}
-                  </Panel>
-                </section>
-              )}
-
-              {board.expired.length > 0 && (
-                <section>
-                  <SectionHead
-                    icon={AlertTriangle}
-                    title="Licence terms that have run out"
-                    note={`The term we hold has ended. The register has not said these licences expired — 83 of the 98 the platform used to call expired were still marked active at source — so confirm with the council before acting on it.${
-                      totals.expired > Math.min(board.expired.length, 10)
-                        ? ` Showing the ${Math.min(board.expired.length, 10)} most recent of ${totals.expired}.`
-                        : ""
-                    }`}
+                    {remaining > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/saved")}
+                        className="flex w-full items-center justify-center gap-1.5 bg-surface-alt px-4 py-3 text-[0.8125rem] font-semibold text-brand transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
+                      >
+                        See {remaining} more {remaining === 1 ? "alert" : "alerts"}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </>
+                ) : data.savedCount === 0 ? (
+                  <EmptyState
+                    icon={Bookmark}
+                    title="Nothing saved yet"
+                    body="Save a listing and anything that lands on it — a licence running out, an Article 4 direction arriving — shows up here."
+                    action={
+                      <ShellButton href="/map" variant="primary">
+                        <MapIcon className="h-4 w-4" />
+                        Find properties
+                      </ShellButton>
+                    }
                   />
-                  <Panel className="divide-y divide-line overflow-hidden">
-                    {board.expired.slice(0, 10).map((licence) => (
-                      <LicenceRow
-                        key={licence.id}
-                        licence={licence}
-                        tone="expired"
-                        onOpen={() => check(licence.address)}
-                      />
-                    ))}
-                  </Panel>
-                </section>
-              )}
-            </div>
+                ) : (
+                  <EmptyState
+                    icon={BellRing}
+                    title="Nothing needs attention"
+                    body={`None of your ${data.savedCount} saved ${
+                      data.savedCount === 1 ? "listing has" : "listings have"
+                    } a licence running out or a restriction arriving in the next ${months} months.`}
+                  />
+                )}
+              </Panel>
+            </section>
 
-            {/* Shown to users, not hidden. Someone deciding how much weight to
-                put on a report deserves to know how much of the estate is
-                unverified — concealing it would make the product look more
-                certain than it is. */}
-            {board.coverage.length > 0 && (
-              <section>
-                <SectionHead
-                  icon={Search}
-                  title="What we have not verified"
-                  note="Gaps in our coverage, so you know how far to trust a report."
-                />
-                <Panel className="divide-y divide-line">
-                  {board.coverage.map((gap, i) => {
-                    const pct = gap.total > 0 ? Math.round((gap.count / gap.total) * 100) : 0
-                    return (
-                      <div key={i} className="px-4 py-3.5">
-                        <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-[0.875rem] font-medium text-ink">{gap.label}</span>
-                          <span className="tnum shrink-0 text-[0.8125rem] text-ink-subtle">
-                            {gap.count.toLocaleString()}
-                            <span className="text-ink-faint"> of {gap.total.toLocaleString()}</span>
-                            <span className="ml-2 font-semibold text-ink-muted">{pct}%</span>
-                          </span>
+            {/* Restrictions arriving, whether or not they touch anything saved.
+                These land on their date regardless of who is watching. */}
+            <section>
+              <SectionHead
+                icon={CalendarClock}
+                title={`Article 4 directions arriving in the next ${months} months`}
+                note="A direction starts binding on its date. Where a council has published one, it is recorded here from the council's own notice."
+              />
+              <Panel>
+                {data.upcomingDirections.length > 0 ? (
+                  data.upcomingDirections.map((direction) => (
+                    <div
+                      key={`${direction.council}-${direction.date}`}
+                      className="flex items-start gap-4 border-b border-line px-4 py-3.5 last:border-b-0"
+                    >
+                      <DayCount daysAway={direction.daysAway} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-ink">{direction.council}</div>
+                        <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-subtle">
+                          {direction.extent ??
+                            "A new HMO Article 4 direction takes effect on this date."}
+                        </p>
+                        <div className="mt-1 font-mono text-[0.6875rem] uppercase tracking-wide text-ink-faint">
+                          {direction.date}
                         </div>
-                        <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-sunken">
-                          <div
-                            className="h-full rounded-full bg-ink-faint transition-[width] duration-500"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <p className="mt-1.5 text-[0.75rem] leading-relaxed text-ink-subtle">{gap.note}</p>
                       </div>
-                    )
-                  })}
-                </Panel>
-              </section>
-            )}
-
-            {board.datedChanges.length === 0 &&
-              board.expiringSoon.length === 0 &&
-              board.expired.length === 0 && (
-                <Panel className="px-6 py-12 text-center">
-                  <p className="text-[0.9375rem] font-semibold text-ink">Nothing needs attention today</p>
-                  <p className="mx-auto mt-1 max-w-md text-[0.8125rem] leading-relaxed text-ink-subtle">
-                    No restrictions commencing and no licences running out in the next eight months.
-                  </p>
-                  <div className="mt-5 flex justify-center">
-                    <ShellButton href="/map" variant="primary">
-                      Browse properties
-                      <ArrowRight className="h-4 w-4" />
-                    </ShellButton>
-                  </div>
-                </Panel>
-              )}
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={AlertTriangle}
+                    title="None recorded"
+                    body={`No council we hold a direction for has one commencing in the next ${months} months. That is what we hold, not a guarantee that none exists.`}
+                  />
+                )}
+              </Panel>
+            </section>
           </>
+        )}
+
+        {!loading && !data && (
+          <Panel>
+            <EmptyState
+              icon={AlertTriangle}
+              title="Could not load your dashboard"
+              body="Sign in and reload, or try again in a moment."
+            />
+          </Panel>
         )}
       </div>
     </AppShell>

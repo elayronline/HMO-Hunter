@@ -24,7 +24,6 @@ import {
   Map as MapIcon,
   FileSearch,
   Bookmark,
-  KanbanSquare,
   HelpCircle,
   Menu,
   X,
@@ -56,14 +55,10 @@ interface NavItem {
 }
 
 const PRIMARY: NavItem[] = [
-  { href: "/user-dashboard", label: "Attention", icon: LayoutDashboard },
-  { href: "/map", label: "Map", icon: MapIcon },
+  { href: "/user-dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/map", label: "Properties", icon: MapIcon },
   { href: "/hmo-check", label: "Address check", icon: FileSearch },
-]
-
-const SECONDARY: NavItem[] = [
   { href: "/saved", label: "Saved", icon: Bookmark },
-  { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
 ]
 
 const FOOTER: NavItem[] = [{ href: "/help", label: "Help", icon: HelpCircle }]
@@ -248,15 +243,15 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const primary = PRIMARY.map((item) =>
-    item.href === "/user-dashboard" && counts?.expired
-      ? { ...item, badge: counts.expired, badgeTone: "danger" as const }
-      : item
-  )
-
-  const secondary = SECONDARY.map((item) =>
-    item.href === "/saved" && counts?.saved ? { ...item, badge: counts.saved } : item
-  )
+  const primary = PRIMARY.map((item) => {
+    if (item.href === "/user-dashboard" && counts?.expired) {
+      return { ...item, badge: counts.expired, badgeTone: "danger" as const }
+    }
+    if (item.href === "/saved" && counts?.saved) {
+      return { ...item, badge: counts.saved }
+    }
+    return item
+  })
 
   const rail = (onNavigate?: () => void) => (
     <div className="flex h-full flex-col gap-1 px-3 pb-4 pt-4">
@@ -275,7 +270,6 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
       </Link>
 
       <NavGroup items={primary} pathname={pathname} onNavigate={onNavigate} />
-      <NavGroup label="Workspace" items={secondary} pathname={pathname} onNavigate={onNavigate} />
 
       <div className="mt-auto space-y-3">
         <NavGroup items={FOOTER} pathname={pathname} onNavigate={onNavigate} />

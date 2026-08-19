@@ -2,7 +2,8 @@
 
 import { useState, useMemo, memo } from "react"
 import Link from "next/link"
-import { BedDouble, Bath, MapPin, TrendingUp, ShieldCheck, HelpCircle, Clock, AlertTriangle, ExternalLink } from "lucide-react"
+import { useEffect, useRef } from "react"
+import { BedDouble, Bath, MapPin, TrendingUp, ShieldCheck, HelpCircle, Clock, AlertTriangle, ExternalLink, Map as MapIcon, Maximize2 } from "lucide-react"
 import {
   categorise,
   licenceExpiry,
@@ -19,9 +20,19 @@ const PAGE_SIZE = 48
 interface PropertyListViewProps {
   properties: Property[]
   selectedProperty?: Property | null
+  /** Opens the detail panel beside the list, without leaving the workspace. */
   onPropertySelect?: (property: Property) => void
+  /** Switches to the map, flies to this property and selects it. */
+  onShowOnMap?: (property: Property) => void
   loading: boolean
   savedPropertyIds: Set<string>
+  /**
+   * How many other properties share this one's exact coordinate. 452 of 2,958
+   * sit on a point with at least one neighbour and the worst holds 20, so
+   * "show on map" can land on a pile the reader cannot tell apart. The card
+   * says so before they go rather than leaving them to work it out.
+   */
+  coincidentCounts?: Map<string, number>
 }
 
 /**
@@ -183,8 +194,11 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 export const PropertyListView = memo(function PropertyListView({
   properties,
   selectedProperty,
+  onPropertySelect,
+  onShowOnMap,
   loading,
   savedPropertyIds,
+  coincidentCounts,
 }: PropertyListViewProps) {
   const [sortKey, setSortKey] = useState<SortKey>("licence_expiry")
   const [page, setPage] = useState(1)
@@ -201,6 +215,37 @@ export const PropertyListView = memo(function PropertyListView({
   const sorted = useMemo(() => {
     return [...properties].sort((a, b) => getSortValue(a, sortKey) - getSortValue(b, sortKey))
   }, [properties, sortKey])
+
+  // A selection can arrive from outside the list — a marker click, or a
+  // /map?property=<id> deep link — and the row may sit on a page that has not
+  // been loaded yet. Reveal it.
+  //
+  // Adjusted during render rather than in an effect, matching the reset above:
+  // an effect that sets state here paints the old page first and then jumps,
+  // and the lint rule that forbids it is right about the cascading render.
+  const rowRefs = useRef(new Map<string, HTMLDivElement | null>())
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
+  if (selectedProperty && selectedProperty.id !== lastSelectedId) {
+    setLastSelectedId(selectedProperty.id)
+    const index = sorted.findIndex(p => p.id === selectedProperty.id)
+    if (index >= 0) {
+      const neededPage = Math.floor(index / PAGE_SIZE) + 1
+      if (page < neededPage) setPage(neededPage)
+    }
+  }
+
+  // Scrolling only — no state, so an effect is the right place for it. Waits a
+  // frame so a newly revealed page has painted before the row is scrolled to.
+  useEffect(() => {
+    if (!selectedProperty) return
+    const raf = requestAnimationFrame(() => {
+      rowRefs.current.get(selectedProperty.id)?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [selectedProperty])
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
   const paginatedProperties = useMemo(() => {
@@ -255,6 +300,7 @@ export const PropertyListView = memo(function PropertyListView({
           const status = getUseBadge(property)
           const isSelected = selectedProperty?.id === property.id
           const isSaved = savedPropertyIds.has(property.id)
+          const stacked = coincidentCounts?.get(property.id) ?? 0
 
           return (
             // The whole card is a link, but so is "View listing" — and an <a>
@@ -263,6 +309,7 @@ export const PropertyListView = memo(function PropertyListView({
             // are never nested.
             <div
               key={property.id}
+              ref={(el) => { rowRefs.current.set(property.id, el) }}
               className={`group relative text-left rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-teal-500 focus-within:ring-offset-1 ${
                 isSelected ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-200"
               }`}
@@ -373,13 +420,48 @@ export const PropertyListView = memo(function PropertyListView({
                     View listing <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
+
+                {/* Explicit journeys out of the list. Above the select overlay. */}
+                <div className="relative z-10 mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-2.5">
+                  {onShowOnMap && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onShowOnMap(property) }}
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                      title={stacked > 0
+                        ? `Show on map — ${stacked} other ${stacked === 1 ? "property shares" : "properties share"} this exact location`
+                        : "Show this property on the map"}
+                    >
+                      <MapIcon className="h-3.5 w-3.5" />
+                      Show on map
+                      {stacked > 0 && (
+                        <span className="rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-800">
+                          +{stacked} here
+                        </span>
+                      )}
+                    </button>
+                  )}
+                  <Link
+                    href={`/property/${property.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                    Full page
+                  </Link>
+                </div>
               </div>
 
-              {/* Last in the DOM so it paints over the static content it covers. */}
-              <Link
-                href={`/property/${property.id}`}
-                aria-label={`View details for ${property.address}`}
-                className="absolute inset-0 rounded-xl focus:outline-none"
+              {/* Last in the DOM so it paints over the static content it covers.
+                  A button, not a link: selecting opens the panel beside the
+                  list and keeps the filters, the scroll position and the
+                  loaded pages that a navigation would throw away. */}
+              <button
+                type="button"
+                onClick={() => onPropertySelect?.(property)}
+                aria-label={`Select ${property.address}`}
+                aria-pressed={isSelected}
+                className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
               />
             </div>
           )

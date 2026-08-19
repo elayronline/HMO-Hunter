@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { categorise, rentIsEvidence, MARKET_LABELS, LICENCE_LABELS } from "@/lib/properties/category"
+import { ExportButton } from "@/components/export-button"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -110,15 +111,26 @@ export default function SavedPropertiesPage() {
               <p className="text-xs md:text-sm text-slate-500">{savedProperties.length} saved</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/map")}
-            className="flex items-center gap-2 text-sm px-2 md:px-4"
-            size="sm"
-          >
-            <Home className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Map</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {savedProperties.length > 0 && (
+              <ExportButton
+                propertyIds={savedProperties
+                  .map((s) => s.property?.id)
+                  .filter((id): id is string => Boolean(id))}
+                disabled={loading}
+                isAdmin={user?.user_metadata?.is_admin === true}
+              />
+            )}
+            <Button
+              variant="outline"
+              onClick={() => router.push("/map")}
+              className="flex items-center gap-2 text-sm px-2 md:px-4"
+              size="sm"
+            >
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to properties</span>
+            </Button>
+          </div>
         </div>
       </header>
 

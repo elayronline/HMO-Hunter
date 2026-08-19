@@ -14,6 +14,12 @@ export interface MainMapViewProps {
   showArticle4Overlay?: boolean
   showPotentialHMOLayer?: boolean
   onArticle4AreaClick?: (areaInfo: Article4AreaInfo) => void
+  /**
+   * A property the map should centre on. The nonce makes a repeat request for
+   * the same property a new request, so "show on map" re-centres a reader who
+   * has since panned away.
+   */
+  focusProperty?: { property: Property; nonce: number } | null
 }
 
 export interface Article4AreaInfo {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
+import { shouldHonourFocus, shouldFlyToCity } from "@/lib/map/view-workflow"
 
 // Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard, no API key needed)
 const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
@@ -18,6 +19,7 @@ export function MapInner({
   showArticle4Overlay = true,
   showPotentialHMOLayer = true,
   onArticle4AreaClick,
+  focusProperty,
 }: MainMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -25,6 +27,12 @@ export function MapInner({
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const popupRef = useRef<maplibregl.Popup | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  // Which focus request the camera has already honoured, and the latest one
+  // asked for. Read through refs so the city effect below sees current values
+  // without taking focusProperty as a dependency.
+  const focusRef = useRef<typeof focusProperty>(null)
+  const appliedFocusRef = useRef<number | null>(null)
+  focusRef.current = focusProperty ?? null
   const [error, setError] = useState<string | null>(null)
   const [article4Loaded, setArticle4Loaded] = useState(false)
   const retryCountRef = useRef(0)
@@ -326,12 +334,41 @@ export function MapInner({
   useEffect(() => {
     if (!mapRef.current || !mapReady) return
 
+    // A "show on map" request outranks the city framing. Both effects wake on
+    // the same mapReady flip, and relying on declaration order to decide which
+    // camera move survives is not a guarantee — the map opened UK-wide with a
+    // single Oxford property selected, which is the failure this prevents.
+    if (!shouldFlyToCity(focusRef.current, appliedFocusRef.current)) return
+
     mapRef.current.flyTo({
       center: [selectedCity.longitude, selectedCity.latitude],
       zoom: selectedCity.zoom,
       duration: 1500,
     })
   }, [selectedCity.longitude, selectedCity.latitude, selectedCity.zoom, mapReady])
+
+  // Fly to a single property on request.
+  //
+  // The camera previously only ever followed selectedCity, so selecting a
+  // property — from the list, from a deep link, from anywhere but a click on a
+  // visible pin — styled a marker that could be anywhere, including outside
+  // the viewport. Zoom 16 is close enough to read the street and still show
+  // the neighbours, which matters: 452 of 2,958 properties share their exact
+  // coordinate with another, so the pin is often not alone.
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return
+    if (!shouldHonourFocus(focusProperty, appliedFocusRef.current)) return
+    if (!focusProperty) return
+    const { latitude, longitude } = focusProperty.property
+    if (latitude == null || longitude == null) return
+    appliedFocusRef.current = focusProperty.nonce
+    mapRef.current.flyTo({
+      center: [longitude, latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 16),
+      duration: 1200,
+      essential: true,
+    })
+  }, [focusProperty?.nonce, mapReady])
 
   // Helper to get marker style properties for a property
   const getMarkerStyle = useCallback((property: typeof properties[0], isSelected: boolean, showPotentialHMO: boolean) => {
@@ -480,6 +517,11 @@ export function MapInner({
     el.style.boxShadow = style.boxShadow
     el.textContent = style.displayValue
     el.title = style.title
+    // Markers paint in DOM order, so a selected pin can sit under the ones
+    // added after it. 452 of 2,958 properties share their coordinate with
+    // another and one point carries 20, meaning the selection ring was
+    // routinely drawn beneath the neighbours it exists to distinguish.
+    el.style.zIndex = style.isSelected ? "10" : "1"
   }, [])
 
   // Update markers - use stable positioning
