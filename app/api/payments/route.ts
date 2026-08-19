@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://hmohunter.co.uk"}/pipeline?payment=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://hmohunter.co.uk"}/pipeline?payment=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://hmohunter.co.uk"}/saved?payment=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://hmohunter.co.uk"}/saved?payment=cancelled`,
       metadata: {
         user_id: user.id,
         package_id: pkg.id,
