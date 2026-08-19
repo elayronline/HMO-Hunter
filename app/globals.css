@@ -495,3 +495,90 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ---------------------------------------------------------------------------
+   Landing page
+   Utilities the marketing page needs that Tailwind cannot express inline:
+   a texture, a fading hairline, and the mono eyebrow used above each section
+   heading. Everything else stays in the components as utility classes.
+   --------------------------------------------------------------------------- */
+
+.lp-eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Fine film of noise. Keeps large flat fills from banding and reads as print
+   stock rather than a screen gradient. Sits under content at low opacity. */
+.lp-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.32'/%3E%3C/svg%3E");
+}
+
+/* A rule that fades out at both ends instead of stopping dead. */
+.lp-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--grey-200) 15%,
+    var(--grey-200) 85%,
+    transparent
+  );
+}
+
+.lp-rule-invert {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.14) 15%,
+    rgb(255 255 255 / 0.14) 85%,
+    transparent
+  );
+}
+
+/* Optical correction for the display sizes only: at 48px and up the default
+   tracking reads loose, and the cap height needs a tighter leading. */
+.lp-display {
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-grain::after {
+    display: none;
+  }
+}
+
+/* Hero entrance.
+   Deliberately CSS rather than framer-motion: a JS-driven `initial` state is
+   serialised into the server HTML as opacity:0, so the first thing a visitor
+   sees is an empty hero until hydration finishes. A keyframe runs at first
+   paint instead, with no JavaScript in the path. */
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-rise {
+  animation: lp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-rise {
+    animation: none;
+  }
+}

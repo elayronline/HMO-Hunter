@@ -31,8 +31,19 @@ export default function LandingPage() {
       <Features />
       <EarlyAdopterBenefits />
       <HowItWorks />
-      <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8 bg-[var(--grey-50)]">
-        <div className="mx-auto max-w-3xl">
+      <section className="relative overflow-hidden bg-[var(--grey-50)] px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--grey-900) 1px, transparent 1px), linear-gradient(90deg, var(--grey-900) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent 75%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-3xl">
           <SignupForm />
         </div>
       </section>

@@ -11,7 +11,7 @@ export function VideoPlayer() {
 
   if (playing) {
     return (
-      <div className="relative w-full overflow-hidden rounded-2xl" style={{ paddingBottom: "56.25%" }}>
+      <div className="relative block w-full overflow-hidden rounded-2xl" style={{ paddingBottom: "56.25%" }}>
         <iframe
           className="absolute inset-0 h-full w-full"
           src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&rel=0`}
@@ -26,7 +26,7 @@ export function VideoPlayer() {
   return (
     <button
       onClick={() => { track("video_play"); setPlaying(true) }}
-      className="group relative w-full overflow-hidden rounded-2xl focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
+      className="group relative block w-full overflow-hidden rounded-2xl focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
       style={{ paddingBottom: "56.25%" }}
       aria-label="Play demo video"
     >

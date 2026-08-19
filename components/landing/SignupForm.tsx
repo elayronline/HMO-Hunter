@@ -122,8 +122,9 @@ export function SignupForm() {
   }
 
   const inputCls =
-    "w-full rounded-xl border border-[var(--grey-200)] bg-white px-4 py-3 text-sm text-[var(--grey-800)] placeholder:text-[var(--grey-400)] focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal-pale)] outline-none transition-colors"
-  const labelCls = "block text-sm font-semibold text-[var(--grey-600)] mb-1.5"
+    "w-full rounded-xl border border-[var(--grey-200)] bg-[var(--grey-50)] px-4 py-3.5 text-sm text-[var(--grey-900)] placeholder:text-[var(--grey-400)] outline-none transition-all focus:border-[var(--teal)] focus:bg-white focus:ring-4 focus:ring-[var(--teal-pale)]"
+  const labelCls =
+    "lp-eyebrow mb-2 block text-[var(--grey-500)]"
 
   return (
     <div id="signup-form" className="scroll-mt-24">
@@ -131,16 +132,16 @@ export function SignupForm() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="mx-auto max-w-lg rounded-2xl border border-[var(--grey-200)] bg-white p-8 shadow-sm"
+        className="mx-auto max-w-lg rounded-2xl border border-[var(--grey-200)] bg-white p-8 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_20px_48px_-24px_rgba(15,23,42,0.28)] sm:p-10"
       >
-        <h3 className="text-center font-[family-name:var(--font-plus-jakarta)] text-xl font-bold text-[var(--grey-900)]">
-          Create Your Account
+        <h3 className="lp-display text-center font-[family-name:var(--font-plus-jakarta)] text-2xl font-bold text-[var(--grey-900)]">
+          Create your account
         </h3>
-        <p className="mt-1 text-center text-sm text-[var(--grey-500)]">
-          10 seconds. 5 fields. You're in.
+        <p className="mt-2 text-center text-sm text-[var(--grey-500)]">
+          Five fields, about a minute, and you&rsquo;re in.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
             <label htmlFor="sf-name" className={labelCls}>Full Name</label>
             <input
@@ -237,9 +238,9 @@ export function SignupForm() {
           <button
             type="submit"
             disabled={state === "submitting"}
-            className="w-full rounded-xl bg-[var(--teal-dark)] py-3 text-sm font-semibold text-white hover:bg-[var(--teal)] transition-colors disabled:opacity-60"
+            className="w-full rounded-xl bg-[var(--grey-900)] py-3.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.24),0_8px_24px_-10px_rgba(15,23,42,0.5)] transition-all hover:bg-[var(--teal-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2 disabled:opacity-60"
           >
-            {state === "submitting" ? "Creating account..." : "Secure My Spot"}
+            {state === "submitting" ? "Creating account…" : "Create my account"}
           </button>
         </form>
 

@@ -49,6 +49,13 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (event.request.method !== "GET") return
 
+  // Skip anything not served by this origin. The static-asset branch below
+  // matches on the pathname alone, so without this a cross-origin image whose
+  // path happens to end ".jpg" — the YouTube poster on the landing page, for
+  // one — is intercepted here, and caching its opaque response rejects and
+  // leaves the request unresolved. The image renders broken.
+  if (url.origin !== self.location.origin) return
+
   // Skip API routes (always network)
   if (url.pathname.startsWith("/api/")) return
 

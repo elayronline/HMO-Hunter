@@ -38,8 +38,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "HMO Hunter | Find Viable HMOs. Spot Untapped Opportunities.",
-  description: "The UK's first sourcing platform built exclusively for HMO professionals. Search compliance data, licensing status, Article 4 zones, and yield projections — all in one place.",
+  title: "HMO Hunter | Source and vet viable HMOs. In one place.",
+  description: "Find and vet viable HMOs, both existing and change of use potential. Article 4 planning position, licence state, and an explicit \"not established\" where the evidence stops — the insight you need to source to your needs.",
   icons: {
     icon: "/icon-light-32x32.png",
     apple: "/apple-icon.png",
