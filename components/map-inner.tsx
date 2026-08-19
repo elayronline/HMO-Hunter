@@ -26,6 +26,12 @@ export function MapInner({
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const popupRef = useRef<maplibregl.Popup | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  // Which focus request the camera has already honoured, and the latest one
+  // asked for. Read through refs so the city effect below sees current values
+  // without taking focusProperty as a dependency.
+  const focusRef = useRef<typeof focusProperty>(null)
+  const appliedFocusRef = useRef<number | null>(null)
+  focusRef.current = focusProperty ?? null
   const [error, setError] = useState<string | null>(null)
   const [article4Loaded, setArticle4Loaded] = useState(false)
   const retryCountRef = useRef(0)
@@ -327,6 +333,13 @@ export function MapInner({
   useEffect(() => {
     if (!mapRef.current || !mapReady) return
 
+    // A "show on map" request outranks the city framing. Both effects wake on
+    // the same mapReady flip, and relying on declaration order to decide which
+    // camera move survives is not a guarantee — the map opened UK-wide with a
+    // single Oxford property selected, which is the failure this prevents.
+    const pending = focusRef.current
+    if (pending && appliedFocusRef.current !== pending.nonce) return
+
     mapRef.current.flyTo({
       center: [selectedCity.longitude, selectedCity.latitude],
       zoom: selectedCity.zoom,
@@ -344,8 +357,10 @@ export function MapInner({
   // coordinate with another, so the pin is often not alone.
   useEffect(() => {
     if (!mapRef.current || !mapReady || !focusProperty) return
+    if (appliedFocusRef.current === focusProperty.nonce) return
     const { latitude, longitude } = focusProperty.property
     if (latitude == null || longitude == null) return
+    appliedFocusRef.current = focusProperty.nonce
     mapRef.current.flyTo({
       center: [longitude, latitude],
       zoom: Math.max(mapRef.current.getZoom(), 16),

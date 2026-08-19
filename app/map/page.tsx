@@ -80,7 +80,6 @@ import { Map, List } from "lucide-react"
 import {
   initialViewMode,
   viewParam,
-  shouldApplyStoredView,
   urlAfterPropertyConsumed,
   countCoincident,
 } from "@/lib/map/view-workflow"
@@ -207,30 +206,17 @@ function MapPage() {
   // and re-selecting the same property should still re-centre.
   const [mapFocus, setMapFocus] = useState<{ property: Property; nonce: number } | null>(null)
 
-  // Restore the last view the reader chose, but never over an explicit URL.
+  // No client-side view preference, deliberately.
   //
-  // Deliberately not guarded by a "have I run yet" ref. React remounts this
-  // component in development, and a ref survives that while the state does not
-  // — so the guard was still set from the first mount while viewMode had reset
-  // to the default, and the stored preference was silently dropped on every
-  // load. The effect is idempotent instead: it only ever sets the value the
-  // store already holds, and an explicit ?view= in the URL disables it.
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("hmohunter:view")
-      if (shouldApplyStoredView(searchParams.get("view"), stored)) setViewMode(stored)
-    } catch {
-      // Private mode or a blocked store: the default stands.
-    }
-  }, [searchParams])
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("hmohunter:view", viewMode)
-    } catch {
-      // Nothing to do; the preference simply will not persist.
-    }
-  }, [viewMode])
+  // React hydrates this route's Suspense boundary lazily — the tree stays
+  // dehydrated until the reader interacts with it. A preference restored in an
+  // effect therefore cannot apply on load, and when it finally does it changes
+  // the view out from under someone already reading. Measured: with "map"
+  // stored, a bare /map stayed on the list through a full load and a click.
+  //
+  // The URL is the persistence instead. Toggling to the map writes ?view=map,
+  // so history, bookmarks and shared links all carry the choice, and a bare
+  // /map always means the list. Predictable beats remembered here.
 
   // Property comparison hook
   const {

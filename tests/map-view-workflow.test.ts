@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest"
 import {
   initialViewMode,
   viewParam,
-  shouldApplyStoredView,
   urlAfterPropertyConsumed,
   countCoincident,
 } from "@/lib/map/view-workflow"
@@ -34,24 +33,12 @@ describe("which view a load opens in", () => {
     expect(viewParam("list")).toBeNull()
     expect(viewParam("map")).toBe("map")
   })
-})
 
-describe("the stored preference", () => {
-  it("applies when the URL is silent", () => {
-    expect(shouldApplyStoredView(null, "map")).toBe(true)
-    expect(shouldApplyStoredView(null, "list")).toBe(true)
-  })
-
-  it("never overrides an explicit link", () => {
-    // Someone sent this link meaning the map. It has to stay the map.
-    expect(shouldApplyStoredView("map", "list")).toBe(false)
-    expect(shouldApplyStoredView("list", "map")).toBe(false)
-  })
-
-  it("ignores junk in the store", () => {
-    expect(shouldApplyStoredView(null, "")).toBe(false)
-    expect(shouldApplyStoredView(null, null)).toBe(false)
-    expect(shouldApplyStoredView(null, "satellite")).toBe(false)
+  it("carries the choice, since there is no stored preference to fall back on", () => {
+    // The URL is the only persistence: a bookmark or a shared link is what
+    // makes a reader's choice survive, so the round trip above has to hold.
+    expect(initialViewMode(viewParam("map"))).toBe("map")
+    expect(initialViewMode(viewParam("list"))).toBe("list")
   })
 })
 

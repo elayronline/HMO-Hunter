@@ -13,6 +13,11 @@
  * The list is the default because it answers "what have I got?" without waiting
  * for tiles, and because nothing is hidden by starting there — every property in
  * the table carries a valid UK coordinate, so the two views show the same set.
+ *
+ * There is deliberately no stored view preference. React hydrates the map
+ * route's Suspense boundary lazily, so a preference restored in an effect does
+ * not apply on load and, when it eventually does, changes the view under
+ * someone already reading. The URL carries the choice instead.
  */
 
 export type ViewMode = "map" | "list"
@@ -37,20 +42,6 @@ export function initialViewMode(param: string | null | undefined): ViewMode {
  */
 export function viewParam(mode: ViewMode): string | null {
   return mode === "list" ? null : mode
-}
-
-/**
- * Whether a stored preference should override the initial view.
- *
- * An explicit `?view=` in the URL always wins: a link someone was sent has to
- * mean the same thing for them as it did for the sender.
- */
-export function shouldApplyStoredView(
-  urlParam: string | null | undefined,
-  stored: string | null | undefined
-): stored is ViewMode {
-  if (urlParam) return false
-  return stored === "map" || stored === "list"
 }
 
 /**
