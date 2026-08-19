@@ -77,6 +77,13 @@ import { countMarkerBuckets } from "@/lib/properties/marker-bucket"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { Map, List } from "lucide-react"
+import {
+  initialViewMode,
+  viewParam,
+  shouldApplyStoredView,
+  urlAfterPropertyConsumed,
+  countCoincident,
+} from "@/lib/map/view-workflow"
 import { PropertyListView } from "@/components/property-list-view"
 import { csrfFetch } from "@/lib/csrf-client"
 
@@ -186,10 +193,44 @@ function MapPage() {
 
   // Onboarding walkthrough state
   const [showWalkthrough, setShowWalkthrough] = useState(false)
-  const [viewMode, setViewMode] = useState<"map" | "list">(() => {
-    const param = searchParams.get("view")
-    return param === "list" ? "list" : "map"
-  })
+  // List first. It is the view that answers "what have I got?", it works
+  // without waiting for tiles, and every property carries a valid coordinate so
+  // nothing is hidden by starting here — the map is a lens on the same set.
+  // Initialised from the URL alone so the server and client agree; a stored
+  // preference is applied after mount, below, where a mismatch cannot happen.
+  const [viewMode, setViewMode] = useState<"map" | "list">(() =>
+    initialViewMode(searchParams.get("view"))
+  )
+
+  // The property the map should fly to. Distinct from selectedProperty: opening
+  // the panel from the list must not move a map the reader is not looking at,
+  // and re-selecting the same property should still re-centre.
+  const [mapFocus, setMapFocus] = useState<{ property: Property; nonce: number } | null>(null)
+
+  // Restore the last view the reader chose, but never over an explicit URL.
+  //
+  // Deliberately not guarded by a "have I run yet" ref. React remounts this
+  // component in development, and a ref survives that while the state does not
+  // — so the guard was still set from the first mount while viewMode had reset
+  // to the default, and the stored preference was silently dropped on every
+  // load. The effect is idempotent instead: it only ever sets the value the
+  // store already holds, and an explicit ?view= in the URL disables it.
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("hmohunter:view")
+      if (shouldApplyStoredView(searchParams.get("view"), stored)) setViewMode(stored)
+    } catch {
+      // Private mode or a blocked store: the default stands.
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("hmohunter:view", viewMode)
+    } catch {
+      // Nothing to do; the preference simply will not persist.
+    }
+  }, [viewMode])
 
   // Property comparison hook
   const {
@@ -220,12 +261,23 @@ function MapPage() {
       return
     }
     const params = new URLSearchParams(searchParams.toString())
-    if (viewMode !== "map") params.set("view", viewMode); else params.delete("view")
+    const view = viewParam(viewMode)
+    if (view) params.set("view", view); else params.delete("view")
     params.delete("type")
     if (activeSegment !== "all") params.set("segment", activeSegment); else params.delete("segment")
     const newUrl = params.toString() ? `?${params.toString()}` : "/map"
     router.replace(newUrl, { scroll: false })
   }, [viewMode, activeSegment])
+
+  // Switching a single property onto the map: select it, move there, and show
+  // the map. All three, or the reader arrives at a map centred somewhere else
+  // with no indication which pin was theirs.
+  const handleShowOnMap = useCallback((property: Property) => {
+    setSelectedProperty(property)
+    setRightPanelOpen(true)
+    setMapFocus({ property, nonce: Date.now() })
+    setViewMode("map")
+  }, [])
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
   const handleOpenLeftPanel = useCallback(() => {
@@ -363,8 +415,11 @@ function MapPage() {
         setSelectedProperty(property)
         setRightPanelOpen(true)
       }
-      // Always clear the URL parameter to prevent repeated failed lookups
-      window.history.replaceState({}, '', '/')
+      // Clear only the property parameter, so the lookup does not repeat.
+      // This used to replace the whole URL with "/", which pointed the address
+      // bar at the marketing page: every deep link into a property silently
+      // lost the map, its filters and the view, and a refresh left the app.
+      window.history.replaceState({}, '', urlAfterPropertyConsumed(window.location.search))
     }
 
     openPropertyFromUrl()
@@ -648,6 +703,12 @@ function MapPage() {
   }, [properties, activeSegment])
 
   const displayProperties = segmentFilteredProperties
+
+  // How many other properties share each one's exact coordinate. 452 of 2,958
+  // sit on a shared point and the worst holds 20, so a card that offers "show
+  // on map" has to be able to warn that the pin will not be alone.
+  const coincidentCounts = useMemo(() => countCoincident(displayProperties), [displayProperties])
+
 
   // The legend counts markers, not segments. The tabs above the map count
   // segments, and a property can sit in more than one of those — which is
@@ -1490,6 +1551,7 @@ function MapPage() {
                 loading={loading}
                 showArticle4Overlay={showArticle4Overlay}
                 showPotentialHMOLayer={showPotentialHMOLayer}
+                focusProperty={mapFocus}
               />
             </>
           ) : (
@@ -1500,8 +1562,10 @@ function MapPage() {
                 setSelectedProperty(property)
                 setRightPanelOpen(true)
               }}
+              onShowOnMap={handleShowOnMap}
               loading={loading}
               savedPropertyIds={savedPropertyIds}
+              coincidentCounts={coincidentCounts}
             />
           )}
 

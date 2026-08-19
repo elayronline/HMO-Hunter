@@ -18,6 +18,7 @@ export function MapInner({
   showArticle4Overlay = true,
   showPotentialHMOLayer = true,
   onArticle4AreaClick,
+  focusProperty,
 }: MainMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -333,6 +334,26 @@ export function MapInner({
     })
   }, [selectedCity.longitude, selectedCity.latitude, selectedCity.zoom, mapReady])
 
+  // Fly to a single property on request.
+  //
+  // The camera previously only ever followed selectedCity, so selecting a
+  // property — from the list, from a deep link, from anywhere but a click on a
+  // visible pin — styled a marker that could be anywhere, including outside
+  // the viewport. Zoom 16 is close enough to read the street and still show
+  // the neighbours, which matters: 452 of 2,958 properties share their exact
+  // coordinate with another, so the pin is often not alone.
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !focusProperty) return
+    const { latitude, longitude } = focusProperty.property
+    if (latitude == null || longitude == null) return
+    mapRef.current.flyTo({
+      center: [longitude, latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 16),
+      duration: 1200,
+      essential: true,
+    })
+  }, [focusProperty?.nonce, mapReady])
+
   // Helper to get marker style properties for a property
   const getMarkerStyle = useCallback((property: typeof properties[0], isSelected: boolean, showPotentialHMO: boolean) => {
     const isLicensed = property.hmo_status === "Licensed HMO"
@@ -480,6 +501,11 @@ export function MapInner({
     el.style.boxShadow = style.boxShadow
     el.textContent = style.displayValue
     el.title = style.title
+    // Markers paint in DOM order, so a selected pin can sit under the ones
+    // added after it. 452 of 2,958 properties share their coordinate with
+    // another and one point carries 20, meaning the selection ring was
+    // routinely drawn beneath the neighbours it exists to distinguish.
+    el.style.zIndex = style.isSelected ? "10" : "1"
   }, [])
 
   // Update markers - use stable positioning
