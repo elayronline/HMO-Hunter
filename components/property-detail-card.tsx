@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { roomRent } from "@/lib/properties/room-rents"
 import type { Property } from "@/lib/types/database"
 import { EPCBadge } from "@/components/epc-badge"
 import { AgentContactCard } from "@/components/agent-contact-card"
@@ -165,15 +166,42 @@ export function PropertyDetailCard({
     return ((monthlyRent * 12 / property.purchase_price) * 100).toFixed(1)
   })()
 
-  const netYield = grossYield ? (parseFloat(grossYield) * 0.7).toFixed(1) : null
+  /*
+   * The yield's basis, stated on the face of the panel.
+   *
+   * Gross yield on a purchase listing is modelled: the asking price is
+   * observed, the rent is `estimated_rent_per_room × bedrooms`. 231 of the
+   * 1,068 purchase rows (21.6%) take that rate from the national default
+   * rather than a city figure, and a reader could not previously tell which
+   * they were looking at.
+   */
+  const rentBasis = property.listing_type === "purchase" && monthlyRent
+    ? roomRent(property.city, property.article_4_council)
+    : null
 
-  const monthlyCashflow = (() => {
-    if (!property.purchase_price || !monthlyRent) return null
-    const annualRent = monthlyRent * 12
-    const costs = annualRent * 0.3
-    const mortgage = property.purchase_price * 0.75 * 0.055
-    return Math.round((annualRent - costs - mortgage) / 12)
+  /*
+   * Rent per room on a letting. Both inputs are observed — the advertised
+   * monthly rent and the bedroom count — so this is arithmetic on real values
+   * rather than a model, and it is the figure an HMO investor actually
+   * compares between properties.
+   */
+  const rentPerRoom = (() => {
+    if (property.listing_type === "purchase") return null
+    if (!property.price_pcm || !property.bedrooms) return null
+    return Math.round(property.price_pcm / property.bedrooms)
   })()
+
+  /*
+   * Net yield and monthly cashflow were removed here.
+   *
+   * "Net Yield" was `grossYield × 0.7` — a flat 30% haircut presented as a
+   * distinct metric, with nothing saying so. Cashflow assumed 30% costs, 75%
+   * LTV and 5.5% interest, all hardcoded, and rendered as a pound figure a
+   * reader would take for their own. It also painted RED when null, because
+   * `monthlyCashflow !== null && monthlyCashflow >= 0` is false for a null —
+   * so 1,890 rows (63.9%) showed a red dash that read as negative cashflow.
+   * Neither can be stated honestly without inputs the reader controls.
+   */
 
   /*
    * Derived from the expiry date, not the stored licence_status. Councils only
@@ -222,7 +250,58 @@ export function PropertyDetailCard({
       ═══════════════════════════════════════════════════════════════════ */}
       {!hideHeader && <div className="shrink-0 p-4 border-b border-slate-200">
 
-        {/* Row 1: Price + Deal Score */}
+        {/*
+          * Planning and licence position first.
+          *
+          * This is the reason the ICP is on this panel rather than a portal —
+          * the three-state Article 4 position and a licence state that does not
+          * pretend. The price sat above it, and the price is the one thing a
+          * reader can get anywhere.
+          */}
+        <div className="flex flex-wrap gap-2 mb-3" role="list" aria-label="Property status tags">
+          {/*
+            * Reads the categorised licence state, not the raw columns. This row
+            * used to show "Licensed" off `licensed_hmo` and "Expired Licence"
+            * off `licence_status === "expired"` — so a property whose term had
+            * run out while the register still said active showed a plain green
+            * "Licensed", contradicting the panel's own header a few pixels
+            * below, which has read the categorised state since the licence work.
+            * The register saying expired and our copy of the date running out
+            * are different findings and are never merged.
+            */}
+          {licenceState !== "unlicensed" && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium",
+                licenceConfig.bg,
+                licenceConfig.color,
+              )}
+              role="listitem"
+            >
+              <licenceConfig.icon className="w-3 h-3" aria-hidden="true" />
+              {licenceState === "licensed" || licenceState === "licence_undated"
+                ? "Licensed"
+                : licenceState === "licence_ending"
+                  ? "Licence ending soon"
+                  : licenceState === "licence_expired"
+                    ? "Recorded as expired"
+                    : "Licence term ended, unconfirmed"}
+            </span>
+          )}
+          {property.article_4_status === "in_force" && (
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-purple-50 text-purple-700" role="listitem">
+              <AlertCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Area
+            </span>
+          )}
+          {property.article_4_status === "unknown" && (
+            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-slate-100 text-slate-600" role="listitem">
+              <HelpCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Unknown
+            </span>
+          )}
+          
+        </div>
+
+        {/* Price */}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-xl md:text-2xl font-bold text-slate-900">
@@ -237,14 +316,13 @@ export function PropertyDetailCard({
           </div>
         </div>
 
-
-        {/* Row 2: Address */}
+        {/* Address */}
         <div className="flex items-center gap-2 mt-3">
           <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
           <p className="text-sm text-slate-700 truncate">{property.address}, {property.postcode}</p>
         </div>
 
-        {/* Row 3: Specs */}
+        {/* Specs */}
         <div className="flex items-center gap-2 md:gap-4 mt-3">
           <div className="flex items-center gap-1 text-sm text-slate-600">
             <BedDouble className="w-4 h-4 text-slate-400" />
@@ -262,54 +340,44 @@ export function PropertyDetailCard({
           )}
         </div>
 
-        {/* Row 4: Tags */}
-        <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Property status tags">
-          {property.licensed_hmo && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-emerald-50 text-emerald-700" role="listitem">
-              <Shield className="w-3 h-3" aria-hidden="true" /> Licensed
-            </span>
-          )}
-          {property.licence_status === "expired" && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-amber-50 text-amber-700" role="listitem">
-              <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Expired Licence
-            </span>
-          )}
-          {property.article_4_status === "in_force" && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-purple-50 text-purple-700" role="listitem">
-              <AlertCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Area
-            </span>
-          )}
-          {property.article_4_status === "unknown" && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs font-medium bg-slate-100 text-slate-600" role="listitem">
-              <HelpCircle className="w-3 h-3" aria-hidden="true" /> Article 4 Unknown
-            </span>
-          )}
-          
-        </div>
       </div>}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          METRICS BAR
+          HEADLINE METRIC
+          One figure, or none. The old bar was three columns rendered
+          unconditionally — for the 63.9% of stock that is a letting, all three
+          showed an em-dash, so a third of the panel's height said nothing
+          three times.
       ═══════════════════════════════════════════════════════════════════ */}
-      {(true) && (
-        <div className="shrink-0 grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-slate-50">
-          {[
-            { label: "Net Yield", value: netYield ? `${netYield}%` : "—", positive: netYield && parseFloat(netYield) >= 6 },
-            { label: "Gross Yield", value: grossYield ? `${grossYield}%` : "—", positive: null },
-            { label: "Cashflow", value: monthlyCashflow !== null ? `${monthlyCashflow >= 0 ? '+' : ''}£${monthlyCashflow}` : "—", positive: monthlyCashflow !== null && monthlyCashflow >= 0 },
-          ].map((metric, i) => (
-            <div key={i} className="py-3 text-center">
-              <p className="text-xs text-slate-500">{metric.label}</p>
-              <p className={cn(
-                "text-base font-bold mt-1",
-                metric.positive === true ? "text-emerald-600" :
-                metric.positive === false ? "text-red-600" :
-                "text-slate-900"
-              )}>
-                {metric.value}
+      {(grossYield || rentPerRoom !== null) && (
+        <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-4 py-3">
+          {grossYield ? (
+            <>
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs text-slate-500">Gross yield</p>
+                <p className="text-base font-bold text-slate-900">{grossYield}%</p>
+              </div>
+              {/* No colour threshold. The old rule painted >=6% green, which
+                  endorsed a modelled number — and against a median of 2.5%
+                  across purchase stock it almost never fired anyway. */}
+              {rentBasis && (
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Modelled: £{rentBasis.rate.toLocaleString()}/room × {property.bedrooms} rooms ÷ asking price
+                  {rentBasis.basis === "city"
+                    ? ` · ${rentBasis.city} room rate`
+                    : " · national average room rate, no city figure held"}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="flex items-baseline justify-between">
+              <p className="text-xs text-slate-500">Rent per room</p>
+              <p className="text-base font-bold text-slate-900">
+                £{rentPerRoom?.toLocaleString()}
+                <span className="ml-1 text-xs font-normal text-slate-500">/mo</span>
               </p>
             </div>
-          ))}
+          )}
         </div>
       )}
 
