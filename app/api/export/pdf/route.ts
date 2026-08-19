@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits } from "@/lib/credits"
+import { lockReason, userCan } from "@/lib/entitlements"
 import { validateBody } from "@/lib/validation/api-validation"
 import { exportRequestSchema } from "@/lib/validation/schemas"
 import { propertiesForExport } from "@/lib/export/query"
@@ -38,8 +38,16 @@ export async function POST(request: NextRequest) {
   try {
     const { propertyIds, filters, segment } = validation.data
 
-    // Same query as the map and the CSV, and credits only once there are rows.
+    // Export is a Pro capability, so the answer does not depend on the result
+    // set — refuse before running the query rather than after.
     // See lib/export/query.ts for why this route no longer builds its own.
+    if (!(await userCan(user.id, "export"))) {
+      return NextResponse.json(
+        { error: lockReason("free", "export"), upgradeRequired: true },
+        { status: 403 },
+      )
+    }
+
     const matched = await propertiesForExport(filters, segment, propertyIds)
 
     if (matched.length === 0) {
@@ -49,15 +57,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const creditResult = await deductCredits(user.id, "csv_export") // Same cost as CSV
-    if (!creditResult.success) {
-      return NextResponse.json({
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
-      }, { status: 429 })
-    }
 
     const properties = matched.slice(0, MAX_ROWS)
     const omitted = matched.length - properties.length
@@ -198,8 +197,6 @@ export async function POST(request: NextRequest) {
         "Content-Disposition": `attachment; filename="hmo-hunter-export-${new Date().toISOString().split("T")[0]}.pdf"`,
         "X-Export-Rows": String(properties.length),
         "X-Export-Rows-Omitted": String(omitted),
-        "X-Credits-Remaining": String(creditResult.credits_remaining ?? 0),
-        "X-Credits-Warning": creditResult.warning || "",
       }
     })
   } catch (error) {

@@ -126,10 +126,10 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
           description: `You've reached your limit of ${data.limit} saved searches`,
           variant: "destructive"
         })
-      } else if (data.insufficientCredits) {
+      } else if (data.limitReached) {
         toast({
-          title: "Insufficient Credits",
-          description: "You don't have enough credits to save this search",
+          title: "Saved search limit reached",
+          description: data.error || "You have reached your saved searches limit.",
           variant: "destructive"
         })
       } else {
@@ -289,7 +289,7 @@ export function SavedSearches({ currentFilters, onLoadFilters, isLoggedIn }: Sav
               onKeyDown={(e) => e.key === 'Enter' && saveSearch()}
             />
             <p className="text-xs text-slate-500 mt-2">
-              Costs 2 credits. You can save up to 10 searches.
+              Saved searches are limited by your plan.
             </p>
           </div>
           <DialogFooter>

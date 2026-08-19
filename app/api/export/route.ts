@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits } from "@/lib/credits"
+import { lockReason, userCan } from "@/lib/entitlements"
 import { validateBody } from "@/lib/validation/api-validation"
 import { exportRequestSchema } from "@/lib/validation/schemas"
 import { propertiesForExport } from "@/lib/export/query"
@@ -25,13 +25,20 @@ export async function POST(request: NextRequest) {
   const { propertyIds, filters, segment } = validation.data
 
   try {
-    // Fetch first, charge second.
+    // Check entitlement first, then fetch.
     //
-    // Credits were taken before the query ran and never given back when it
-    // failed — and it always failed, on a select naming nine columns that do
-    // not exist. Every export attempt in the product's history cost 10 credits
-    // and returned an error. Nothing here is charged for until there are rows
-    // to hand over.
+    // Export is a Pro capability rather than something priced per use, so the
+    // answer does not depend on the result set and there is no reason to run
+    // the query before refusing. The old code took 10 credits AFTER a query
+    // that always failed, so every export in the product's history cost
+    // credits and returned an error.
+    if (!(await userCan(user.id, "export"))) {
+      return NextResponse.json(
+        { error: lockReason("free", "export"), upgradeRequired: true },
+        { status: 403 },
+      )
+    }
+
     const properties = await propertiesForExport(filters, segment, propertyIds)
 
     if (properties.length === 0) {
@@ -39,16 +46,6 @@ export async function POST(request: NextRequest) {
         { error: "No properties match these filters, so there is nothing to export." },
         { status: 400 }
       )
-    }
-
-    const creditResult = await deductCredits(user.id, 'csv_export')
-    if (!creditResult.success) {
-      return NextResponse.json({
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
-      }, { status: 429 })
     }
 
     // No row cap. The old 500 was applied silently against a page that says
@@ -62,8 +59,6 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="hmo-hunter-export-${new Date().toISOString().split('T')[0]}.csv"`,
         'X-Export-Rows': String(properties.length),
-        'X-Credits-Remaining': String(creditResult.credits_remaining ?? 0),
-        'X-Credits-Warning': creditResult.warning || '',
       }
     })
   } catch (error) {

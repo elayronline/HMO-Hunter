@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { checkResourceCap, deductCredits, updateResourceCount } from "@/lib/credits"
+import { checkResourceCap, updateResourceCount } from "@/lib/entitlements"
 import { validateBody } from "@/lib/validation/api-validation"
 import { priceAlertCreateSchema, priceAlertUpdateSchema } from "@/lib/validation/schemas"
 
@@ -69,25 +69,17 @@ export async function POST(request: NextRequest) {
 
   try {
 
-    // Check resource cap (10 active price alerts max)
+    // Capacity is the only thing checked now. The limit comes from the tier
+    // rather than being written into the message, which is why the old
+    // hardcoded "(10)" is gone — Free and Pro do not share a number.
     const capCheck = await checkResourceCap(user.id, 'price_alerts')
-    if (!capCheck.success) {
+    if (!capCheck.allowed) {
       return NextResponse.json({
-        error: capCheck.error || "You've reached your price alerts limit (10)",
+        error: capCheck.reason || "You have reached your price alerts limit.",
         limitReached: true,
+        tier: capCheck.tier,
         current: capCheck.current,
         limit: capCheck.limit,
-      }, { status: 429 })
-    }
-
-    // Deduct 5 credits for creating a price alert
-    const creditResult = await deductCredits(user.id, 'create_price_alert')
-    if (!creditResult.success) {
-      return NextResponse.json({
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
       }, { status: 429 })
     }
 
@@ -146,11 +138,7 @@ export async function POST(request: NextRequest) {
     // Update resource count
     await updateResourceCount(user.id, 'price_alerts', 1)
 
-    return NextResponse.json({
-      ...alert,
-      creditsRemaining: creditResult.credits_remaining,
-      warning: creditResult.warning,
-    }, { status: 201 })
+    return NextResponse.json({ ...alert }, { status: 201 })
   } catch (error) {
     console.error("[PriceAlerts] Error:", error)
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })

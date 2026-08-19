@@ -19,13 +19,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import {
-  CREDIT_COSTS,
-  formatCreditStatus,
-  getTimeUntilReset,
-  type UserCredits,
-  type CreditAction,
-} from "@/lib/credits"
-import {
   FRESHNESS_RULES,
   assessFreshness,
   calculateCompleteness,
@@ -59,26 +52,6 @@ import { D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
 const uuid = (n: number = 0) => `550e8400-e29b-41d4-a716-${String(n).padStart(12, "0")}`
-
-const createMockCredits = (overrides: Partial<UserCredits> = {}): UserCredits => ({
-  id: "test-id",
-  user_id: "test-user",
-  role: "standard_pro",
-  daily_credits: 150,
-  credits_used: 0,
-  free_property_views_used: 0,
-  free_property_views_limit: 20,
-  saved_properties_count: 0,
-  saved_properties_limit: 100,
-  saved_searches_count: 0,
-  saved_searches_limit: 10,
-  active_price_alerts_count: 0,
-  active_price_alerts_limit: 10,
-  last_reset_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  ...overrides,
-})
 
 const createFullProperty = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
   id: uuid(1),
@@ -347,93 +320,6 @@ describe("Schema Fuzzing: All 17 Schemas Under Adversarial Input", () => {
 // 2. CREDIT SYSTEM UNDER EXTREME LOAD
 // ============================================================
 
-describe("Credit System: Extreme Load Simulation", () => {
-  it("should survive 10,000 sequential action cost calculations", () => {
-    const actions: CreditAction[] = Object.keys(CREDIT_COSTS) as CreditAction[]
-    for (let i = 0; i < 10000; i++) {
-      const action = actions[i % actions.length]
-      const cost = CREDIT_COSTS[action]
-      expect(cost).toBeGreaterThan(0)
-      expect(Number.isFinite(cost)).toBe(true)
-    }
-  })
-
-  it("should correctly model a power user's full day", () => {
-    // Power user: maxes out every feature type
-    const session = {
-      freeViews: 20,
-      paidViews: 30,           // 30 × 1 = 30
-      contactViews: 10,        // 10 × 2 = 20
-      contactCopies: 5,        // 5 × 3 = 15
-      savedProperties: 10,     // 10 × 1 = 10
-      savedSearches: 3,        // 3 × 2 = 6
-      priceAlerts: 2,          // 2 × 5 = 10
-      csvExports: 1,           // 1 × 10 = 10
-      pipelineAdds: 15,        // 15 × 1 = 15
-      d2vEmails: 10,           // 10 × 2 = 20
-      d2vLetters: 3,           // 3 × 3 = 9
-      viewingsScheduled: 2,    // 2 × 2 = 4
-    }
-
-    const totalCredits =
-      session.paidViews * CREDIT_COSTS.property_view +
-      session.contactViews * CREDIT_COSTS.contact_data_view +
-      session.contactCopies * CREDIT_COSTS.contact_data_copy +
-      session.savedProperties * CREDIT_COSTS.save_property +
-      session.savedSearches * CREDIT_COSTS.save_search +
-      session.priceAlerts * CREDIT_COSTS.create_price_alert +
-      session.csvExports * CREDIT_COSTS.csv_export +
-      session.pipelineAdds * CREDIT_COSTS.add_to_pipeline +
-      session.d2vEmails * CREDIT_COSTS.d2v_send_email +
-      session.d2vLetters * CREDIT_COSTS.d2v_send_letter +
-      session.viewingsScheduled * CREDIT_COSTS.schedule_viewing
-
-    expect(totalCredits).toBe(149) // Just under 150 daily limit
-    expect(totalCredits).toBeLessThanOrEqual(150)
-  })
-
-  it("should handle formatCreditStatus at every percentage from 0 to 200", () => {
-    for (let pct = 0; pct <= 200; pct++) {
-      const used = Math.round((pct / 100) * 150)
-      const credits = createMockCredits({ credits_used: used })
-      const status = formatCreditStatus(credits)
-      expect(Number.isFinite(status.creditsRemaining)).toBe(true)
-      expect(Number.isFinite(status.percentUsed)).toBe(true)
-      expect(typeof status.isWarning).toBe("boolean")
-      expect(typeof status.isBlocked).toBe("boolean")
-    }
-  })
-
-  it("should never allow negative free views", () => {
-    for (let used = 0; used <= 30; used++) {
-      const credits = createMockCredits({
-        free_property_views_used: used,
-        free_property_views_limit: 20,
-      })
-      const remaining = credits.free_property_views_limit - credits.free_property_views_used
-      expect(remaining).toBeLessThanOrEqual(20)
-      // Even if used > limit (race condition), remaining can be negative
-      // but formatCreditStatus should handle it
-      const status = formatCreditStatus(credits)
-      expect(Number.isFinite(status.freeViewsRemaining)).toBe(true)
-    }
-  })
-
-  it("should correctly calculate time until reset at every hour", () => {
-    vi.useFakeTimers()
-    for (let hour = 0; hour < 24; hour++) {
-      vi.setSystemTime(new Date(`2026-03-19T${String(hour).padStart(2, "0")}:30:00.000Z`))
-      const result = getTimeUntilReset()
-      expect(result.hours).toBeGreaterThanOrEqual(0)
-      expect(result.hours).toBeLessThanOrEqual(23)
-      expect(result.minutes).toBeGreaterThanOrEqual(0)
-      expect(result.minutes).toBeLessThanOrEqual(59)
-      expect(result.formatted).toMatch(/^\d+h \d+m$/)
-    }
-    vi.useRealTimers()
-  })
-})
-
 // ============================================================
 // 3. DATA QUALITY MODEL: BOUNDARY + ADVERSARIAL
 // ============================================================
@@ -548,45 +434,6 @@ describe("Freshness: Every Source × Every Status Boundary", () => {
 // ============================================================
 // 7. D2V CAMPAIGN LIFECYCLE
 // ============================================================
-
-describe("D2V: Full Campaign Lifecycle Validation", () => {
-  it("Step 1: Create template → validates", () => {
-    expect(d2vTemplateCreateSchema.safeParse({
-      name: "Standard Purchase Letter",
-      body: "Dear {{owner_name}}, I am interested in {{property_address}}.",
-      channel: "letter",
-    }).success).toBe(true)
-  })
-
-  it("Step 2: Create campaign with properties → validates", () => {
-    expect(d2vCampaignCreateSchema.safeParse({
-      name: "March 2026 - Manchester",
-      channel: "email",
-      template_id: uuid(100),
-      property_ids: [uuid(1), uuid(2), uuid(3)],
-    }).success).toBe(true)
-  })
-
-  it("Step 3: Send campaign → credit cost correct", () => {
-    const recipientCount = 3
-    const emailCost = recipientCount * CREDIT_COSTS.d2v_send_email
-    expect(emailCost).toBe(6)
-  })
-
-  it("should reject campaign with 0 recipients", () => {
-    expect(d2vCampaignCreateSchema.safeParse({
-      name: "Empty",
-      channel: "email",
-      property_ids: [],
-    }).success).toBe(false)
-  })
-
-  it("should calculate correct cost for max batch (100 letters)", () => {
-    const cost = 100 * CREDIT_COSTS.d2v_send_letter
-    expect(cost).toBe(300) // Would need 2 days of credits
-    expect(cost).toBeGreaterThan(150) // Exceeds daily limit — user should be warned
-  })
-})
 
 // ============================================================
 // 8. VIEWING CHECKLIST COMPLETENESS

@@ -91,15 +91,6 @@ export function ExportButton({
         // Get the file content
         const blob = await response.blob()
 
-        // Check for credit warning in headers
-        const warning = response.headers.get('X-Credits-Warning')
-        if (warning) {
-          toast({
-            title: "Credits Running Low",
-            description: warning,
-          })
-        }
-
         // Create download link
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -117,10 +108,10 @@ export function ExportButton({
       } else {
         const data = await response.json()
 
-        if (data.insufficientCredits) {
+        if (data.upgradeRequired) {
           toast({
-            title: "Insufficient Credits",
-            description: "Export costs 10 credits. You don't have enough credits.",
+            title: "Export is part of Pro",
+            description: data.error || "Exporting a saved set is part of Pro.",
             variant: "destructive"
           })
         } else {
@@ -161,12 +152,10 @@ export function ExportButton({
         <DropdownMenuItem onClick={() => handleExport("csv")} className="gap-2">
           <FileSpreadsheet className="w-4 h-4" />
           Export as CSV
-          <span className="text-xs text-slate-400 ml-auto">10 credits</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("pdf")} className="gap-2">
           <FileText className="w-4 h-4" />
           Export as PDF
-          <span className="text-xs text-slate-400 ml-auto">10 credits</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

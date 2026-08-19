@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { checkResourceCap, deductCredits, updateResourceCount } from "@/lib/credits"
+import { checkResourceCap, updateResourceCount } from "@/lib/entitlements"
 
 export async function saveProperty(propertyId: string, notes?: string) {
   try {
@@ -17,25 +17,16 @@ export async function saveProperty(propertyId: string, notes?: string) {
       return { error: "You must be logged in to save properties" }
     }
 
-    // Check resource cap (100 saved properties max)
+    // The limit comes from the tier, so it is not written into the message —
+    // Free and Pro do not share a number.
     const capCheck = await checkResourceCap(user.id, 'saved_properties')
-    if (!capCheck.success) {
+    if (!capCheck.allowed) {
       return {
-        error: capCheck.error || "You've reached your saved properties limit (100)",
+        error: capCheck.reason || "You have reached your saved properties limit.",
         limitReached: true,
+        tier: capCheck.tier,
         current: capCheck.current,
         limit: capCheck.limit,
-      }
-    }
-
-    // Deduct 1 credit for saving a property
-    const creditResult = await deductCredits(user.id, 'save_property')
-    if (!creditResult.success) {
-      return {
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
       }
     }
 
@@ -60,11 +51,7 @@ export async function saveProperty(propertyId: string, notes?: string) {
     await updateResourceCount(user.id, 'saved_properties', 1)
 
     revalidatePath("/")
-    return {
-      data,
-      creditsRemaining: creditResult.credits_remaining,
-      warning: creditResult.warning,
-    }
+    return { data }
   } catch (error: any) {
     if (error?.name === 'AbortError') {
       return { error: "Request was cancelled" }

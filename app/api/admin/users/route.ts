@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
-import { isAdmin } from "@/lib/credits"
+import { isAdmin, normaliseTier } from "@/lib/entitlements"
 
 // GET all users with their credit info (admin only)
 export async function GET(request: NextRequest) {
@@ -44,97 +44,45 @@ export async function GET(request: NextRequest) {
   )
 
   const users = authUsers.users.map(u => {
-    const credits = creditsMap.get(u.id)
+    const record = creditsMap.get(u.id)
     return {
       id: u.id,
       email: u.email,
-      role: credits?.role || 'standard_pro',
-      is_active: credits?.is_active ?? true,
-      deactivated_at: credits?.deactivated_at || null,
-      deactivation_reason: credits?.deactivation_reason || null,
+      // A missing record is an unknown, and the lowest tier is the safe read.
+      tier: normaliseTier(record?.tier),
+      hasRecord: Boolean(record),
+      is_active: record?.is_active ?? true,
+      deactivated_at: record?.deactivated_at || null,
+      deactivation_reason: record?.deactivation_reason || null,
       created_at: u.created_at,
       last_sign_in: u.last_sign_in_at,
-      credits: credits ? {
-        daily_credits: credits.daily_credits,
-        credits_used: credits.credits_used,
-        saved_properties_count: credits.saved_properties_count,
-        saved_searches_count: credits.saved_searches_count,
-        active_price_alerts_count: credits.active_price_alerts_count,
+      usage: record ? {
+        saved_properties_count: record.saved_properties_count,
+        saved_searches_count: record.saved_searches_count,
+        active_price_alerts_count: record.active_price_alerts_count,
+        property_views_today: record.property_views_today ?? 0,
       } : null
     }
   })
 
-  // Calculate stats
   const stats = {
     total_users: users.length,
-    admin_count: users.filter(u => u.role === 'admin').length,
-    standard_pro_count: users.filter(u => u.role === 'standard_pro').length,
-    active_today: users.filter(u => {
-      const credits = creditsMap.get(u.id)
-      return credits?.credits_used > 0
-    }).length,
+    admin_count: users.filter(u => u.tier === 'admin').length,
+    pro_count: users.filter(u => u.tier === 'pro').length,
+    free_count: users.filter(u => u.tier === 'free').length,
+    // "Active today" used to mean credits_used > 0, which was 0 for every
+    // account ever — so the figure always read zero. It now counts accounts
+    // that have taken a property view today.
+    active_today: users.filter(u => (u.usage?.property_views_today ?? 0) > 0).length,
     deactivated_count: users.filter(u => !u.is_active).length
   }
 
   return NextResponse.json({ users, stats })
 }
 
-// PATCH - Update user role (admin only)
-export async function PATCH(request: NextRequest) {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  // Check if user is admin
-  const adminCheck = await isAdmin(user.id)
-  if (!adminCheck) {
-    return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 })
-  }
-
-  const { userId, role } = await request.json()
-
-  if (!userId || !role || !['admin', 'standard_pro'].includes(role)) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 })
-  }
-
-  // Use service role to update
-  const supabaseAdmin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-
-  // Update user_credits table
-  const { error: creditsError } = await supabaseAdmin
-    .from('user_credits')
-    .update({
-      role,
-      daily_credits: role === 'admin' ? 999999 : 150,
-      updated_at: new Date().toISOString()
-    })
-    .eq('user_id', userId)
-
-  if (creditsError) {
-    console.error("[Admin] Error updating credits:", creditsError)
-    return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
-  }
-
-  // Update user metadata
-  const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-    user_metadata: {
-      role,
-      is_admin: role === 'admin',
-      is_premium: true
-    }
-  })
-
-  if (authUpdateError) {
-    console.error("[Admin] Error updating auth:", authUpdateError)
-  }
-
-  return NextResponse.json({ success: true })
-}
+// Role changes live at /api/admin/users/[userId]/tier, which validates the
+// tier, refuses an admin demoting themselves, and writes an audit row.
+//
+// The PATCH that used to sit here set `is_premium: true` in user metadata for
+// EVERY user it touched, whatever role was being assigned. That is why all
+// five accounts held the flag and the premium gate passed everybody.

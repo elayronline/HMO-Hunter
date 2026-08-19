@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { checkResourceCap, deductCredits, updateResourceCount } from "@/lib/credits"
+import { checkResourceCap, updateResourceCount } from "@/lib/entitlements"
 import { validateBody } from "@/lib/validation/api-validation"
 import { savedSearchCreateSchema, savedSearchUpdateSchema } from "@/lib/validation/schemas"
 
@@ -48,25 +48,15 @@ export async function POST(request: NextRequest) {
 
   try {
 
-    // Check resource cap (10 saved searches max)
+    // The limit comes from the tier, so it is not written into the message.
     const capCheck = await checkResourceCap(user.id, 'saved_searches')
-    if (!capCheck.success) {
+    if (!capCheck.allowed) {
       return NextResponse.json({
-        error: capCheck.error || "You've reached your saved searches limit (10)",
+        error: capCheck.reason || "You have reached your saved searches limit.",
         limitReached: true,
+        tier: capCheck.tier,
         current: capCheck.current,
         limit: capCheck.limit,
-      }, { status: 429 })
-    }
-
-    // Deduct 2 credits for saving a search
-    const creditResult = await deductCredits(user.id, 'save_search')
-    if (!creditResult.success) {
-      return NextResponse.json({
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
       }, { status: 429 })
     }
 
@@ -91,11 +81,7 @@ export async function POST(request: NextRequest) {
     // Update resource count
     await updateResourceCount(user.id, 'saved_searches', 1)
 
-    return NextResponse.json({
-      ...search,
-      creditsRemaining: creditResult.credits_remaining,
-      warning: creditResult.warning,
-    }, { status: 201 })
+    return NextResponse.json({ ...search }, { status: 201 })
   } catch (error) {
     console.error("[SavedSearches] Error:", error)
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })

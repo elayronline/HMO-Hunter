@@ -42,6 +42,7 @@ import { getProperties, getPropertyById } from "../actions/properties"
 import { getSavedProperties } from "../actions/saved-properties"
 import { SavePropertyButton } from "@/components/save-property-button"
 import { createClient } from "@/lib/supabase/client"
+import { useEntitlements } from "@/lib/use-entitlements"
 import type { Property, SavedProperty } from "@/lib/types/database"
 import type { User } from "@supabase/supabase-js"
 import { PropertyGallery } from "@/components/property-gallery"
@@ -227,10 +228,12 @@ function MapPage() {
     canAddMore,
   } = usePropertyComparison(3)
 
-  // Premium user status - check user metadata for subscription tier
-  // TODO: Implement actual subscription system with Stripe or similar
-  // For now, check user_metadata.is_premium flag (can be set via Supabase dashboard)
-  const isPremiumUser = user?.user_metadata?.is_premium === true
+  // What this reader may see. Read from the tier via /api/entitlements rather
+  // than user_metadata.is_premium — the metadata flag was a second source of
+  // truth that the API did not consult the same way, so the page could show a
+  // lock over data the API would have returned.
+  const { can: canAccess } = useEntitlements()
+  const canSeeOwnerData = canAccess("owner_data")
 
   const supabase = createClient()
   const { toast } = useToast()
@@ -334,7 +337,7 @@ function MapPage() {
     return () => window.removeEventListener('keydown', handleTab)
   }, [showFullDetails])
 
-  // Track property view and deduct credits if needed
+  // Meter a property view. Only Free has a daily limit.
   const trackPropertyView = useCallback(async (propertyId: string) => {
     if (!user) return // Don't track for non-logged-in users
 
@@ -347,25 +350,25 @@ function MapPage() {
 
       const data = await response.json()
 
-      if (!response.ok && data.insufficientCredits) {
+      if (!response.ok && data.limitReached) {
         toast({
-          title: "Daily Limit Reached",
-          description: "You've used all your property views for today. Resets at midnight UTC.",
+          title: "Daily view limit reached",
+          description: data.error || "You have used your property views for today.",
           variant: "destructive"
         })
-      } else if (data.warning) {
+      } else if (
+        // null means the tier has no limit, which is not the same as none left.
+        typeof data.viewsRemaining === "number" &&
+        data.viewsRemaining <= 5 &&
+        data.viewsRemaining > 0
+      ) {
         toast({
-          title: "Credits Running Low",
-          description: data.warning,
-        })
-      } else if (data.freeViewUsed && data.freeViewsRemaining !== undefined && data.freeViewsRemaining <= 5 && data.freeViewsRemaining > 0) {
-        toast({
-          title: "Free Views Running Low",
-          description: `${data.freeViewsRemaining} free property views remaining today`,
+          title: "Property views running low",
+          description: `${data.viewsRemaining} property views remaining today`,
         })
       }
-      // Notify credit balance to refresh
-      window.dispatchEvent(new Event("credits-changed"))
+      // Refresh the plan chip
+      window.dispatchEvent(new Event("entitlements-changed"))
     } catch (error) {
       // Silently fail - don't block property viewing
     }
@@ -1108,14 +1111,14 @@ function MapPage() {
                   </Select>
                 </div>
 
-                {/* Licence Expiry Date Filter - Premium Feature */}
+                {/* Licence Expiry Date Filter - Pro capability */}
                 <div className="pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-slate-700">Licence Expiry Filter</span>
                       <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
                     </div>
-                    {isPremiumUser ? (
+                    {canSeeOwnerData ? (
                       <Switch
                         checked={licenceExpiryEnabled}
                         onCheckedChange={setLicenceExpiryEnabled}
@@ -1131,7 +1134,7 @@ function MapPage() {
                   </div>
                   <p className="text-xs text-slate-500 mb-2">Filter by licence expiry month range</p>
 
-                  {licenceExpiryEnabled && isPremiumUser && (
+                  {licenceExpiryEnabled && canSeeOwnerData && (
                     <div className="space-y-3 mt-2">
                       {/* Year selector */}
                       <div className="flex items-center gap-2">
@@ -1234,7 +1237,7 @@ function MapPage() {
                       <span className="text-sm font-medium text-slate-700">Owner Data Only</span>
                       <span className="text-xs text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded font-semibold">PRO</span>
                     </div>
-                    {isPremiumUser ? (
+                    {canSeeOwnerData ? (
                       <Switch
                         checked={ownerDataFilter}
                         onCheckedChange={setOwnerDataFilter}
@@ -1793,7 +1796,7 @@ function MapPage() {
                   <PropertyDetailCard
                     property={selectedProperty}
                     onViewFullDetails={() => setShowFullDetails(true)}
-                    isPremium={isPremiumUser}
+                    canSeeOwnerData={canSeeOwnerData}
                     isSaved={savedPropertyIds.has(selectedProperty.id)}
                   />
                 </div>
@@ -2141,14 +2144,14 @@ function MapPage() {
               {/* Owner Information in Full Details - Always show */}
               <div className="mb-6">
                 <h4 className="font-semibold text-slate-900 mb-3">Title Owner & Licence Holder</h4>
-                <OwnerInformationSection property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
+                <OwnerInformationSection property={selectedProperty} defaultOpen={true} canSeeOwnerData={canSeeOwnerData} />
               </div>
 
               {/* Potential HMO Analysis in Full Details - Pro Feature */}
               {selectedProperty.is_potential_hmo && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">HMO Investment Analysis</h4>
-                  <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
+                  <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} canSeeOwnerData={canSeeOwnerData} />
                 </div>
               )}
 

@@ -35,10 +35,10 @@ import { csrfFetch } from "@/lib/csrf-client"
 interface OwnerInformationSectionProps {
   property: Property
   defaultOpen?: boolean
-  isPremium?: boolean
+  canSeeOwnerData?: boolean
 }
 
-// Track contact data access and deduct credits
+// Log contact data access for GDPR, and surface a Pro lock if it is refused
 async function trackContactAccess(
   propertyId: string,
   contactName: string | undefined,
@@ -60,10 +60,10 @@ async function trackContactAccess(
     const data = await response.json()
 
     if (!response.ok) {
-      if (data.insufficientCredits) {
+      if (data.upgradeRequired) {
         toast({
-          title: "Insufficient Credits",
-          description: "You don't have enough credits for this action.",
+          title: "Contact details are part of Pro",
+          description: data.error || "Contact details are part of Pro.",
           variant: "destructive"
         })
         return { success: false }
@@ -71,20 +71,13 @@ async function trackContactAccess(
       return { success: false }
     }
 
-    if (data.warning) {
-      toast({
-        title: "Credits Running Low",
-        description: data.warning,
-      })
-    }
-
-    return { success: true, warning: data.warning }
+    return { success: true }
   } catch (error) {
     return { success: true } // Allow action even if tracking fails
   }
 }
 
-// Copy to clipboard with credit tracking
+// Copy to clipboard, logging the access
 async function copyToClipboard(
   text: string,
   propertyId: string,
@@ -105,7 +98,7 @@ async function copyToClipboard(
 export function OwnerInformationSection({
   property,
   defaultOpen = false,
-  isPremium = false,
+  canSeeOwnerData = false,
 }: OwnerInformationSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -134,8 +127,8 @@ export function OwnerInformationSection({
     return null
   }
 
-  // Premium upgrade CTA component
-  const PremiumUpgradeCTA = () => (
+  // Pro upgrade CTA component
+  const ProUpgradeCTA = () => (
     <div className="relative">
       {/* Blurred preview */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white z-10" />
@@ -151,7 +144,7 @@ export function OwnerInformationSection({
         </p>
         <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold px-6">
           <Lock className="h-4 w-4 mr-2" />
-          Upgrade to Premium
+          Upgrade to Pro
         </Button>
       </div>
     </div>
@@ -183,7 +176,7 @@ export function OwnerInformationSection({
         </div>
         <Lock className="h-4 w-4 text-gray-400" />
       </div>
-      <PremiumUpgradeCTA />
+      <ProUpgradeCTA />
     </div>
   )
 
@@ -201,10 +194,10 @@ export function OwnerInformationSection({
               <span className="text-white font-bold text-sm uppercase tracking-wide">Title Owner</span>
             </div>
             <div className="flex items-center gap-2">
-              {!isPremium && hasTitleOwnerName && (
+              {!canSeeOwnerData && hasTitleOwnerName && (
                 <Badge className="bg-amber-500 text-white border-amber-400 text-xs">
                   <Lock className="h-3 w-3 mr-1" />
-                  Premium
+                  Pro
                 </Badge>
               )}
               <Badge className="bg-white/20 text-white border-white/30 text-xs">
@@ -217,7 +210,7 @@ export function OwnerInformationSection({
 
         {/* Content - Show locked or unlocked based on premium status */}
         {hasTitleOwnerName ? (
-          isPremium ? (
+          canSeeOwnerData ? (
             <div className="p-4 space-y-3">
               {/* Owner Name/Company - PREMIUM UNLOCKED */}
               <div className="flex items-start gap-3">
@@ -280,7 +273,7 @@ export function OwnerInformationSection({
               )}
 
               {/* D2V Quick Outreach — one-click personalised letter/email */}
-              {isPremium && (property.owner_name || property.licence_holder_name) && (
+              {canSeeOwnerData && (property.owner_name || property.licence_holder_name) && (
                 <div className="pt-2 border-t border-blue-200">
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">Direct Outreach</p>
                   <QuickOutreach property={property} />
@@ -336,7 +329,7 @@ export function OwnerInformationSection({
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Licence Holder</p>
-                    {isPremium ? (
+                    {canSeeOwnerData ? (
                       <>
                         <p className="font-semibold text-gray-900">{property.licence_holder_name}</p>
                         {property.licence_holder_address && (
@@ -349,13 +342,13 @@ export function OwnerInformationSection({
                     ) : (
                       <p className="font-semibold text-gray-400 blur-sm select-none">Licence Holder Name</p>
                     )}
-                    {sameOwnerAndLicenceHolder && isPremium && (
+                    {sameOwnerAndLicenceHolder && canSeeOwnerData && (
                       <Badge className="mt-2 bg-amber-100 text-amber-700 border-amber-300 text-xs">
                         Same as Title Owner
                       </Badge>
                     )}
                   </div>
-                  {!isPremium && <Lock className="h-4 w-4 text-gray-400" />}
+                  {!canSeeOwnerData && <Lock className="h-4 w-4 text-gray-400" />}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-gray-500">
@@ -422,7 +415,7 @@ export function OwnerInformationSection({
               </div>
 
               {/* Licence Holder Contact Buttons - PREMIUM ONLY */}
-              {hasLicenceHolderContact && isPremium && (
+              {hasLicenceHolderContact && canSeeOwnerData && (
                 <div className="grid grid-cols-1 gap-2 pt-2 border-t border-teal-200">
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Contact Licence Holder</p>
                   <div className="flex flex-wrap gap-2">
@@ -480,7 +473,7 @@ export function OwnerInformationSection({
       {/* ============================================ */}
       {/* EXPANDABLE DETAILS SECTION - PREMIUM ONLY */}
       {/* ============================================ */}
-      {isPremium && (isCompany || (property.directors && property.directors.length > 0)) && (
+      {canSeeOwnerData && (isCompany || (property.directors && property.directors.length > 0)) && (
         <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border rounded-lg bg-white">
           <CollapsibleTrigger asChild>
             <Button
@@ -572,8 +565,8 @@ export function OwnerInformationSection({
         </Collapsible>
       )}
 
-      {/* Premium teaser for company details when not premium */}
-      {!isPremium && (isCompany || (property.directors && property.directors.length > 0)) && (
+      {/* Pro teaser for company details */}
+      {!canSeeOwnerData && (isCompany || (property.directors && property.directors.length > 0)) && (
         <div className="border rounded-lg bg-white p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -587,7 +580,7 @@ export function OwnerInformationSection({
             </div>
             <Badge className="bg-amber-500 text-white border-amber-400 text-xs">
               <Lock className="h-3 w-3 mr-1" />
-              Premium
+              Pro
             </Badge>
           </div>
         </div>

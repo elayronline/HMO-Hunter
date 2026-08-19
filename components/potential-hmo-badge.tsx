@@ -13,7 +13,7 @@ interface PotentialHMOBadgeProps {
   classification: "ready_to_go" | "value_add" | "not_suitable" | null
   dealScore?: number
   className?: string
-  isPremium?: boolean
+  canSeeOwnerData?: boolean
 }
 
 const classificationConfig = {
@@ -41,7 +41,7 @@ export function PotentialHMOBadge({
   classification,
   dealScore,
   className = "",
-  isPremium = false,
+  canSeeOwnerData = false,
 }: PotentialHMOBadgeProps) {
   if (!classification || classification === "not_suitable") {
     return null
@@ -51,7 +51,7 @@ export function PotentialHMOBadge({
   const Icon = config.icon
 
   // Non-premium users see a locked badge
-  if (!isPremium) {
+  if (!canSeeOwnerData) {
     return (
       <TooltipProvider>
         <Tooltip>

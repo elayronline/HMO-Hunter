@@ -62,7 +62,7 @@ import { csrfFetch } from "@/lib/csrf-client"
 interface PropertyDetailCardProps {
   property: Property
   onViewFullDetails: () => void
-  isPremium?: boolean
+  canSeeOwnerData?: boolean
   isSaved?: boolean
   className?: string
   hideFooter?: boolean
@@ -74,7 +74,7 @@ type TabType = "analysis" | "details" | "compliance"
 export function PropertyDetailCard({
   property,
   onViewFullDetails,
-  isPremium = false,
+  canSeeOwnerData = false,
   isSaved = false,
   className,
   hideFooter = false,
@@ -413,10 +413,10 @@ export function PropertyDetailCard({
                 </Section>
               )}
 
-              {/* Ownership - Premium Feature */}
+              {/* Ownership - Pro capability */}
               {(property.owner_name || property.company_name) && (
                 <Section title="Ownership">
-                  {isPremium ? (
+                  {canSeeOwnerData ? (
                     property.company_name ? (
                       <>
                         <Row
@@ -448,7 +448,7 @@ export function PropertyDetailCard({
                     <div className="text-center py-3">
                       <div className="flex items-center justify-center gap-2 text-amber-600 mb-2">
                         <Shield className="w-4 h-4" />
-                        <span className="text-sm font-medium">Premium Feature</span>
+                        <span className="text-sm font-medium">Pro feature</span>
                       </div>
                       <p className="text-xs text-slate-500">Upgrade to see owner details</p>
                     </div>

@@ -40,7 +40,7 @@ const faqData: FAQCategory[] = [
       },
       {
         question: "How do I get started?",
-        answer: "Simply create a free account to access the map and basic property information. You can browse licensed HMOs, filter by location, and save properties to your watchlist. Premium features like owner data, licence expiry filters, and potential HMO analysis require a Pro subscription."
+        answer: "Simply create a free account to access the map and basic property information. You can browse licensed HMOs, filter by location, and save properties to your watchlist. Pro adds owner data, licence expiry filters, potential HMO analysis, export, unlimited property views and higher limits."
       },
       {
         question: "Is HMO Hunter free to use?",
@@ -136,7 +136,7 @@ const faqData: FAQCategory[] = [
       },
       {
         question: "What additional features do Pro users get?",
-        answer: "Pro subscribers unlock: (1) Owner & Contact Data - view title owner names, addresses, contact details, and company information for corporate landlords; (2) Licence Expiry Filter - find properties with licences expiring in specific month ranges to target motivated sellers; (3) Potential HMO Analysis - identify and filter unlicensed properties suitable for HMO conversion with classification, floor area, yield band, and deal score filters; (4) Premium Yield Calculator - advanced ROI calculations with customisable inputs; (5) Owner Data Filter - show only properties with verified ownership information."
+        answer: "Pro unlocks: (1) Owner and contact data — title owner names, addresses, contact details and company information for corporate landlords; (2) the licence expiry filter, for properties whose licence term ends in a given month range; (3) the potential HMO analysis panel, with classification, floor area and yield band on conversion candidates; (4) CSV and PDF export of a set you have chosen; (5) unlimited property views, where Free is capped at 20 a day, and higher limits on saved properties, saved searches and price alerts."
       },
       {
         question: "How do credits work?",

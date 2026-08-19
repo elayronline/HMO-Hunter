@@ -103,20 +103,20 @@ const faqCategories = [
     ]
   },
   {
-    title: "Premium Features",
+    title: "Pro features",
     icon: Crown,
     questions: [
       {
-        q: "What's included in Premium?",
-        a: "Premium users get access to owner information including company details, directors, and contact information where available. Premium also includes advanced analytics and priority data updates."
+        q: "What's included in Pro?",
+        a: "Pro adds owner information — company details, directors and contact information where available — plus CSV and PDF export, unlimited property views, and higher limits on saved properties, saved searches and price alerts."
       },
       {
-        q: "How do I upgrade to Premium?",
-        a: "Contact our team to discuss Premium access. We're currently in beta and offering early-adopter pricing for qualified investors."
+        q: "How do I upgrade to Pro?",
+        a: "Contact our team to discuss Pro access. We're currently in beta and offering early-adopter pricing for qualified investors."
       },
       {
-        q: "Can I try Premium before subscribing?",
-        a: "Beta testers have access to Premium features during the testing period. Contact us to join the beta program."
+        q: "Can I try Pro before subscribing?",
+        a: "Every beta account is on Pro during the testing period. Contact us to join the beta program."
       },
     ]
   },

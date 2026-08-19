@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { CREDIT_COSTS, formatCreditStatus, type UserCredits } from "@/lib/credits"
 import { D2V_PLACEHOLDERS } from "@/lib/types/pipeline"
 import { viewingConfirmationEmail } from "@/lib/email/templates"
 import {
@@ -15,71 +14,6 @@ import {
 // ============================================================
 // CREDIT SYSTEM - NEW ACTIONS
 // ============================================================
-
-describe("Pipeline Credit Costs", () => {
-  it("should define costs for all new actions", () => {
-    expect(CREDIT_COSTS.add_to_pipeline).toBeDefined()
-    expect(CREDIT_COSTS.d2v_send_letter).toBeDefined()
-    expect(CREDIT_COSTS.d2v_send_email).toBeDefined()
-    expect(CREDIT_COSTS.schedule_viewing).toBeDefined()
-  })
-
-  it("should have reasonable costs for pipeline actions", () => {
-    // Pipeline add should be cheap (1 credit)
-    expect(CREDIT_COSTS.add_to_pipeline).toBe(1)
-
-    // D2V letter should cost more than email (postal costs)
-    expect(CREDIT_COSTS.d2v_send_letter).toBeGreaterThan(CREDIT_COSTS.d2v_send_email)
-
-    // Viewing should be moderate
-    expect(CREDIT_COSTS.schedule_viewing).toBeGreaterThanOrEqual(1)
-    expect(CREDIT_COSTS.schedule_viewing).toBeLessThanOrEqual(5)
-  })
-
-  it("should allow at least 150 pipeline additions per day", () => {
-    const dailyCredits = 150
-    const maxAdds = Math.floor(dailyCredits / CREDIT_COSTS.add_to_pipeline)
-    expect(maxAdds).toBeGreaterThanOrEqual(150)
-  })
-
-  it("should allow at least 50 D2V emails per day", () => {
-    const dailyCredits = 150
-    const maxEmails = Math.floor(dailyCredits / CREDIT_COSTS.d2v_send_email)
-    expect(maxEmails).toBeGreaterThanOrEqual(50)
-  })
-
-  it("should allow at least 50 D2V letters per day", () => {
-    const dailyCredits = 150
-    const maxLetters = Math.floor(dailyCredits / CREDIT_COSTS.d2v_send_letter)
-    expect(maxLetters).toBeGreaterThanOrEqual(50)
-  })
-
-  it("should allow at least 75 viewings per day", () => {
-    const dailyCredits = 150
-    const maxViewings = Math.floor(dailyCredits / CREDIT_COSTS.schedule_viewing)
-    expect(maxViewings).toBeGreaterThanOrEqual(75)
-  })
-
-  it("should handle mixed pipeline usage within daily limit", () => {
-    // Typical pipeline user session:
-    // - 10 pipeline adds (10 credits)
-    // - 5 D2V emails (10 credits)
-    // - 3 D2V letters (9 credits)
-    // - 4 viewings (8 credits)
-    // - 20 property views (20 credits - after free)
-    // - 3 contact views (6 credits)
-
-    const totalCost =
-      (10 * CREDIT_COSTS.add_to_pipeline) +
-      (5 * CREDIT_COSTS.d2v_send_email) +
-      (3 * CREDIT_COSTS.d2v_send_letter) +
-      (4 * CREDIT_COSTS.schedule_viewing) +
-      (20 * CREDIT_COSTS.property_view) +
-      (3 * CREDIT_COSTS.contact_data_view)
-
-    expect(totalCost).toBeLessThan(150)
-  })
-})
 
 // ============================================================
 // ROLE VISIBILITY - NEW FEATURES
@@ -491,65 +425,6 @@ describe("Viewing Validation Schemas", () => {
 // ============================================================
 // STRESS TESTS - CONCURRENT OPERATIONS
 // ============================================================
-
-describe("Concurrent Operation Simulation", () => {
-  it("should handle 100 rapid pipeline additions without breaking credit calc", () => {
-    let creditsUsed = 0
-    const dailyCredits = 150
-    const additions = 100
-
-    for (let i = 0; i < additions; i++) {
-      creditsUsed += CREDIT_COSTS.add_to_pipeline
-      const remaining = dailyCredits - creditsUsed
-
-      if (remaining < 0) {
-        // Should hit limit before 150 additions
-        expect(i).toBeLessThan(dailyCredits / CREDIT_COSTS.add_to_pipeline)
-        break
-      }
-    }
-
-    // With 1 credit per add, all 100 should fit in 150
-    expect(creditsUsed).toBe(100)
-  })
-
-  it("should correctly track mixed D2V campaign credits", () => {
-    // Simulate a campaign with 50 emails
-    const emailCost = 50 * CREDIT_COSTS.d2v_send_email // 100 credits
-    // Plus 10 letters
-    const letterCost = 10 * CREDIT_COSTS.d2v_send_letter // 30 credits
-
-    const totalCost = emailCost + letterCost
-    expect(totalCost).toBe(130)
-    expect(totalCost).toBeLessThan(150) // Fits in daily budget
-  })
-
-  it("should handle edge case of exactly 0 credits remaining", () => {
-    const credits: UserCredits = {
-      id: "test",
-      user_id: "test",
-      role: "standard_pro",
-      daily_credits: 150,
-      credits_used: 150,
-      free_property_views_used: 20,
-      free_property_views_limit: 20,
-      saved_properties_count: 0,
-      saved_properties_limit: 100,
-      saved_searches_count: 0,
-      saved_searches_limit: 10,
-      active_price_alerts_count: 0,
-      active_price_alerts_limit: 10,
-      last_reset_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    const status = formatCreditStatus(credits)
-    expect(status.creditsRemaining).toBe(0)
-    expect(status.isBlocked).toBe(true)
-    expect(status.percentUsed).toBe(100)
-  })
-})
 
 // ============================================================
 // STRESS TESTS - DATA INTEGRITY

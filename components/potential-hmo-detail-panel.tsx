@@ -10,7 +10,7 @@ import type { Property } from "@/lib/types/database"
 interface PotentialHMODetailPanelProps {
   property: Property
   defaultOpen?: boolean
-  isPremium?: boolean
+  canSeeOwnerData?: boolean
 }
 
 const classificationConfig = {
@@ -59,7 +59,7 @@ const epcImprovementLabels = {
   none: "Already optimal (A/B)",
 }
 
-export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremium = false }: PotentialHMODetailPanelProps) {
+export function PotentialHMODetailPanel({ property, defaultOpen = false, canSeeOwnerData = false }: PotentialHMODetailPanelProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   if (!property.is_potential_hmo) {
@@ -76,7 +76,7 @@ export function PotentialHMODetailPanel({ property, defaultOpen = false, isPremi
   const Icon = config.icon
 
   // Non-premium users see locked state
-  if (!isPremium) {
+  if (!canSeeOwnerData) {
     return (
       <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
         <div className="px-4 py-4">

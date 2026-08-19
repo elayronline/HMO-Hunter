@@ -50,14 +50,13 @@ export function SavePropertyButton({
 
           if (extResult.limitReached) {
             toast({
-              title: "Saved Properties Limit Reached",
-              description: `You've reached your limit of ${extResult.limit ?? 100} saved properties. Remove some to save more.`,
-              variant: "destructive",
-            })
-          } else if (extResult.insufficientCredits) {
-            toast({
-              title: "Daily Credits Exhausted",
-              description: "You've used all your credits for today. Resets at midnight UTC.",
+              // The limit comes from the server, because Free and Pro do not
+              // share a number and the old hardcoded 100 was only ever Pro's.
+              title: "Saved properties limit reached",
+              description:
+                typeof extResult.error === "string"
+                  ? extResult.error
+                  : "You have reached your saved properties limit.",
               variant: "destructive",
             })
           } else {
@@ -70,15 +69,7 @@ export function SavePropertyButton({
         } else {
           setIsSaved(true)
           toast({ title: "Property saved", description: "Added to your saved properties." })
-          window.dispatchEvent(new Event("credits-changed"))
-
-          const extResult = result as Record<string, unknown>
-          if (extResult.warning) {
-            toast({
-              title: "Credits Running Low",
-              description: String(extResult.warning),
-            })
-          }
+          window.dispatchEvent(new Event("entitlements-changed"))
         }
       }
     })
