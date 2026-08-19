@@ -103,6 +103,57 @@ export const exportRequestSchema = z.object({
 })
 
 // Contact tracking schemas
+/**
+ * Zoopla ingestion.
+ *
+ * The bounds are the point of this schema. The route used to accept only
+ * { postcode, area, listingType, limit } and pass exactly that to an adapter
+ * that supports minPrice/maxPrice/minBedrooms/maxBedrooms — so every sale run
+ * asked Zoopla for "everything for sale in this area" and stored the first N.
+ *
+ * That produced 1,053 of the 1,068 purchase rows in one run on 2026-01-29:
+ * median asking price £1.5m, 34.2% over £2m, 15 under £500k, and 186 flats at a
+ * £4.45m median. A leasehold Mayfair flat is not an HMO conversion candidate,
+ * and 344 of the over-£2m rows are still tagged "Potential HMO".
+ *
+ * A sale run must therefore state its ceiling and its bedroom floor. They are
+ * required rather than defaulted because a default is a sourcing policy hidden
+ * in code, and hiding this one is what caused the problem.
+ */
+export const zooplaIngestSchema = z
+  .object({
+    postcode: z.string().min(2).max(10).optional(),
+    area: z.string().min(2).max(60).optional(),
+    listingType: z.enum(["rent", "sale"]).default("rent"),
+    limit: z.number().int().positive().max(100).default(20),
+    minPrice: z.number().int().nonnegative().optional(),
+    maxPrice: z.number().int().positive().optional(),
+    minBedrooms: z.number().int().min(0).max(60).optional(),
+    maxBedrooms: z.number().int().min(0).max(60).optional(),
+  })
+  .refine((v) => Boolean(v.postcode || v.area), {
+    message: "Either postcode or area is required",
+    path: ["area"],
+  })
+  .refine((v) => v.listingType !== "sale" || v.maxPrice !== undefined, {
+    message:
+      "maxPrice is required for a sale run. An unbounded sale query returns the top of the market, not HMO stock.",
+    path: ["maxPrice"],
+  })
+  .refine((v) => v.listingType !== "sale" || v.minBedrooms !== undefined, {
+    message:
+      "minBedrooms is required for a sale run. An HMO needs at least 3 bedrooms.",
+    path: ["minBedrooms"],
+  })
+  .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
+    message: "minPrice cannot exceed maxPrice",
+    path: ["minPrice"],
+  })
+  .refine(
+    (v) => v.minBedrooms === undefined || v.maxBedrooms === undefined || v.minBedrooms <= v.maxBedrooms,
+    { message: "minBedrooms cannot exceed maxBedrooms", path: ["minBedrooms"] },
+  )
+
 export const trackContactSchema = z.object({
   propertyId: z.string().uuid("Invalid property ID"),
   action: z.enum(["view", "call", "email", "copy"], {
@@ -236,6 +287,7 @@ export type PriceAlertCreate = z.infer<typeof priceAlertCreateSchema>
 export type PriceAlertUpdate = z.infer<typeof priceAlertUpdateSchema>
 export type SavedSearchCreate = z.infer<typeof savedSearchCreateSchema>
 export type ExportRequest = z.infer<typeof exportRequestSchema>
+export type ZooplaIngest = z.infer<typeof zooplaIngestSchema>
 export type TrackContact = z.infer<typeof trackContactSchema>
 export type TrackPropertyView = z.infer<typeof trackPropertyViewSchema>
 export type AdminUpdateUser = z.infer<typeof adminUpdateUserSchema>

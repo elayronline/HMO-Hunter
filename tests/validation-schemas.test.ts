@@ -7,6 +7,7 @@ import {
   savedSearchCreateSchema,
   exportRequestSchema,
   propertyFiltersSchema,
+  zooplaIngestSchema,
 } from "@/lib/validation/schemas"
 
 describe("uuidSchema", () => {
@@ -327,5 +328,74 @@ describe("propertyFiltersSchema", () => {
       hasParking: false,
     })
     expect(result.success).toBe(true)
+  })
+})
+
+describe("zooplaIngestSchema — an unbounded sale run must be unrepresentable", () => {
+  const sale = (over: Record<string, unknown> = {}) =>
+    zooplaIngestSchema.safeParse({ area: "Nottingham", listingType: "sale", ...over })
+
+  // This is the exact shape the route accepted before, and it is what put
+  // 1,053 purchase rows at a £1.5m median into the table in a single run.
+  it("rejects a sale run with no bounds at all", () => {
+    const result = sale()
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects a sale run with a bedroom floor but no ceiling", () => {
+    expect(sale({ minBedrooms: 3 }).success).toBe(false)
+  })
+
+  it("rejects a sale run with a ceiling but no bedroom floor", () => {
+    expect(sale({ maxPrice: 750000 }).success).toBe(false)
+  })
+
+  it("accepts a sale run that states both", () => {
+    const result = sale({ maxPrice: 750000, minBedrooms: 3 })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.maxPrice).toBe(750000)
+      expect(result.data.minBedrooms).toBe(3)
+    }
+  })
+
+  it("names the missing bound, so the caller knows which one to add", () => {
+    const result = sale({ minBedrooms: 3 })
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes("maxPrice"))).toBe(true)
+    }
+  })
+
+  // Rent runs are not the problem — the rental stock is not what skewed — so
+  // they stay unbounded by choice rather than by omission.
+  it("leaves a rent run free of required bounds", () => {
+    const result = zooplaIngestSchema.safeParse({ area: "Nottingham", listingType: "rent" })
+    expect(result.success).toBe(true)
+  })
+
+  it("still requires a location", () => {
+    expect(zooplaIngestSchema.safeParse({ listingType: "rent" }).success).toBe(false)
+  })
+
+  it("accepts a postcode instead of an area", () => {
+    expect(zooplaIngestSchema.safeParse({ postcode: "NG7 2AB", listingType: "rent" }).success).toBe(true)
+  })
+
+  it("rejects an inverted price range", () => {
+    expect(sale({ maxPrice: 500000, minPrice: 900000, minBedrooms: 3 }).success).toBe(false)
+  })
+
+  it("rejects an inverted bedroom range", () => {
+    expect(sale({ maxPrice: 750000, minBedrooms: 6, maxBedrooms: 3 }).success).toBe(false)
+  })
+
+  it("caps limit at 100, because the adapter pages at 100", () => {
+    expect(sale({ maxPrice: 750000, minBedrooms: 3, limit: 500 }).success).toBe(false)
+  })
+
+  it("defaults listingType to rent, so an omitted type never silently runs a sale", () => {
+    const result = zooplaIngestSchema.safeParse({ area: "Nottingham" })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.listingType).toBe("rent")
   })
 })
