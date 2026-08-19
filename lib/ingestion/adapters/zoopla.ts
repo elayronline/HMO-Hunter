@@ -22,6 +22,20 @@ export class ZooplaAdapter extends SourceAdapter {
     this.baseUrl = baseUrl || apiConfig.zoopla.baseUrl
   }
 
+  /**
+   * Whether this adapter can reach Zoopla at all.
+   *
+   * Every fetch method here returns an empty result when the key is missing,
+   * which is indistinguishable from "the search matched nothing". Callers must
+   * ask this BEFORE reporting a result, or they will state a fact about the
+   * market on the strength of a missing environment variable — an unconfigured
+   * ingest reported "No listings found" for Nottingham, and an unconfigured
+   * sold-price lookup reported an average of £0.
+   */
+  isConfigured(): boolean {
+    return this.apiKey.length > 0
+  }
+
   async fetch(options?: {
     postcode?: string
     area?: string
