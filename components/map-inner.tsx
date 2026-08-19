@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
+import { shouldHonourFocus, shouldFlyToCity } from "@/lib/map/view-workflow"
 
 // Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard, no API key needed)
 const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
@@ -337,8 +338,7 @@ export function MapInner({
     // the same mapReady flip, and relying on declaration order to decide which
     // camera move survives is not a guarantee — the map opened UK-wide with a
     // single Oxford property selected, which is the failure this prevents.
-    const pending = focusRef.current
-    if (pending && appliedFocusRef.current !== pending.nonce) return
+    if (!shouldFlyToCity(focusRef.current, appliedFocusRef.current)) return
 
     mapRef.current.flyTo({
       center: [selectedCity.longitude, selectedCity.latitude],
@@ -356,8 +356,9 @@ export function MapInner({
   // the neighbours, which matters: 452 of 2,958 properties share their exact
   // coordinate with another, so the pin is often not alone.
   useEffect(() => {
-    if (!mapRef.current || !mapReady || !focusProperty) return
-    if (appliedFocusRef.current === focusProperty.nonce) return
+    if (!mapRef.current || !mapReady) return
+    if (!shouldHonourFocus(focusProperty, appliedFocusRef.current)) return
+    if (!focusProperty) return
     const { latitude, longitude } = focusProperty.property
     if (latitude == null || longitude == null) return
     appliedFocusRef.current = focusProperty.nonce

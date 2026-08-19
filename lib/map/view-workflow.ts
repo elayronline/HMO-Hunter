@@ -93,3 +93,39 @@ export function countCoincident(properties: readonly Locatable[]): Map<string, n
   }
   return counts
 }
+
+export interface FocusRequest {
+  nonce: number
+}
+
+/**
+ * Whether the camera should honour a "show on map" request.
+ *
+ * True exactly once per request. The nonce, rather than the property id, is
+ * what makes a second request for the same property count as a new one — a
+ * reader who has panned away and asks again expects to be taken back.
+ */
+export function shouldHonourFocus(
+  focus: FocusRequest | null | undefined,
+  appliedNonce: number | null
+): boolean {
+  if (!focus) return false
+  return appliedNonce !== focus.nonce
+}
+
+/**
+ * Whether the camera should frame the selected city.
+ *
+ * It stands down while a "show on map" request is outstanding. Both camera
+ * moves wake on the same map-ready flip, and leaving the winner to the order
+ * the effects happen to be declared in is not a guarantee: the map opened on
+ * the whole of the UK with a single Oxford property selected beside it. Once
+ * the request has been honoured, city framing resumes normally, so changing
+ * city after using "show on map" still works.
+ */
+export function shouldFlyToCity(
+  focus: FocusRequest | null | undefined,
+  appliedNonce: number | null
+): boolean {
+  return !shouldHonourFocus(focus, appliedNonce)
+}

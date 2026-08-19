@@ -4,6 +4,8 @@ import {
   viewParam,
   urlAfterPropertyConsumed,
   countCoincident,
+  shouldHonourFocus,
+  shouldFlyToCity,
 } from "@/lib/map/view-workflow"
 
 describe("which view a load opens in", () => {
@@ -125,5 +127,34 @@ describe("counting properties that share a coordinate", () => {
 
   it("returns an empty map for an empty set", () => {
     expect(countCoincident([]).size).toBe(0)
+  })
+})
+
+describe("which camera move wins", () => {
+  it("frames the city when nothing has been asked for", () => {
+    expect(shouldFlyToCity(null, null)).toBe(true)
+    expect(shouldHonourFocus(null, null)).toBe(false)
+  })
+
+  it("stands the city down while a request is outstanding", () => {
+    // The regression: the map opened UK-wide with one Oxford property selected.
+    expect(shouldFlyToCity({ nonce: 1 }, null)).toBe(false)
+    expect(shouldHonourFocus({ nonce: 1 }, null)).toBe(true)
+  })
+
+  it("honours a request exactly once", () => {
+    expect(shouldHonourFocus({ nonce: 1 }, 1)).toBe(false)
+  })
+
+  it("lets city framing resume once the request is honoured", () => {
+    // Otherwise changing city after using "show on map" would do nothing.
+    expect(shouldFlyToCity({ nonce: 1 }, 1)).toBe(true)
+  })
+
+  it("treats a repeat request for the same property as new", () => {
+    // A reader who panned away and pressed "show on map" again expects to be
+    // taken back, which is why the request carries a nonce and not just an id.
+    expect(shouldHonourFocus({ nonce: 2 }, 1)).toBe(true)
+    expect(shouldFlyToCity({ nonce: 2 }, 1)).toBe(false)
   })
 })
