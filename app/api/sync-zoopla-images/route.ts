@@ -11,6 +11,21 @@ const zoopla = new ZooplaAdapter()
  * Finds HMO properties that exist on Zoopla and updates their images
  */
 export async function POST(request: NextRequest) {
+    // Absence of a key is not absence of stock. Every fetch on the adapter
+    // returns empty when unconfigured, which is indistinguishable from a search
+    // that matched nothing — so say which it is.
+    if (!zoopla.isConfigured()) {
+      return NextResponse.json(
+        {
+          error: "Zoopla is not configured",
+          detail:
+            "ZOOPLA_API_KEY is not set, so no request was made. This is not a statement about the market.",
+          configured: false,
+        },
+        { status: 503 },
+      )
+    }
+
   const body = await request.json().catch(() => ({}))
   const limit = body.limit || 50
 

@@ -26,6 +26,21 @@ const zoopla = new ZooplaAdapter()
  */
 export async function POST(request: NextRequest) {
   try {
+    // Absence of a key is not absence of stock. Every fetch on the adapter
+    // returns empty when unconfigured, which is indistinguishable from a search
+    // that matched nothing — so say which it is.
+    if (!zoopla.isConfigured()) {
+      return NextResponse.json(
+        {
+          error: "Zoopla is not configured",
+          detail:
+            "ZOOPLA_API_KEY is not set, so no request was made. This is not a statement about the market.",
+          configured: false,
+        },
+        { status: 503 },
+      )
+    }
+
     const validation = await validateBody(request, zooplaIngestSchema)
     if (!validation.success) {
       return validation.error

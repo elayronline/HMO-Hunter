@@ -8,6 +8,21 @@ const cache = new Map<string, { data: AreaStatistics; timestamp: number }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 export async function GET(request: NextRequest) {
+    // Absence of a key is not absence of stock. Every fetch on the adapter
+    // returns empty when unconfigured, which is indistinguishable from a search
+    // that matched nothing — so say which it is.
+    if (!zoopla.isConfigured()) {
+      return NextResponse.json(
+        {
+          error: "Zoopla is not configured",
+          detail:
+            "ZOOPLA_API_KEY is not set, so no request was made. This is not a statement about the market.",
+          configured: false,
+        },
+        { status: 503 },
+      )
+    }
+
   const searchParams = request.nextUrl.searchParams
   const postcode = searchParams.get("postcode")
   const area = searchParams.get("area")
