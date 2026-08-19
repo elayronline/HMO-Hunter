@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, Info } from "lucide-react"
+import { AlertTriangle, HelpCircle, Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
@@ -10,8 +10,23 @@ import {
 } from "@/components/ui/tooltip"
 import type { PlanningConstraint } from "@/lib/types/database"
 
+/**
+ * Article 4 has three states and this component used to take a boolean.
+ *
+ * `in_force` is the only one it could express, so an address whose position has
+ * never been established rendered nothing — the same silence as one checked and
+ * found outside a direction. 942 of 2,958 properties are in that state, because
+ * their council publishes no boundary and no page that can be read. Saying
+ * nothing about them is the one thing the platform must not do: absent has to
+ * be shown as absent, not left to look like a clean answer.
+ *
+ * `none_found` is the only verified negative, and the only state that may still
+ * render nothing.
+ */
+export type Article4Status = "in_force" | "none_found" | "unknown" | null
+
 interface Article4WarningProps {
-  article4Area: boolean
+  article4Status: Article4Status
   conservationArea?: boolean
   listedBuildingGrade?: "I" | "II*" | "II" | null
   planningConstraints?: PlanningConstraint[] | null
@@ -20,14 +35,17 @@ interface Article4WarningProps {
 }
 
 export function Article4Warning({
-  article4Area,
+  article4Status,
   conservationArea,
   listedBuildingGrade,
   planningConstraints,
   className = "",
   variant = "badge",
 }: Article4WarningProps) {
-  if (!article4Area && !conservationArea && !listedBuildingGrade) {
+  const article4Area = article4Status === "in_force"
+  const unverified = article4Status !== "in_force" && article4Status !== "none_found"
+
+  if (!article4Area && !unverified && !conservationArea && !listedBuildingGrade) {
     return null
   }
 
@@ -43,7 +61,18 @@ export function Article4Warning({
     warnings.push(`Grade ${listedBuildingGrade} Listed`)
   }
 
-  const badge = (
+  // An unestablished position is not a restriction and must not be dressed as
+  // one — it reads in slate, not amber, and says what is missing rather than
+  // what applies.
+  const badge = unverified && !article4Area && !warnings.length ? (
+    <Badge
+      variant="outline"
+      className={`bg-slate-50 text-slate-600 border-slate-300 ${className}`}
+    >
+      <HelpCircle className="w-3 h-3 mr-1" />
+      Article 4 unverified
+    </Badge>
+  ) : (
     <Badge
       variant="outline"
       className={`bg-amber-50 text-amber-700 border-amber-400 ${className}`}
@@ -60,9 +89,31 @@ export function Article4Warning({
         <TooltipContent className="max-w-sm">
           <div className="space-y-2">
             <p className="font-medium flex items-center gap-1">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Planning Restrictions Apply
+              {warnings.length ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  Planning Restrictions Apply
+                </>
+              ) : (
+                <>
+                  <HelpCircle className="w-4 h-4 text-slate-400" />
+                  Planning Position Not Established
+                </>
+              )}
             </p>
+
+            {unverified && (
+              <div className="text-sm">
+                <p className="font-medium text-slate-600">Article 4 unverified</p>
+                <p className="text-muted-foreground">
+                  No Article 4 position is held for this address. Its council
+                  publishes no boundary data we can read, so nothing has been
+                  established either way. This is not the same as being checked
+                  and found outside a direction — confirm with the council
+                  before relying on it.
+                </p>
+              </div>
+            )}
 
             {article4Area && (
               <div className="text-sm">

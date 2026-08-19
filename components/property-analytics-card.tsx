@@ -41,7 +41,6 @@ interface PropertyAnalyticsCardProps {
 interface AreaAverages {
   avgYield: number
   avgRentPerRoom: number
-  avgDealScore: number
   avgBedrooms: number
   minYield: number
   maxYield: number
@@ -499,39 +498,50 @@ export function PropertyAnalyticsCard({
   // Calculate area averages
   const calculateAreaAverages = (): AreaAverages => {
     if (properties.length === 0) {
-      return { avgYield: 0, avgRentPerRoom: 0, avgDealScore: 0, avgBedrooms: 0, minYield: 0, maxYield: 0 }
+      return { avgYield: 0, avgRentPerRoom: 0, avgBedrooms: 0, minYield: 0, maxYield: 0 }
     }
 
-    const yields = properties.map(p => parseFloat(calculateROI(p) as string) || 0)
+    // calculateROI returns "N/A" when there is no asking price to divide by,
+    // which is 63.9% of the table. This used to be `|| 0`, so every property
+    // without one entered the mean as a zero and dragged the "area average"
+    // from 2.69% to 0.97%. An absent figure is dropped from the average now,
+    // not counted as a nil return.
+    const yields = properties
+      .map(p => parseFloat(calculateROI(p) as string))
+      .filter(y => Number.isFinite(y))
     const rentsPerRoom = properties.map(p => {
       const rent = getMonthlyRent(p)
       return p.bedrooms > 0 ? rent / p.bedrooms : rent
     })
-    const dealScores = properties.map(p => p.deal_score || 0)
     const bedrooms = properties.map(p => p.bedrooms || 0)
 
     return {
-      avgYield: yields.reduce((a, b) => a + b, 0) / yields.length,
+      avgYield: yields.length ? yields.reduce((a, b) => a + b, 0) / yields.length : 0,
       avgRentPerRoom: rentsPerRoom.reduce((a, b) => a + b, 0) / rentsPerRoom.length,
-      avgDealScore: dealScores.reduce((a, b) => a + b, 0) / dealScores.length,
       avgBedrooms: bedrooms.reduce((a, b) => a + b, 0) / bedrooms.length,
-      minYield: Math.min(...yields.filter(y => y > 0)),
-      maxYield: Math.max(...yields),
+      // Math.min() of an empty list is Infinity.
+      minYield: yields.length ? Math.min(...yields) : 0,
+      maxYield: yields.length ? Math.max(...yields) : 0,
     }
   }
 
   const area = calculateAreaAverages()
-  const propYield = parseFloat(calculateROI(property) as string) || 0
+  // null, not 0 — this property may simply have no asking price to divide by.
+  const rawYield = parseFloat(calculateROI(property) as string)
+  const propYield: number | null = Number.isFinite(rawYield) ? rawYield : null
   const propRent = getMonthlyRent(property)
   const propRentPerRoom = property.bedrooms > 0 ? propRent / property.bedrooms : propRent
-  const propDealScore = property.deal_score || 0
 
   // Generate insights
   const generateInsights = () => {
     const insights: { text: string; type: "good" | "neutral" | "bad" }[] = []
 
-    const yieldDiff = area.avgYield > 0 ? ((propYield - area.avgYield) / area.avgYield) * 100 : 0
-    if (Math.abs(yieldDiff) < 5) {
+    const yieldDiff = propYield != null && area.avgYield > 0 ? ((propYield - area.avgYield) / area.avgYield) * 100 : null
+    if (yieldDiff == null) {
+      // Saying nothing about yield beats saying "below average in yield
+      // (-100%)", which is what 1,890 properties were told on the strength of
+      // having no asking price.
+    } else if (Math.abs(yieldDiff) < 5) {
       insights.push({ text: "matches area average in yield", type: "neutral" })
     } else if (yieldDiff > 0) {
       insights.push({ text: `outperforms in yield (+${yieldDiff.toFixed(0)}%)`, type: "good" })
@@ -548,13 +558,13 @@ export function PropertyAnalyticsCard({
       insights.push({ text: `lower rent per room (${rentDiff.toFixed(0)}%)`, type: "bad" })
     }
 
-    if (propDealScore >= 70) {
-      insights.push({ text: "has a strong deal score", type: "good" })
-    } else if (propDealScore >= 40) {
-      insights.push({ text: "has a moderate deal score", type: "neutral" })
-    } else if (propDealScore > 0) {
-      insights.push({ text: "has a low deal score", type: "bad" })
-    }
+    // "has a moderate deal score" used to be appended here, and a Deal Score
+    // metric row sat below with the tooltip "Composite score based on yield,
+    // condition, location, and market fundamentals". Nothing computes that any
+    // more — the scoring system was removed from the product and the column
+    // holds 329 frozen values between 54 and 92. A sentence describing a live
+    // judgement, and a row inviting comparison against an area average of the
+    // same dead numbers, are both worse than saying nothing.
 
     return insights
   }
@@ -614,7 +624,11 @@ export function PropertyAnalyticsCard({
       ═══════════════════════════════════════════════════════════════════ */}
       <div className={cn(
         "relative overflow-hidden rounded-2xl p-5 border-2",
-        propYield >= area.avgYield
+        // No figure, no verdict: a neutral card rather than the red one that
+        // said this property was underperforming.
+        propYield == null
+          ? "bg-slate-50 border-slate-200"
+          : propYield >= area.avgYield
           ? "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-emerald-200"
           : "bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 border-amber-200"
       )}>
@@ -638,15 +652,31 @@ export function PropertyAnalyticsCard({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="text-5xl font-black text-slate-900 tracking-tight mb-1">
-              {propYield.toFixed(1)}%
-            </div>
-            <p className="text-sm text-slate-500">
-              Area average: <span className="font-semibold">{area.avgYield.toFixed(1)}%</span>
-            </p>
+            {/* A yield that cannot be computed was drawn as "0.0%" — a
+                figure, in the same type as a real one — and then compared with
+                the area average to produce "-100%". The panel's own header
+                shows "—" for the same property. */}
+            {propYield == null ? (
+              <>
+                <div className="text-5xl font-black text-slate-300 tracking-tight mb-1">—</div>
+                <p className="text-sm text-slate-500">
+                  No asking price published, so a yield cannot be worked out.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl font-black text-slate-900 tracking-tight mb-1">
+                  {propYield.toFixed(1)}%
+                </div>
+                <p className="text-sm text-slate-500">
+                  Area average: <span className="font-semibold">{area.avgYield.toFixed(1)}%</span>
+                </p>
+              </>
+            )}
           </div>
 
-          {/* Difference badge */}
+          {/* Difference badge — nothing to compare when there is no figure. */}
+          {propYield != null && area.avgYield > 0 && (
           <div className={cn(
             "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-lg",
             propYield >= area.avgYield
@@ -662,6 +692,7 @@ export function PropertyAnalyticsCard({
               {Math.abs(((propYield - area.avgYield) / area.avgYield) * 100).toFixed(1)}%
             </span>
           </div>
+          )}
         </div>
       </div>
 
@@ -685,15 +716,6 @@ export function PropertyAnalyticsCard({
             delay={0}
           />
           <MetricRow
-            label="Deal Score"
-            icon={Target}
-            value={propDealScore}
-            areaAverage={Math.round(area.avgDealScore)}
-            format={(v) => `${v}/100`}
-            tooltip="Composite score based on yield, condition, location, and market fundamentals."
-            delay={100}
-          />
-          <MetricRow
             label="Max Occupancy"
             icon={Users}
             value={property.lettable_rooms || property.bedrooms || 0}
@@ -708,12 +730,17 @@ export function PropertyAnalyticsCard({
       {/* ═══════════════════════════════════════════════════════════════════
           YIELD POSITION GAUGE
       ═══════════════════════════════════════════════════════════════════ */}
-      <YieldGauge
-        value={propYield}
-        min={area.minYield || 0}
-        max={area.maxYield || 10}
-        areaAverage={area.avgYield}
-      />
+      {/* The gauge plots this property against the area spread. With no
+          figure it plotted it at zero, at the far left of the scale, which
+          reads as the worst property in the area rather than an unknown one. */}
+      {propYield != null && (
+        <YieldGauge
+          value={propYield}
+          min={area.minYield || 0}
+          max={area.maxYield || 10}
+          areaAverage={area.avgYield}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           QUICK INSIGHT

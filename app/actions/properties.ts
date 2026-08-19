@@ -86,16 +86,17 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // product exists to surface, so an unpriced row passes a price filter
     // rather than failing it, and the user narrows by price only among the
     // properties that actually have one.
-    if (validatedFilters.minPrice && !licenceExpiryFilterActive) {
+    // The `&& !licenceExpiryFilterActive` guard here dates from 2026-08-11 and
+    // was made redundant on 2026-08-15, when unpriced rows started passing the
+    // price filter rather than failing it. Until it was removed, setting a price
+    // range and then filtering by licence expiry left the slider visibly set and
+    // silently ignored.
+    if (validatedFilters.minPrice) {
       query = query.or(`purchase_price.gte.${validatedFilters.minPrice},purchase_price.is.null`)
     }
     // The slider's own maximum means "no upper limit", not "£2,000,000". Treated
     // literally it excluded 330 properties on a ceiling the user never chose.
-    if (
-      validatedFilters.maxPrice &&
-      validatedFilters.maxPrice < PRICE_SLIDER_MAX &&
-      !licenceExpiryFilterActive
-    ) {
+    if (validatedFilters.maxPrice && validatedFilters.maxPrice < PRICE_SLIDER_MAX) {
       query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},purchase_price.is.null`)
     }
 
@@ -129,9 +130,9 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     }
 
     // Apply filters
-    if (validatedFilters.propertyTypes && validatedFilters.propertyTypes.length > 0) {
-      query = query.in("property_type", validatedFilters.propertyTypes)
-    }
+    // propertyTypes was accepted and applied here, and nothing in the product
+    // ever set it — there is no control for it anywhere. A filter no caller can
+    // reach is not a feature, it is a branch that has to be kept working.
     // Only filter by city if it's not "All Cities" and no postcode is specified
     if (validatedFilters.city && validatedFilters.city !== "All Cities" && !validatedFilters.postcodePrefix) {
       query = query.eq("city", validatedFilters.city)
@@ -192,9 +193,9 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     if (validatedFilters.isFurnished === true) {
       query = query.eq("is_furnished", true)
     }
-    if (validatedFilters.hasParking === true) {
-      query = query.eq("has_parking", true)
-    }
+    // hasParking is gone. has_parking is false on all 2,958 rows and is written
+    // by nothing in this codebase, so the switch could only ever return an empty
+    // map — which is exactly what it did.
 
     // Licence Type Filter
     //

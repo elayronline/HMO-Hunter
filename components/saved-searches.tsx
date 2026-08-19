@@ -43,7 +43,6 @@ export interface SearchFilters {
   minBedrooms: number
   minBathrooms: number
   isFurnished: boolean
-  hasParking: boolean
 }
 
 interface SavedSearch {

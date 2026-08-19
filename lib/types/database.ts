@@ -94,6 +94,12 @@ export type Property = {
   article_4_status: Article4Status
   /** When status was last determined. null means never checked. */
   article_4_checked_at: string | null
+  /**
+   * When an HMO register was last read for this property. Null means never
+   * read — the state of a licence is only as good as the date it was fetched,
+   * and nothing in this table recorded that until migration 017.
+   */
+  licence_checked_at: string | null
   /** Provenance for the status — governs redistribution in the phase-2 API. */
   article_4_source: string | null
   /** Name of the matched direction area, when status is in_force. */
@@ -312,7 +318,6 @@ export type PropertyFilters = {
   minBedrooms?: number
   minBathrooms?: number
   isFurnished?: boolean
-  hasParking?: boolean
 }
 
 export type SavedProperty = {

@@ -337,11 +337,13 @@ export function MapInner({
   const getMarkerStyle = useCallback((property: typeof properties[0], isSelected: boolean, showPotentialHMO: boolean) => {
     const isLicensed = property.hmo_status === "Licensed HMO"
     const isPotentialHMOStatus = property.hmo_status === "Potential HMO"
-    const isArticle4 = property.article_4_area
+    // in_force, never the deprecated boolean: a false there means "not found
+    // in a feed that does not cover this council", which is not a negative.
+    const isArticle4 = property.article_4_status === "in_force"
+    const article4Unverified =
+      property.article_4_status !== "in_force" &&
+      property.article_4_status !== "none_found"
     const isPotentialHMO = property.is_potential_hmo
-    const hmoClassification = property.hmo_classification
-    const isReadyToGo = isPotentialHMO && hmoClassification === "ready_to_go"
-    const isValueAdd = isPotentialHMO && hmoClassification === "value_add"
 
     // Check for expired licence - HMOs that were previously licensed but licence has expired
     const hasExpiredLicence = property.licence_status === "expired"
@@ -376,26 +378,21 @@ export function MapInner({
       borderStyle = "3px solid #d97706" // amber-600
       markerSize = 40
     } else if ((isPotentialHMO || isPotentialHMOStatus) && showPotentialHMO) {
-      // OPPORTUNITIES - Green colors (matches legend)
-      if (isReadyToGo) {
-        // Ready to Go - Dark green with darker border (matches legend)
-        bgColor = "#16a34a" // green-600
-        textColor = "white"
-        borderStyle = "3px solid #15803d" // green-700
-        markerSize = hasCompleteInfo ? 44 : (hasPartialInfo ? 40 : 36)
-      } else if (isValueAdd) {
-        // Value-Add - Medium green with green border (matches legend)
-        bgColor = "#4ade80" // green-400
-        textColor = "#14532d" // green-900
-        borderStyle = "3px solid #22c55e" // green-500
-        markerSize = hasCompleteInfo ? 42 : (hasPartialInfo ? 38 : 34)
-      } else {
-        // Unclassified potential HMO - use Ready to Go style
-        bgColor = "#16a34a" // green-600
-        textColor = "white"
-        borderStyle = "3px solid #15803d" // green-700
-        markerSize = 36
-      }
+      // CHANGE OF USE — one green.
+      //
+      // There were two, a darker and a lighter, split on hmo_classification.
+      // classifyProperty() sets that from a deal-score threshold, and the deal
+      // score was removed from the product, so the shade was a frozen artefact
+      // of a system that no longer runs. Two shades invite a reader to look for
+      // a difference; the honest number of shades for a distinction that no
+      // longer means anything is one.
+      //
+      // Size still carries owner contact detail held, which is live and is what
+      // the legend describes.
+      bgColor = "#16a34a" // green-600
+      textColor = "white"
+      borderStyle = "3px solid #15803d" // green-700
+      markerSize = hasCompleteInfo ? 44 : hasPartialInfo ? 40 : 36
     } else if (isLicensed) {
       // READY TO OPERATE - Teal (matches legend)
       bgColor = "#0f766e" // teal-700
@@ -408,31 +405,56 @@ export function MapInner({
       markerSize = 32
     }
 
+    // An address whose Article 4 position has never been established keeps its
+    // own bucket and colour — it is still a licensed HMO, or still has no HMO
+    // use today — but the edge is broken to say the planning position is not
+    // one of the things we know about it. Drawn solid, 942 properties claimed a
+    // clearance nobody had checked.
+    if (article4Unverified) {
+      borderStyle =
+        borderStyle === "none"
+          ? "3px dashed #94a3b8"
+          : borderStyle.replace("solid", "dashed")
+    }
+
     // Selection ring style
     let boxShadow = "0 2px 6px rgba(0,0,0,0.2)"
     if (isSelected) {
       if (isArticle4) {
         boxShadow = "0 0 0 4px rgba(248,113,113,0.5), 0 4px 12px rgba(0,0,0,0.3)"
-      } else if (isReadyToGo || isValueAdd || isPotentialHMOStatus) {
+      } else if (isPotentialHMO || isPotentialHMOStatus) {
         boxShadow = "0 0 0 4px rgba(34,197,94,0.6), 0 4px 12px rgba(0,0,0,0.3)"
       } else {
         boxShadow = "0 0 0 3px rgba(13,148,136,0.5), 0 2px 6px rgba(0,0,0,0.3)"
       }
     }
 
-    const displayValue = isPotentialHMO && property.deal_score && !isArticle4
-      ? property.deal_score.toString()
-      : String(property.bedrooms)
+    // The number in a marker is the bedroom count, always. It used to be the
+    // deal score for 329 of them, so the same slot meant two different things
+    // depending on a property you could not see — and that score came from the
+    // scoring system that was removed from the product, which makes it a stale
+    // number presented as a live one.
+    const displayValue = String(property.bedrooms)
 
     // Enhanced title showing contact info status
     let title = ""
+    const article4Note = article4Unverified
+      ? " - Article 4 position not established for this address"
+      : ""
     if (isArticle4) {
       title = `${property.bedrooms} bed - Article 4 Area (Planning permission required)`
     } else if (isPotentialHMO) {
-      const infoStatus = hasCompleteInfo ? "Complete Info" : hasPartialInfo ? "Partial Info" : "No Contact Info"
-      title = `${hmoClassification === "ready_to_go" ? "Ready to Go" : "Value-Add"} HMO - Score: ${property.deal_score} (${infoStatus})`
+      // Was "Ready to Go / Value-Add - Score: NN". Both halves came from the
+      // removed scoring system. The contact-info status is real and is what the
+      // marker's size encodes, so that is what the tooltip says.
+      const infoStatus = hasCompleteInfo
+        ? "owner and licence holder held"
+        : hasPartialInfo
+        ? "some owner detail held"
+        : "no owner contact held"
+      title = `${property.bedrooms} bed - no HMO use today (${infoStatus})${article4Note}`
     } else {
-      title = `${property.bedrooms} bed ${property.hmo_status || "property"}`
+      title = `${property.bedrooms} bed ${property.hmo_status || "property"}${article4Note}`
     }
 
     return {

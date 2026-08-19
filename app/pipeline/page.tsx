@@ -393,7 +393,10 @@ function OffMarketDashboard() {
                       <span>{opp.postcode}</span>
                       {opp.city && <span>{opp.city}</span>}
                       {opp.bedrooms && <span>{opp.bedrooms} bed</span>}
-                      {opp.deal_score && <span>Score: {opp.deal_score}</span>}
+                      {/* "Score: 71" was the deal score. That system was
+                          removed from the product, so the column holds frozen
+                          numbers no longer computed for anything — a figure
+                          that looks current and is not. */}
                       {opp.owner_name && <span className="text-teal-600">Owner: {opp.owner_name}</span>}
                     </div>
                   </div>

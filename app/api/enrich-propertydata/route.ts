@@ -147,6 +147,11 @@ export async function POST(request: Request) {
             // Update licence status
             updateData.licence_status = "active"
             updateData.licensed_hmo = true
+            // When the register was read. Without this there is no way to tell
+            // a licence that has expired from one nobody has looked at since,
+            // which is how 83 properties came to be called expired while the
+            // register still had them active.
+            updateData.licence_checked_at = new Date().toISOString()
 
             log.push(`  Matched HMO: ${property.address} -> ${matched.reference}`)
           } else {

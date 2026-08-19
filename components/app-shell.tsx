@@ -14,10 +14,11 @@
  * wastes the screen they bought for exactly this.
  */
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { track } from "@vercel/analytics"
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -27,7 +28,22 @@ import {
   HelpCircle,
   Menu,
   X,
+  ChevronDown,
+  LogOut,
+  Shield,
+  User as UserIcon,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { CreditBalance } from "@/components/credit-balance"
+import { createClient } from "@/lib/supabase/client"
+import type { User } from "@supabase/supabase-js"
 
 interface NavItem {
   href: string
@@ -113,6 +129,103 @@ function NavGroup({
   )
 }
 
+/**
+ * Who you are signed in as, what credit you have left, and the way out.
+ *
+ * All of this used to hang off the map's own header, which meant the two pages
+ * already on this shell had no sign-out at all and never showed a balance. A
+ * shell that does not carry the account is not carrying much: it belongs here
+ * once rather than in each page that happens to need it.
+ */
+function AccountMenu() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user: authUser } }: { data: { user: User | null } }) => {
+      setUser(authUser)
+    })
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event: string, session: { user: User | null } | null) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const isPremium = user?.user_metadata?.is_premium === true
+
+  const signOut = async () => {
+    track("sign_out")
+    await createClient().auth.signOut()
+    window.location.href = "/"
+  }
+
+  if (!user) {
+    return (
+      <Button onClick={() => router.push("/auth/login")} className="bg-brand text-white hover:bg-brand-hover">
+        Sign in
+      </Button>
+    )
+  }
+
+  return (
+    <>
+      <CreditBalance />
+
+      {isPremium && (
+        <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[0.6875rem] font-bold text-amber-600">
+          PRO
+        </span>
+      )}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex items-center gap-1.5 rounded-md p-1 transition-colors hover:bg-surface-sunken"
+            aria-label="Account menu"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-soft">
+              <UserIcon className="h-4 w-4 text-brand" />
+            </span>
+            <ChevronDown className="h-4 w-4 text-ink-faint" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <div className="px-2 py-1.5">
+            <p className="truncate text-sm font-medium text-ink">{user.email}</p>
+            <p className="text-xs text-ink-subtle">Signed in</p>
+          </div>
+          <DropdownMenuSeparator />
+          {user.user_metadata?.is_admin && (
+            <DropdownMenuItem onClick={() => router.push("/admin")}>
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Portal
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => router.push("/pipeline?tab=profile")}>
+            <UserIcon className="mr-2 h-4 w-4" />
+            Sender Profile & Logo
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/help")}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            Help
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/faq")}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            FAQ
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={signOut} className="text-danger focus:text-danger">
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  )
+}
+
 export interface AppShellProps {
   children: React.ReactNode
   /** Page title, shown in the top bar. */
@@ -122,8 +235,12 @@ export interface AppShellProps {
   /** Page-level actions, right-aligned in the top bar. */
   actions?: React.ReactNode
   /** Counts the rail carries, so navigation doubles as a status line. */
-  counts?: { expired?: number }
-  /** Surfaces that manage their own scrolling, like the map. */
+  counts?: { expired?: number; saved?: number }
+  /**
+   * Surfaces that manage their own scrolling, like the map: the shell becomes a
+   * fixed-height column and hands the whole remainder to the page, so the page
+   * can size against it without knowing how tall this bar happens to be.
+   */
   bleed?: boolean
 }
 
@@ -135,6 +252,10 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
     item.href === "/user-dashboard" && counts?.expired
       ? { ...item, badge: counts.expired, badgeTone: "danger" as const }
       : item
+  )
+
+  const secondary = SECONDARY.map((item) =>
+    item.href === "/saved" && counts?.saved ? { ...item, badge: counts.saved } : item
   )
 
   const rail = (onNavigate?: () => void) => (
@@ -154,7 +275,7 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
       </Link>
 
       <NavGroup items={primary} pathname={pathname} onNavigate={onNavigate} />
-      <NavGroup label="Workspace" items={SECONDARY} pathname={pathname} onNavigate={onNavigate} />
+      <NavGroup label="Workspace" items={secondary} pathname={pathname} onNavigate={onNavigate} />
 
       <div className="mt-auto space-y-3">
         <NavGroup items={FOOTER} pathname={pathname} onNavigate={onNavigate} />
@@ -170,7 +291,7 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
   )
 
   return (
-    <div className="min-h-screen bg-app-bg">
+    <div className={`bg-app-bg ${bleed ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {/* Desktop rail */}
       <aside
         className="fixed inset-y-0 left-0 z-30 hidden border-r border-line bg-surface-sunken lg:block"
@@ -203,8 +324,12 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
         </div>
       )}
 
-      <div className="lg:pl-[var(--shell-width)]">
-        <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
+      <div className={`lg:pl-[var(--shell-width)] ${bleed ? "flex h-full flex-col" : ""}`}>
+        <header
+          className={`border-b border-line bg-surface/90 backdrop-blur ${
+            bleed ? "relative z-20 shrink-0" : "sticky top-0 z-20"
+          }`}
+        >
           <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
             <button
               onClick={() => setMobileOpen(true)}
@@ -219,11 +344,14 @@ export function AppShell({ children, title, subtitle, actions, counts, bleed }: 
               </h1>
               {subtitle && <p className="truncate text-[0.8125rem] text-ink-subtle">{subtitle}</p>}
             </div>
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+              <AccountMenu />
+            </div>
           </div>
         </header>
 
-        <main className={bleed ? "" : "px-4 py-6 sm:px-6 lg:px-8"}>{children}</main>
+        <main className={bleed ? "min-h-0 flex-1" : "px-4 py-6 sm:px-6 lg:px-8"}>{children}</main>
       </div>
     </div>
   )

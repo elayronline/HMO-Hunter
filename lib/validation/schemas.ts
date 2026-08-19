@@ -98,7 +98,6 @@ export const exportRequestSchema = z.object({
       minBedrooms: z.number().int().min(1).max(20).optional(),
       minBathrooms: z.number().int().min(1).max(10).optional(),
       isFurnished: z.boolean().optional(),
-      hasParking: z.boolean().optional(),
     })
     .optional(),
 })
@@ -162,7 +161,6 @@ export const propertyFiltersSchema = z.object({
   minBedrooms: z.coerce.number().int().min(1).max(20).optional(),
   minBathrooms: z.coerce.number().int().min(1).max(10).optional(),
   isFurnished: z.coerce.boolean().optional(),
-  hasParking: z.coerce.boolean().optional(),
 })
 
 // Pipeline schemas

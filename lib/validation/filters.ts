@@ -159,10 +159,6 @@ export function validateFilters(filters: Partial<PropertyFilters>): Partial<Prop
   if (typeof filters.isFurnished === "boolean") {
     sanitized.isFurnished = filters.isFurnished
   }
-  // Parking filter
-  if (typeof filters.hasParking === "boolean") {
-    sanitized.hasParking = filters.hasParking
-  }
   // TA suitability filter
 
   return sanitized

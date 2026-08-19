@@ -64,13 +64,34 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`font-sans antialiased safe-area-inset`}>
+        {/* The worker caches /_next/static/** cache-first and never versions
+            that cache. Production chunk names are content-hashed, so a new
+            build asks for new URLs and this is safe. Development reuses chunk
+            names across rebuilds, so the worker keeps answering with the
+            previous build's JavaScript at the same URL — which surfaces as
+            "module factory is not available" and as hydration mismatches
+            between new server HTML and stale client code, neither of which is
+            a fault in the code being edited. So: register in production only,
+            and tear down any registration a developer already has. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `
+            __html:
+              process.env.NODE_ENV === "production"
+                ? `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js').catch(() => {});
                 });
+              }
+            `
+                : `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations()
+                  .then((rs) => rs.forEach((r) => r.unregister()))
+                  .catch(() => {});
+              }
+              if (window.caches) {
+                caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
               }
             `,
           }}

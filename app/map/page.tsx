@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { track } from "@vercel/analytics"
+import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   ChevronDown,
@@ -15,7 +14,6 @@ import {
   Bath,
   Wifi,
   TrainFront,
-  Heart,
   Trees,
   BarChart3,
   Info,
@@ -25,8 +23,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  LogOut,
-  User as UserIcon,
   Home,
   Key,
   X,
@@ -37,19 +33,11 @@ import {
   LayoutGrid,
   Briefcase,
 } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { getProperties, getPropertyById } from "../actions/properties"
 import { getSavedProperties } from "../actions/saved-properties"
 import { SavePropertyButton } from "@/components/save-property-button"
@@ -57,26 +45,20 @@ import { createClient } from "@/lib/supabase/client"
 import type { Property, SavedProperty } from "@/lib/types/database"
 import type { User } from "@supabase/supabase-js"
 import { PropertyGallery } from "@/components/property-gallery"
-import { FreshnessBadge } from "@/components/freshness-badge"
-import { DEFAULT_CITY, ALL_CITIES_OPTION, type UKCity } from "@/lib/data/uk-cities"
-import { LocationSearch, DEFAULT_LOCATION, type SearchLocation, cityToSearchLocation } from "@/components/location-search"
+import { LocationSearch, DEFAULT_LOCATION, type SearchLocation } from "@/components/location-search"
 import { MainMapView } from "@/components/main-map-view"
 import { EPCBadge } from "@/components/epc-badge"
 import { Article4Warning } from "@/components/article4-warning"
 import { OwnerInformationSection } from "@/components/owner-information-section"
-import { PotentialHMOBadge } from "@/components/potential-hmo-badge"
 import { PotentialHMODetailPanel } from "@/components/potential-hmo-detail-panel"
-import { FloorPlanBadge } from "@/components/floor-plan-badge"
 import { FloorPlanSection } from "@/components/floor-plan-section"
 import { BroadbandBadge } from "@/components/broadband-badge"
-import { EpcFloorAreaBadge } from "@/components/epc-floor-area-badge"
 import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
-import { LicenceExpiryWarning } from "@/components/licence-expiry-warning"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
-import { HelpCircle, Shield, Menu } from "lucide-react"
-import { CreditBalance } from "@/components/credit-balance"
+import { HelpCircle, SlidersHorizontal } from "lucide-react"
+import { AppShell, ShellButton } from "@/components/app-shell"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CurrentUsePanel } from "@/components/current-use-panel"
 import {
@@ -87,9 +69,11 @@ import {
   PRICE_SLIDER_MAX,
   inSegment,
   type CategorisableProperty,
+  type Article4Position,
   type SourcingCategory,
 } from "@/lib/properties/category"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
+import { countMarkerBuckets } from "@/lib/properties/marker-bucket"
 import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { Map, List } from "lucide-react"
@@ -97,6 +81,24 @@ import { PropertyListView } from "@/components/property-list-view"
 import { csrfFetch } from "@/lib/csrf-client"
 
 export default function HMOHunterPage() {
+  // useSearchParams needs a Suspense boundary to avoid opting the whole route
+  // into client-side rendering — the same reason /hmo-check has one.
+  //
+  // Without it the boundary is missing from the tree React derives useId from,
+  // and the server and client disagree about that tree: every generated id on
+  // this page came out different on the two sides. React does not repair
+  // attributes, so the Radix triggers in the filters panel kept a server-side
+  // aria-controls pointing at an element id the client never creates. Visually
+  // nothing was wrong, which is why it read as noise; to a screen reader the
+  // control pointed at nothing.
+  return (
+    <Suspense fallback={null}>
+      <MapPage />
+    </Suspense>
+  )
+}
+
+function MapPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -167,7 +169,6 @@ export default function HMOHunterPage() {
   const [minBedrooms, setMinBedrooms] = useState<number>(0)
   const [minBathrooms, setMinBathrooms] = useState<number>(0)
   const [isFurnished, setIsFurnished] = useState(false)
-  const [hasParking, setHasParking] = useState(false)
 
   // Role selection modal state
 
@@ -227,8 +228,6 @@ export default function HMOHunterPage() {
   }, [viewMode, activeSegment])
 
   // Memoized callbacks for performance - prevents unnecessary re-renders
-  const handleNavigateToLogin = useCallback(() => router.push("/auth/login"), [router])
-  const handleNavigateToSaved = useCallback(() => router.push("/saved"), [router])
   const handleOpenLeftPanel = useCallback(() => {
     setRightPanelOpen(false) // close right panel on mobile to avoid z-index conflict
     setLeftPanelOpen(true)
@@ -242,7 +241,6 @@ export default function HMOHunterPage() {
   const handleToggleSearch = useCallback(() => setSearchExpanded(prev => !prev), [])
   const handleToggleFilters = useCallback(() => setFiltersExpanded(prev => !prev), [])
   const handleToggleLegend = useCallback(() => setLegendExpanded(prev => !prev), [])
-  const handleClearSelection = useCallback(() => setSelectedProperty(null), [])
   const handleCloseFullDetails = useCallback(() => setShowFullDetails(false), [])
 
   // Escape key handler, body scroll lock, and focus trap for full details modal
@@ -335,11 +333,6 @@ export default function HMOHunterPage() {
       // Silently fail - don't block property viewing
     }
   }, [user, toast])
-
-  const handleSelectProperty = useCallback((property: Property) => {
-    setSelectedProperty(property)
-    trackPropertyView(property.id)
-  }, [trackPropertyView])
 
   // Show walkthrough immediately in demo mode
   useEffect(() => {
@@ -473,7 +466,6 @@ export default function HMOHunterPage() {
       minBedrooms: minBedrooms > 0 ? minBedrooms : undefined,
       minBathrooms: minBathrooms > 0 ? minBathrooms : undefined,
       isFurnished: isFurnished || undefined,
-      hasParking: hasParking || undefined,
     }
   }
 
@@ -538,7 +530,6 @@ export default function HMOHunterPage() {
     minBedrooms,
     minBathrooms,
     isFurnished,
-    hasParking,
   ])
 
   /**
@@ -561,12 +552,6 @@ export default function HMOHunterPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    track("sign_out")
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }
-
   const handleResetFilters = () => {
     setPriceRange([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
     setSourcingCategories(["existing_off_market", "for_sale_hmo", "change_of_use"])
@@ -584,11 +569,14 @@ export default function HMOHunterPage() {
     setMinBedrooms(0)
     setMinBathrooms(0)
     setIsFurnished(false)
-    setHasParking(false)
     setOwnerDataFilter(false)
     setAdvancedFiltersExpanded(false)
   }
 
+  // The last fallback read p.area_avg_rent, which is not a column on this
+  // table, so it never returned anything. Two of the three sources here are
+  // estimates derived from the city-average room rent — see the note on the
+  // removed Yield Band filter above — and only price_pcm is advertised.
   const getMonthlyRent = (p: Property): number => {
     if (p.price_pcm && p.price_pcm > 0) return p.price_pcm
     if (p.estimated_gross_monthly_rent && p.estimated_gross_monthly_rent > 0) return p.estimated_gross_monthly_rent
@@ -596,7 +584,6 @@ export default function HMOHunterPage() {
       const rooms = p.lettable_rooms || p.bedrooms || 1
       return p.estimated_rent_per_room * rooms
     }
-    if (p.area_avg_rent && p.area_avg_rent > 0) return p.area_avg_rent
     return 0
   }
 
@@ -608,93 +595,28 @@ export default function HMOHunterPage() {
     [properties]
   )
 
-  const calculateAverageMetric = () => {
-    if (properties.length === 0) return 0
-    const total = properties.reduce((sum, p) => {
-      const rent = getMonthlyRent(p)
-      const rooms = p.bedrooms || 1
-      return sum + rent / rooms
-    }, 0)
-    return Math.round(total / properties.length)
-  }
+  // Counts here are of the filtered set, so a count of what a filter excludes
+  // is zero as soon as that filter runs. The EPC note states the behaviour
+  // instead; this one is only printed while its own filter is off.
+  const ownerDataCount = useMemo(
+    () => properties.filter((p) => p.owner_name || p.company_name).length,
+    [properties]
+  )
 
-
+  // Read property.rental_yield first and fell back to property.estimated_value
+  // for the divisor. Neither is a column on this table, so the first branch
+  // never fired and the divisor was always the asking price — which 63.9% of
+  // rows do not have. That is why this returns "N/A" so often, and callers must
+  // treat that as absent rather than coerce it to zero.
   const calculateROI = (property: Property) => {
-    if (property.rental_yield && property.rental_yield > 0) {
-      return property.rental_yield.toFixed(1)
-    }
     const rent = getMonthlyRent(property)
-    const price = property.purchase_price || property.estimated_value || 0
+    const price = property.purchase_price || 0
     if (rent > 0 && price > 0) {
       const annualIncome = rent * 12
       const roi = (annualIncome / price) * 100
       return roi.toFixed(1)
     }
     return "N/A"
-  }
-
-  const getComparableProperties = (selected: Property): Property[] => {
-    const scored = properties
-      .filter((p) => p.id !== selected.id && p.listing_type === selected.listing_type)
-      .map((p) => {
-        let score = 0
-        if (p.city && selected.city && p.city === selected.city) score += 3
-        if (p.bedrooms === selected.bedrooms) score += 2
-        else if (Math.abs(p.bedrooms - selected.bedrooms) === 1) score += 1
-        if (selected.listing_type === "purchase") {
-          const selPrice = selected.purchase_price || selected.estimated_value || 0
-          const pPrice = p.purchase_price || p.estimated_value || 0
-          if (selPrice > 0 && pPrice > 0) {
-            const ratio = pPrice / selPrice
-            if (ratio >= 0.8 && ratio <= 1.2) score += 2
-            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
-          }
-        } else {
-          const selRent = getMonthlyRent(selected)
-          const pRent = getMonthlyRent(p)
-          if (selRent > 0 && pRent > 0) {
-            const ratio = pRent / selRent
-            if (ratio >= 0.8 && ratio <= 1.2) score += 2
-            else if (ratio >= 0.6 && ratio <= 1.4) score += 1
-          }
-        }
-        return { property: p, score }
-      })
-    scored.sort((a, b) => b.score - a.score)
-    return scored.slice(0, 3).map((s) => s.property)
-  }
-
-  const calculateAreaAverages = () => {
-    if (properties.length === 0) return { avgYield: 0, avgDealScore: 0, avgBedrooms: 0, avgRentPerRoom: 0, minYield: 0, maxYield: 0 }
-    let totalYield = 0, totalDealScore = 0, totalBedrooms = 0, totalRentPerRoom = 0
-    let yieldCount = 0, dealScoreCount = 0
-    let minYield = Infinity, maxYield = -Infinity
-    for (const p of properties) {
-      const y = parseFloat(calculateROI(p) as string)
-      if (!isNaN(y)) {
-        totalYield += y
-        yieldCount++
-        if (y < minYield) minYield = y
-        if (y > maxYield) maxYield = y
-      }
-      if (p.deal_score != null) {
-        totalDealScore += p.deal_score
-        dealScoreCount++
-      }
-      totalBedrooms += p.bedrooms || 0
-      const rent = getMonthlyRent(p)
-      const rooms = p.bedrooms || 1
-      totalRentPerRoom += rooms > 0 ? rent / rooms : 0
-    }
-    const n = properties.length
-    return {
-      avgYield: yieldCount > 0 ? totalYield / yieldCount : 0,
-      avgDealScore: dealScoreCount > 0 ? totalDealScore / dealScoreCount : 0,
-      avgBedrooms: n > 0 ? totalBedrooms / n : 0,
-      avgRentPerRoom: n > 0 ? totalRentPerRoom / n : 0,
-      minYield: minYield === Infinity ? 0 : minYield,
-      maxYield: maxYield === -Infinity ? 0 : maxYield,
-    }
   }
 
   // Segment membership comes from inSegment() in lib/properties/category.ts so
@@ -708,7 +630,7 @@ export default function HMOHunterPage() {
       restricted: 0,
     }
     for (const p of properties) {
-      const c = p as CategorisableProperty & { article_4_area?: boolean | null }
+      const c = p as CategorisableProperty & Article4Position
       if (inSegment(c, "licensed")) counts.licensed++
       if (inSegment(c, "expired")) counts.expired++
       if (inSegment(c, "conversion")) counts.conversion++
@@ -721,132 +643,54 @@ export default function HMOHunterPage() {
   const segmentFilteredProperties = useMemo(() => {
     if (activeSegment === "all") return properties
     return properties.filter((p) =>
-      inSegment(p as CategorisableProperty & { article_4_area?: boolean | null }, activeSegment)
+      inSegment(p as CategorisableProperty & Article4Position, activeSegment)
     )
   }, [properties, activeSegment])
 
   const displayProperties = segmentFilteredProperties
 
+  // The legend counts markers, not segments. The tabs above the map count
+  // segments, and a property can sit in more than one of those — which is
+  // exactly how the legend came to advertise a teal swatch that nothing on the
+  // map could render. See lib/properties/marker-bucket.ts.
+  const markerCounts = useMemo(
+    () => countMarkerBuckets(displayProperties, showPotentialHMOLayer),
+    [displayProperties, showPotentialHMOLayer]
+  )
+
   return (
-    <div className="flex flex-col h-screen bg-slate-800">
+    <AppShell
+      title="Map"
+      /* Nothing is counted until the load finishes: "0 of 0" would read as a
+         result, and an empty set is not a fact about the data yet. */
+      subtitle={
+        loading
+          ? undefined
+          : `${displayProperties.length.toLocaleString()} of ${properties.length.toLocaleString()} properties shown`
+      }
+      counts={{ saved: savedProperties.length }}
+      bleed
+      actions={
+        /* The filters live in a panel this page owns, so opening it is a page
+           action rather than navigation. On desktop the floating control inside
+           the map already does this, which is why this one is mobile-only. */
+        !leftPanelOpen ? (
+          <span className="md:hidden">
+            <ShellButton onClick={handleOpenLeftPanel}>
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+            </ShellButton>
+          </span>
+        ) : undefined
+      }
+    >
+    <div className="flex flex-col h-full bg-slate-800">
       <a
         href="#map-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
       >
         Skip to map
       </a>
-      <h1 className="sr-only">HMO Hunter Property Map</h1>
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-3 md:px-6 py-1.5 flex items-center justify-between" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="flex items-center gap-2">
-          {/* Mobile menu button */}
-          <button
-            onClick={handleOpenLeftPanel}
-            className="md:hidden p-2.5 rounded-lg hover:bg-slate-100 transition-colors"
-            title="Open filters"
-            aria-label="Open filters menu"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-          <img
-            src="/hmo-hunter-logo.png"
-            alt="HMO Hunter"
-            className="h-10 md:h-14 w-auto"
-          />
-        </div>
-
-        {/* Desktop navigation.
-            "Home" and "Properties" were buttons with no handler — furniture that
-            looked navigable and did nothing. "Deals" is gone with the pipeline:
-            this product sources and verifies, and a deal tracker is a different
-            job that was never finished. */}
-        <nav className="hidden md:flex items-center gap-8">
-          <button
-            onClick={() => router.push("/user-dashboard")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Attention
-          </button>
-          <button className="text-teal-600 text-sm font-medium">Properties</button>
-          <button
-            onClick={() => router.push("/hmo-check")}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium"
-          >
-            Address check
-          </button>
-          <button
-            onClick={handleNavigateToSaved}
-            className="text-slate-600 hover:text-slate-900 text-sm font-medium flex items-center gap-1.5"
-          >
-            <Heart className="w-4 h-4" />
-            Saved
-            {savedProperties.length > 0 && (
-              <span className="bg-teal-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {savedProperties.length}
-              </span>
-            )}
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-3">
-          {/* Credit balance - shown for logged in users */}
-          {user && <CreditBalance />}
-
-          {/* Premium badge - shown when user has premium subscription */}
-          {isPremiumUser && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-              <span className="text-xs font-bold text-amber-600">PRO</span>
-            </div>
-          )}
-
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5 transition-colors">
-                  <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-600" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-slate-900">{user.email}</p>
-                  <p className="text-xs text-slate-500">Signed in</p>
-                </div>
-                <DropdownMenuSeparator />
-                {user.user_metadata?.is_admin && (
-                  <DropdownMenuItem onClick={() => router.push("/admin")}>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Admin Portal
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => router.push("/pipeline?tab=profile")}>
-                  <UserIcon className="w-4 h-4 mr-2" />
-                  Sender Profile & Logo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/help")}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Help
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/faq")}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  FAQ
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button onClick={handleNavigateToLogin} className="bg-teal-600 hover:bg-teal-700 text-white">
-              Sign in
-            </Button>
-          )}
-        </div>
-      </header>
-
       <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0 }}>
         {/* Left Sidebar Toggle Button - Desktop only, map view only */}
         {!leftPanelOpen && viewMode === "map" && (
@@ -876,7 +720,7 @@ export default function HMOHunterPage() {
             and no reset. Whatever had been set on the map stayed applied there
             with no way to see or change it. */}
         {leftPanelOpen && (
-        <aside className="fixed md:relative top-[56px] md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
+        <aside className="fixed md:relative top-0 md:top-auto bottom-0 left-0 w-[min(85vw,300px)] md:w-[280px] bg-white border-r border-slate-200 overflow-y-auto flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-none">
           {/* Close button */}
           <button
             onClick={handleCloseLeftPanel}
@@ -1022,7 +866,6 @@ export default function HMOHunterPage() {
               minBedrooms,
               minBathrooms,
               isFurnished,
-              hasParking,
             }}
             onLoadFilters={(filters: SearchFilters) => {
               setPriceRange(filters.priceRange)
@@ -1045,7 +888,6 @@ export default function HMOHunterPage() {
               if (filters.minBedrooms !== undefined) setMinBedrooms(filters.minBedrooms)
               if (filters.minBathrooms !== undefined) setMinBathrooms(filters.minBathrooms)
               if (filters.isFurnished !== undefined) setIsFurnished(filters.isFurnished)
-              if (filters.hasParking !== undefined) setHasParking(filters.hasParking)
             }}
             isLoggedIn={!!user}
           />
@@ -1095,6 +937,10 @@ export default function HMOHunterPage() {
                       <SelectItem value="E">E or better</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                    Matches the recorded rating. Properties with no EPC on
+                    record are not returned.
+                  </p>
                 </div>
 
                 {/* Article 4 Filter */}
@@ -1146,7 +992,6 @@ export default function HMOHunterPage() {
                     licenceTypeFilter !== "all",
                     licenceExpiryEnabled,
                     isFurnished,
-                    hasParking,
                     ownerDataFilter,
                   ].filter(Boolean).length
                   return (
@@ -1211,7 +1056,7 @@ export default function HMOHunterPage() {
                           the properties table can actually answer for. */}
                       <SelectItem value="all">All Licence Types</SelectItem>
                       <SelectItem value="any_licensed">Any Licensed HMO</SelectItem>
-                      <SelectItem value="expired_licence">Expired Licence Only</SelectItem>
+                      <SelectItem value="expired_licence">Licence ended only</SelectItem>
                       <SelectItem value="unlicensed">Unlicensed Only</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1333,13 +1178,6 @@ export default function HMOHunterPage() {
                         onCheckedChange={setIsFurnished}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-600">Has Parking</span>
-                      <Switch
-                        checked={hasParking}
-                        onCheckedChange={setHasParking}
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -1363,7 +1201,12 @@ export default function HMOHunterPage() {
                       <span className="text-xs text-slate-400">Not on your plan</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Show only listings with title owner information</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Show only listings with title owner information
+                    {!ownerDataFilter && properties.length > 0
+                      ? ` — ${ownerDataCount} of ${properties.length} shown hold any.`
+                      : "."}
+                  </p>
                 </div>
 
                 {/* Property size and EPC. These were nested under the
@@ -1411,6 +1254,11 @@ export default function HMOHunterPage() {
                         <SelectItem value="needs_upgrade">Needs upgrade (E/F/G)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {epcBandFilter && (
+                      <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                        Properties with no EPC on record are not returned.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1444,7 +1292,7 @@ export default function HMOHunterPage() {
                   </button>
                   <button role="tab" aria-selected={activeSegment === "expired"} onClick={() => setActiveSegment("expired")}
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "expired" ? "bg-amber-500 text-white" : "text-amber-700 hover:bg-amber-50"}`}>
-                    <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
+                    <Clock className="w-3.5 h-3.5" /> Licence ended <span className="opacity-70">{segmentCounts.expired}</span>
                   </button>
                   <button role="tab" aria-selected={activeSegment === "conversion"} onClick={() => setActiveSegment("conversion")}
                     className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${activeSegment === "conversion" ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"}`}>
@@ -1537,7 +1385,7 @@ export default function HMOHunterPage() {
                   : "text-amber-700 hover:bg-amber-50"
               }`}
             >
-              <Clock className="w-3.5 h-3.5" /> Expired <span className="opacity-70">{segmentCounts.expired}</span>
+              <Clock className="w-3.5 h-3.5" /> Licence ended <span className="opacity-70">{segmentCounts.expired}</span>
             </button>
             <button
               role="tab"
@@ -1672,94 +1520,169 @@ export default function HMOHunterPage() {
             </button>
             {legendExpanded && (
               <div className="px-4 pb-4 space-y-3">
-                {/* IN HMO USE */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">In HMO use</span>
-                    <span className="text-[10px] text-slate-400">Licence in force</span>
+                {/* Every row below is a count of markers on screen. A row is
+                    shown only when something is drawn in it, so the legend
+                    cannot advertise a colour this map is not using. */}
+
+                {/* RESTRICTIONS — first, because it wins every other branch */}
+                {markerCounts.article4 > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Restrictions</span>
+                        <span className="text-[10px] text-slate-400">Planning required</span>
+                      </div>
+                      <Switch
+                        checked={showArticle4Overlay}
+                        onCheckedChange={setShowArticle4Overlay}
+                        className="data-[state=checked]:bg-red-400 scale-75"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div>
+                      <span className="text-xs text-slate-600">Article 4 area</span>
+                      <span className="text-[10px] text-red-600 ml-auto">{markerCounts.article4}</span>
+                    </div>
+                    {/* Article 4 is read first, so a property here is drawn red
+                        whatever else is true of it. Saying so is the difference
+                        between a legend and a colour chart. */}
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
+                      Shown ahead of licence and conversion state, so a licensed
+                      HMO inside one of these areas is red here.
+                    </p>
+                    {showArticle4Overlay && (
+                      <div className="flex items-center gap-2.5 mt-1.5">
+                        <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
+                        <span className="text-xs text-slate-500">Article 4 zone overlay</span>
+                      </div>
+                    )}
+                    {/* The dots and the overlay do not share a source. The
+                        overlay is the national feed's geometry; a red dot is a
+                        position recorded from whichever source decided that
+                        address — for most of them, a council's own publication,
+                        not the feed. Crediting only the feed under a red dot
+                        credited the wrong body for two thirds of them. */}
+                    <div className="pt-1 mt-1 border-t border-slate-200 space-y-0.5">
+                      <p className="text-[10px] leading-relaxed text-slate-400">
+                        Positions recorded from council publications and
+                        planning.data.gov.uk.
+                      </p>
+                      {showArticle4Overlay && (
+                        <a
+                          href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors block"
+                        >
+                          Overlay shapes: planning.data.gov.uk
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-teal-700"></div>
-                    <span className="text-xs text-slate-600">Licensed HMO</span>
-                    <span className="text-[10px] text-teal-600 ml-auto">{segmentCounts.licensed}</span>
+                )}
+
+                {/* NOT ESTABLISHED — cuts across the buckets, so it is a note
+                    about the edge of a marker rather than a colour of its own. */}
+                {markerCounts.unverified > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Not established</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full border-2 border-dashed border-slate-400"></div>
+                      <span className="text-xs text-slate-600">Dashed edge</span>
+                      <span className="text-[10px] text-slate-500 ml-auto">{markerCounts.unverified}</span>
+                    </div>
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
+                      No Article 4 position held for the address — the council
+                      publishes nothing we can read. Not the same as checked and
+                      found outside one.
+                    </p>
                   </div>
-                </div>
+                )}
 
                 {/* LICENCE LAPSED */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Licence lapsed</span>
-                    <span className="text-[10px] text-slate-400">Enforcement risk for the owner</span>
+                {markerCounts.expired > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Licence lapsed</span>
+                      <span className="text-[10px] text-slate-400">Enforcement risk for the owner</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
+                      <span className="text-xs text-slate-600">Recorded as expired</span>
+                      <span className="text-[10px] text-amber-600 ml-auto">{markerCounts.expired}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600"></div>
-                    <span className="text-xs text-slate-600">Expired Licence</span>
-                    <span className="text-[10px] text-amber-600 ml-auto">{segmentCounts.expired}</span>
-                  </div>
-                </div>
+                )}
 
-                {/* OPPORTUNITIES */}
-                <div className="pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
-                    <span className="text-[10px] text-slate-400">No HMO use today</span>
-                  </div>
-                  <div className="space-y-1.5">
+                {/* CHANGE OF USE — also shown while the layer is off, or the
+                    switch would hide itself the moment you used it. */}
+                {(markerCounts.conversion > 0 || !showPotentialHMOLayer) && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    {/* This layer could not be turned off: the state existed,
+                        its setter was never called, and the legend offered no
+                        control while Article 4 had one. */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Change of use</span>
+                        <span className="text-[10px] text-slate-400">No HMO use today</span>
+                      </div>
+                      <Switch
+                        checked={showPotentialHMOLayer}
+                        onCheckedChange={setShowPotentialHMOLayer}
+                        className="data-[state=checked]:bg-green-500 scale-75"
+                        aria-label="Show change of use markers"
+                      />
+                    </div>
                     <div className="flex items-center gap-2.5">
                       <div className="w-4 h-4 rounded-full bg-green-600 border-2 border-green-700"></div>
-                      <span className="text-xs text-slate-600">House</span>
-                      <span className="text-[10px] text-green-600 ml-auto">C3 to C4 route</span>
+                      <span className="text-xs text-slate-600">No HMO use today</span>
+                      <span className="text-[10px] text-green-600 ml-auto">{markerCounts.conversion}</span>
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-green-500"></div>
-                      <span className="text-xs text-slate-600">Commercial</span>
-                      <span className="text-[10px] text-green-600 ml-auto">Class MA route</span>
+                    {/* These markers come in two greens. The shade is decided by
+                        hmo_classification, which is a threshold on the deal
+                        score that was removed from the product — so it is not
+                        described here, because it no longer means anything a
+                        reader could act on. */}
+                    <div className="mt-1.5 text-[10px] text-slate-400">
+                      Larger green marker = more owner contact detail held
                     </div>
                   </div>
-                  <div className="mt-1.5 text-[10px] text-slate-400">
-                    <span>{segmentCounts.conversion} with no HMO use today</span>
-                    <span className="ml-2 text-slate-300">|</span>
-                    <span className="ml-2">Larger = more contact info</span>
-                  </div>
-                </div>
+                )}
 
-                {/* RESTRICTIONS */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Restrictions</span>
-                      <span className="text-[10px] text-slate-400">Planning required</span>
+                {/* IN HMO USE */}
+                {markerCounts.licensed > 0 && (
+                  <div className="pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">In HMO use</span>
+                      <span className="text-[10px] text-slate-400">Licence in force</span>
                     </div>
-                    <Switch
-                      checked={showArticle4Overlay}
-                      onCheckedChange={setShowArticle4Overlay}
-                      className="data-[state=checked]:bg-red-400 scale-75"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div>
-                    <span className="text-xs text-slate-600">Article 4 Area</span>
-                    <span className="text-[10px] text-red-600 ml-auto">{segmentCounts.restricted}</span>
-                  </div>
-                  {showArticle4Overlay && (
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded bg-red-300/40 border-2 border-red-600"></div>
-                      <span className="text-xs text-slate-500">Article 4 Zone overlay</span>
+                      <div className="w-4 h-4 rounded-full bg-teal-700"></div>
+                      <span className="text-xs text-slate-600">Licensed HMO</span>
+                      <span className="text-[10px] text-teal-600 ml-auto">{markerCounts.licensed}</span>
                     </div>
-                  )}
-                  {showArticle4Overlay && (
-                    <div className="pt-1 mt-1 border-t border-slate-200">
-                      <a
-                        href="https://www.planning.data.gov.uk/dataset/article-4-direction-area"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
-                      >
-                        Data: planning.data.gov.uk
-                      </a>
+                  </div>
+                )}
+
+                {/* EVERYTHING ELSE — drawn all along, never explained */}
+                {markerCounts.other > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Other</span>
+                      <span className="text-[10px] text-slate-400">Nothing recorded yet</span>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-teal-500"></div>
+                      <span className="text-xs text-slate-600">No position held</span>
+                      <span className="text-[10px] text-slate-500 ml-auto">{markerCounts.other}</span>
+                    </div>
+                    <p className="text-[10px] leading-relaxed text-slate-400">
+                      An address we hold nothing on is unchecked, not clear.
+                    </p>
+                  </div>
+                )}
 
               </div>
             )}
@@ -1772,7 +1695,7 @@ export default function HMOHunterPage() {
           <>
           {/* Mobile backdrop overlay */}
           <div className="md:hidden fixed inset-0 bg-black/50 z-50" onClick={handleCloseRightPanel} aria-hidden="true" />
-          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-[56px] md:top-auto bottom-0 left-0 right-0 md:inset-auto z-[51] md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
+          <aside className="w-full md:w-[320px] lg:w-[400px] fixed md:relative top-0 md:top-auto bottom-0 left-0 right-0 md:inset-auto z-[51] md:z-auto bg-white border-l border-slate-200 overflow-y-auto">
             {/* Close button */}
             <button
               onClick={handleCloseRightPanel}
@@ -2083,16 +2006,38 @@ export default function HMOHunterPage() {
                 </div>
               </div>
 
-              {/* Planning Restrictions Section */}
-              {(selectedProperty.article_4_area || selectedProperty.conservation_area) && (
-                <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <h4 className="font-semibold text-slate-900 mb-3">Planning Restrictions</h4>
+              {/* Planning position.
+                  This block only appeared when a restriction was in force, so a
+                  property whose Article 4 position had never been established
+                  showed the reader nothing — indistinguishable from one checked
+                  and found outside a direction. It is now shown for the
+                  unestablished case too, in slate rather than amber, because a
+                  gap in what is held is not a restriction and must not be
+                  dressed as one. */}
+              {(() => {
+                const article4InForce = selectedProperty.article_4_status === "in_force"
+                const article4Unverified =
+                  selectedProperty.article_4_status !== "in_force" &&
+                  selectedProperty.article_4_status !== "none_found"
+                if (!article4InForce && !article4Unverified && !selectedProperty.conservation_area) {
+                  return null
+                }
+                const restricted = article4InForce || selectedProperty.conservation_area
+                return (
+                <div className={`mb-6 p-4 rounded-lg border ${
+                  restricted
+                    ? "bg-amber-50 border-amber-200"
+                    : "bg-slate-50 border-slate-200"
+                }`}>
+                  <h4 className="font-semibold text-slate-900 mb-3">
+                    {restricted ? "Planning Restrictions" : "Planning Position"}
+                  </h4>
                   <div className="space-y-3">
-                    {selectedProperty.article_4_area && (
+                    {(article4InForce || article4Unverified) && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">Article 4 Direction</span>
                         <Article4Warning
-                          article4Area={selectedProperty.article_4_area}
+                          article4Status={selectedProperty.article_4_status}
                           conservationArea={selectedProperty.conservation_area}
                           listedBuildingGrade={selectedProperty.listed_building_grade}
                           planningConstraints={selectedProperty.planning_constraints}
@@ -2107,7 +2052,8 @@ export default function HMOHunterPage() {
                     )}
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               {/* Broadband & Connectivity */}
               <div className="mb-6 p-4 bg-slate-50 rounded-lg">
@@ -2168,7 +2114,7 @@ export default function HMOHunterPage() {
               </div>
 
               {/* Potential HMO Analysis in Full Details - Pro Feature */}
-              {selectedProperty.is_potential_hmo && selectedProperty.hmo_classification && (
+              {selectedProperty.is_potential_hmo && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-900 mb-3">HMO Investment Analysis</h4>
                   <PotentialHMODetailPanel property={selectedProperty} defaultOpen={true} isPremium={isPremiumUser} />
@@ -2234,5 +2180,6 @@ export default function HMOHunterPage() {
         }}
       />
     </div>
+    </AppShell>
   )
 }

@@ -54,8 +54,19 @@ export type LicenceState =
   | "licensed"
   /** Licensed, expiring within LICENCE_ENDING_WINDOW_MONTHS. */
   | "licence_ending"
-  /** Licence date has passed, or the record says expired. */
+  /** The register itself says expired. The council's own word for it. */
   | "licence_expired"
+  /**
+   * The licence term we hold has run out, and the register has not said so.
+   *
+   * 83 of the 98 properties this platform called "licence expired" carried
+   * licence_status "active" from the register — we were contradicting our own
+   * source field, on a date a median of 0.7 years old, with no record of when
+   * the register was last read. A term that has run out in our copy is a reason
+   * to check the register; it is not a finding that the property is unlicensed,
+   * and it is certainly not an enforcement risk we can assert to an owner.
+   */
+  | "licence_term_ended"
   /**
    * Licensed, but the register gave no expiry date. Nearly half the licensed
    * stock is in this state, and it is neither active nor ending — pretending
@@ -70,6 +81,16 @@ export interface PropertyCategory {
   licence: LicenceState
   /** Days until expiry; negative once past. Null when there is no date. */
   daysToExpiry: number | null
+}
+
+/**
+ * Article 4 has three states and only one of them is a verified negative.
+ * Anything reading it as a boolean turns "unknown" into "clear".
+ */
+export interface Article4Position {
+  /** @deprecated Mirrors `article_4_status === "in_force"`. Never read a negative. */
+  article_4_area?: boolean | null
+  article_4_status?: "in_force" | "none_found" | "unknown" | null
 }
 
 /** The fields categorisation reads. Kept narrow so tests need no fixtures. */
@@ -136,7 +157,7 @@ export type Segment = "all" | "licensed" | "expired" | "conversion" | "restricte
  * with the page it was taken from is worse than no export.
  */
 export function inSegment(
-  property: CategorisableProperty & { article_4_area?: boolean | null },
+  property: CategorisableProperty & Article4Position,
   segment: Segment,
   now: Date = new Date()
 ): boolean {
@@ -146,13 +167,20 @@ export function inSegment(
     case "licensed":
     case "expired": {
       if (!property.licensed_hmo && property.licence_status !== "expired") return false
-      const expired = categorise(property, now).licence === "licence_expired"
+      const licence = categorise(property, now).licence
+      const expired =
+        licence === "licence_expired" || licence === "licence_term_ended"
       return segment === "expired" ? expired : !expired
     }
     case "conversion":
       return sourcingCategory(property) === "change_of_use"
     case "restricted":
-      return Boolean(property.article_4_area)
+      // article_4_area is deprecated and its own doc says never to filter a
+      // negative on it: the national feed covers a minority of councils, so a
+      // false there has always meant "not found in a feed that does not look
+      // here". Reading the status keeps "we have not established this" out of
+      // the answer entirely, rather than counting it as "no restriction".
+      return property.article_4_status === "in_force"
   }
 }
 
@@ -227,7 +255,9 @@ export function categorise(
   }
 
   if (daysToExpiry < 0) {
-    return { market, licence: "licence_expired", daysToExpiry }
+    // Not "expired" — the register did not say that. Only the term we hold has
+    // run out, which may mean it was renewed and we have not read it since.
+    return { market, licence: "licence_term_ended", daysToExpiry }
   }
 
   // ~30.44 days a month, so "6 months" lands within a day of the calendar date
@@ -286,6 +316,7 @@ export const LICENCE_LABELS: Record<LicenceState, string> = {
   licensed: "Licensed",
   licence_ending: "Licence ending",
   licence_expired: "Licence expired",
+  licence_term_ended: "Licence term ended, not confirmed",
   licence_undated: "Licensed, no expiry date",
   unlicensed: "No licence",
 }
