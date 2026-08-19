@@ -2,34 +2,24 @@
 
 import { motion } from "framer-motion"
 import { ShieldCheck, Landmark, BadgeCheck, FileSearch, TrendingUp, LayoutGrid } from "lucide-react"
-import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
 /**
- * Every figure quoted below comes from `stats`, counted at request time. Where
- * a card would need a number it does not have, it states the behaviour instead
- * — the claim has to survive the database being unreachable.
+ * These cards describe behaviour, never inventory size. Quoting a property or
+ * council count would put a number on coverage that is still being connected,
+ * and a figure on a public page is read as a commitment.
  */
-function buildFeatures(stats: LandingStats | null) {
-  return [
+const features = [
     {
       icon: ShieldCheck,
       title: "Article 4, in three states",
-      description: stats
-        ? `In force, confirmed outside, or not established — never a boolean. ${formatCount(
-            stats.inForce
-          )} properties sit inside a live direction and ${formatCount(
-            stats.noneFound
-          )} are positively placed outside one. The rest say so plainly instead of guessing.`
-        : "In force, confirmed outside, or not established — never a boolean. Where nothing settles the question, we say so instead of guessing.",
+      description:
+        "In force, confirmed outside, or not established — never a boolean. Where nothing settles the question we say so, because silence in a national dataset is not an all clear.",
     },
     {
       icon: Landmark,
       title: "The council's own words",
-      description: stats
-        ? `The national planning feed is voluntary and many councils file nothing. Where it is silent we read the council's own direction and quote it — ${formatCount(
-            stats.councilVerified
-          )} properties are settled that way.`
-        : "The national planning feed is voluntary and many councils file nothing. Where it is silent we read the council's own direction and quote it.",
+      description:
+        "The national planning feed is voluntary and many councils file nothing. Where it is silent we read the council's own direction and quote it, rather than treat the gap as an answer.",
     },
     {
       icon: BadgeCheck,
@@ -39,9 +29,9 @@ function buildFeatures(stats: LandingStats | null) {
     },
     {
       icon: FileSearch,
-      title: "Check any address",
+      title: "Existing HMOs and conversion candidates",
       description:
-        "Use class, licence status and expiry, and the permitted development route to an HMO where one exists. Every report ends with the questions that still need a phone call, and exports as a PDF you can send on.",
+        "Check any address for what it is now — use class, licence status and expiry — and for the permitted development route to an HMO where one exists. Every report ends with the questions that still need a phone call, and exports as a PDF you can send on.",
     },
     {
       icon: TrendingUp,
@@ -55,12 +45,9 @@ function buildFeatures(stats: LandingStats | null) {
       description:
         "Map, address check, saved properties, pipeline and an attention list, in one place instead of six browser tabs.",
     },
-  ]
-}
+]
 
-export function Features({ stats }: { stats: LandingStats | null }) {
-  const features = buildFeatures(stats)
-
+export function Features() {
   return (
     <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto max-w-6xl">

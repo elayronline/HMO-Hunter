@@ -3,13 +3,11 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Plus, Minus } from "lucide-react"
-import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
-function buildFaqs(stats: LandingStats | null) {
-  return [
+const faqs = [
     {
       q: "What is HMO Hunter?",
-      a: "A property sourcing platform built exclusively for HMO professionals. It brings a property's planning position, licensing status and viability figures into one search, so you can source and vet without cross-referencing council registers, planning portals and listing sites by hand.",
+      a: "A property sourcing platform built exclusively for HMO professionals. It covers both existing HMOs and properties with change of use potential, bringing the planning position, licensing status and viability figures into one search — so you can source and vet without cross-referencing council registers, planning portals and listing sites by hand.",
     },
     {
       q: "Who is HMO Hunter for?",
@@ -25,13 +23,7 @@ function buildFaqs(stats: LandingStats | null) {
     },
     {
       q: "How is this different from Rightmove, Zoopla, or council registers?",
-      a: stats
-        ? `Those weren't built for HMO sourcing. The difference that matters most is how we handle uncertainty: a property's Article 4 position is recorded as in force, confirmed outside, or not established, and never collapsed into a yes or no. Today ${formatCount(
-            stats.notEstablished
-          )} of our ${formatCount(
-            stats.properties
-          )} properties are "not established" — and saying so is the point, because silence in a national dataset is not an all clear.`
-        : "Those weren't built for HMO sourcing. The difference that matters most is how we handle uncertainty: a property's Article 4 position is recorded as in force, confirmed outside, or not established, and never collapsed into a yes or no, because silence in a national dataset is not an all clear.",
+      a: "Those weren't built for HMO sourcing. The difference that matters most is how we handle uncertainty: a property's Article 4 position is recorded as in force, confirmed outside, or not established, and never collapsed into a yes or no. Where nothing settles it we say so — silence in a national dataset is not an all clear.",
     },
     {
       q: "What data does HMO Hunter use?",
@@ -41,12 +33,10 @@ function buildFaqs(stats: LandingStats | null) {
       q: "When will I get access after signing up?",
       a: "Straight away. Confirm your email, sign in, and the platform is open — there are no waves to wait for.",
     },
-  ]
-}
+]
 
-export function FAQ({ stats }: { stats: LandingStats | null }) {
+export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const faqs = buildFaqs(stats)
 
   return (
     <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">

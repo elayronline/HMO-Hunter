@@ -3,9 +3,8 @@
 import { motion } from "framer-motion"
 import { track } from "@vercel/analytics"
 import { VideoPlayer } from "./VideoPlayer"
-import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
-export function Hero({ stats }: { stats: LandingStats | null }) {
+export function Hero() {
   const scrollToForm = () => {
     document.getElementById("signup-form")?.scrollIntoView({ behavior: "smooth" })
   }
@@ -49,17 +48,8 @@ export function Hero({ stats }: { stats: LandingStats | null }) {
               transition={{ delay: 0.1 }}
               className="mt-6 text-lg leading-relaxed text-[var(--grey-600)]"
             >
-              A sourcing platform built exclusively for HMO professionals. Every
-              property carries its planning position in the council&rsquo;s own words, its
-              licence state, and an explicit &ldquo;not established&rdquo; where the evidence
-              stops.
-              {stats && (
-                <>
-                  {" "}
-                  {formatCount(stats.properties)} properties across{" "}
-                  {formatCount(stats.councils)} planning authorities.
-                </>
-              )}
+              Find and vet viable HMOs, both existing and change of use potential.
+              Get the insight you need to source to your needs.
             </motion.p>
 
             <motion.div

@@ -39,7 +39,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "HMO Hunter | Source and vet viable HMOs. In one place.",
-  description: "A sourcing platform built exclusively for HMO professionals. Every property carries its Article 4 planning position in the council's own words, its licence state, and an explicit \"not established\" where the evidence stops.",
+  description: "Find and vet viable HMOs, both existing and change of use potential. Article 4 planning position, licence state, and an explicit \"not established\" where the evidence stops — the insight you need to source to your needs.",
   icons: {
     icon: "/icon-light-32x32.png",
     apple: "/apple-icon.png",
