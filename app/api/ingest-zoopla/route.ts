@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
+import { validateBody } from "@/lib/validation/api-validation"
+import { zooplaIngestSchema } from "@/lib/validation/schemas"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,28 +15,49 @@ const zoopla = new ZooplaAdapter()
  *
  * Usage:
  *   POST /api/ingest-zoopla
- *   Body: { postcode?: string, area?: string, listingType?: "rent" | "sale", limit?: number }
+ *   Body: { postcode?, area?, listingType?, limit?,
+ *           minPrice?, maxPrice?, minBedrooms?, maxBedrooms? }
+ *
+ * A "sale" run MUST state maxPrice and minBedrooms. The adapter has always
+ * supported those bounds; this route never passed them, so every sale run asked
+ * Zoopla for everything on the market in an area and kept the first N. One such
+ * run on 2026-01-29 produced 1,053 purchase rows at a £1.5m median. See
+ * zooplaIngestSchema for the full account.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => ({}))
-    const { postcode, area, listingType = "rent", limit = 20 } = body
-
-    if (!postcode && !area) {
-      return NextResponse.json(
-        { error: "Either postcode or area is required" },
-        { status: 400 }
-      )
+    const validation = await validateBody(request, zooplaIngestSchema)
+    if (!validation.success) {
+      return validation.error
     }
 
-    console.log(`[IngestZoopla] Fetching ${listingType} properties for ${postcode || area}...`)
+    const { postcode, area, listingType, limit, minPrice, maxPrice, minBedrooms, maxBedrooms } =
+      validation.data
 
-    // Fetch from Zoopla
+    const bounds = [
+      minPrice !== undefined ? `min £${minPrice.toLocaleString()}` : null,
+      maxPrice !== undefined ? `max £${maxPrice.toLocaleString()}` : null,
+      minBedrooms !== undefined ? `${minBedrooms}+ beds` : null,
+      maxBedrooms !== undefined ? `up to ${maxBedrooms} beds` : null,
+    ].filter(Boolean).join(", ") || "no bounds"
+
+    console.log(
+      `[IngestZoopla] Fetching ${listingType} for ${postcode || area} (${bounds})...`,
+    )
+
+    // Every bound the adapter supports is now passed through. It always
+    // accepted these; the route simply never sent them.
     const listings = await zoopla.fetch({
       postcode,
       area,
       listingType,
-      pageSize: Math.min(limit, 100),
+      minPrice,
+      maxPrice,
+      minBedrooms,
+      maxBedrooms,
+      // `limit` carries the schema default of 20; the fallback is belt-and-braces
+      // for the inferred optional type.
+      pageSize: Math.min(limit ?? 20, 100),
       radius: 1,
     })
 
