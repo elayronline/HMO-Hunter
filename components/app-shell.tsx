@@ -56,8 +56,8 @@ interface NavItem {
 }
 
 const PRIMARY: NavItem[] = [
-  { href: "/user-dashboard", label: "Attention", icon: LayoutDashboard },
-  { href: "/map", label: "Map", icon: MapIcon },
+  { href: "/user-dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/map", label: "Properties", icon: MapIcon },
   { href: "/hmo-check", label: "Address check", icon: FileSearch },
 ]
 

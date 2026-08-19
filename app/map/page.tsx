@@ -74,7 +74,6 @@ import {
 } from "@/lib/properties/category"
 import { SavedSearches, type SearchFilters } from "@/components/saved-searches"
 import { countMarkerBuckets } from "@/lib/properties/marker-bucket"
-import { ExportButton } from "@/components/export-button"
 import { PropertyComparison, usePropertyComparison } from "@/components/property-comparison"
 import { Map, List } from "lucide-react"
 import {
@@ -707,7 +706,7 @@ function MapPage() {
 
   return (
     <AppShell
-      title="Map"
+      title="Properties"
       /* Nothing is counted until the load finishes: "0 of 0" would read as a
          result, and an empty set is not a fact about the data yet. */
       subtitle={
@@ -1381,16 +1380,6 @@ function MapPage() {
                 <div className="shrink-0 text-xs text-slate-500">
                   <span className="font-semibold text-slate-700">{displayProperties.length}</span> properties
                 </div>
-                {user && displayProperties.length > 0 && (
-                  <div className="shrink-0">
-                    <ExportButton
-                      filters={currentFilters()}
-                      segment={activeSegment}
-                      disabled={loading}
-                      isAdmin={user.user_metadata?.is_admin === true}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -1501,14 +1490,6 @@ function MapPage() {
                 </span>
               )}
             </div>
-            {user && displayProperties.length > 0 && (
-              <ExportButton
-                filters={currentFilters()}
-                segment={activeSegment}
-                disabled={loading}
-                isAdmin={user.user_metadata?.is_admin === true}
-              />
-            )}
           </div>
           </>
           )}

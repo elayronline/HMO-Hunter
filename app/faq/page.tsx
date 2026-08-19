@@ -297,7 +297,7 @@ export default function FAQPage() {
             className="flex items-center gap-2"
           >
             <Home className="w-4 h-4" />
-            Back to Map
+            Back to properties
           </Button>
         </div>
       </header>
