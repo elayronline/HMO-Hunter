@@ -43,7 +43,7 @@ const features = [
     icon: LayoutGrid,
     title: "One workspace",
     description:
-      "Map, address check, saved properties, pipeline and an attention list, in one place instead of six browser tabs.",
+      "Map, list, address check and your saved properties in one place instead of six browser tabs. The dashboard covers two things: what has landed on the listings you saved, and which Article 4 directions arrive next.",
   },
 ]
 
