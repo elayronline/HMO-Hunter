@@ -3,40 +3,50 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Plus, Minus } from "lucide-react"
+import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
-const faqs = [
-  {
-    q: "What is HMO Hunter?",
-    a: "HMO Hunter is the UK's first property sourcing platform built exclusively for HMO professionals. It brings together compliance data, licensing status, Article 4 zone mapping, and yield projections into a single search tool, replacing the need to cross-reference multiple platforms manually.",
-  },
-  {
-    q: "Who is HMO Hunter for?",
-    a: "It's built for anyone sourcing or managing HMOs: local authority housing teams, housing associations, private investors and landlords, council housing teams, and property agents or sourcers.",
-  },
-  {
-    q: 'What does "beta access" mean?',
-    a: "Beta access means you get to use the live platform before public launch. You'll have full access to search, filter, and assess HMOs. In return, we ask for your honest feedback to help us improve.",
-  },
-  {
-    q: "Is it free?",
-    a: "During beta, yes, completely free. We'll announce pricing before public launch. Beta testers will receive preferential early adopter rates.",
-  },
-  {
-    q: "How is this different from Rightmove, Zoopla, or council registers?",
-    a: "Those platforms weren't built for HMO sourcing. HMO Hunter combines property listings with compliance data, Article 4 mapping, licensing status, and yield projections, so you can assess viability in seconds instead of hours.",
-  },
-  {
-    q: "What data does HMO Hunter use?",
-    a: "We aggregate publicly available data from property listings, council registers, planning portals, and Land Registry records. All data is verified and updated regularly.",
-  },
-  {
-    q: "When will I get access after signing up?",
-    a: "Beta access is rolling out in waves. You'll receive your access link by email as soon as your wave is live. The earlier you sign up, the sooner you get in.",
-  },
-]
+function buildFaqs(stats: LandingStats | null) {
+  return [
+    {
+      q: "What is HMO Hunter?",
+      a: "A property sourcing platform built exclusively for HMO professionals. It brings a property's planning position, licensing status and viability figures into one search, so you can source and vet without cross-referencing council registers, planning portals and listing sites by hand.",
+    },
+    {
+      q: "Who is HMO Hunter for?",
+      a: "It's built for anyone sourcing or managing HMOs: local authority housing teams, housing associations, private investors and landlords, council housing teams, and property agents or sourcers.",
+    },
+    {
+      q: 'What does "beta access" mean?',
+      a: "The platform is live and you get all of it. Beta means we are still building on it, features land often, and we ask for your honest feedback in return. There is no waiting list and no queue.",
+    },
+    {
+      q: "Is it free?",
+      a: "Free during beta, with no card to enter. Usage is metered rather than unlimited: 150 credits a day, your first 20 property views free, and caps of 100 saved properties, 10 saved searches and 10 price alerts. We'll announce pricing before public launch, and beta testers will receive preferential early adopter rates.",
+    },
+    {
+      q: "How is this different from Rightmove, Zoopla, or council registers?",
+      a: stats
+        ? `Those weren't built for HMO sourcing. The difference that matters most is how we handle uncertainty: a property's Article 4 position is recorded as in force, confirmed outside, or not established, and never collapsed into a yes or no. Today ${formatCount(
+            stats.notEstablished
+          )} of our ${formatCount(
+            stats.properties
+          )} properties are "not established" — and saying so is the point, because silence in a national dataset is not an all clear.`
+        : "Those weren't built for HMO sourcing. The difference that matters most is how we handle uncertainty: a property's Article 4 position is recorded as in force, confirmed outside, or not established, and never collapsed into a yes or no, because silence in a national dataset is not an all clear.",
+    },
+    {
+      q: "What data does HMO Hunter use?",
+      a: "Publicly available data: property listings, council registers and planning portals, Land Registry records, and Article 4 directions read from councils' own websites. Where a council publishes nothing usable, we record that rather than infer an answer. The address check report states the basis for every planning position, including the council's own wording where we hold it.",
+    },
+    {
+      q: "When will I get access after signing up?",
+      a: "Straight away. Confirm your email, sign in, and the platform is open — there are no waves to wait for.",
+    },
+  ]
+}
 
-export function FAQ() {
+export function FAQ({ stats }: { stats: LandingStats | null }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const faqs = buildFaqs(stats)
 
   return (
     <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">

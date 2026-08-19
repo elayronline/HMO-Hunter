@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Rocket, Eye, MessageSquare } from "lucide-react"
-import { TOTAL_SPOTS, REMAINING, FILLED, FILL_PERCENT } from "@/lib/constants"
 
 const benefits = [
   {
@@ -25,43 +23,6 @@ const benefits = [
       "Your feedback directly influences the roadmap. Tell us what to build.",
   },
 ]
-
-function AnimatedCounter({ target }: { target: number }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const [count, setCount] = useState(0)
-  const [hasAnimated, setHasAnimated] = useState(false)
-
-  useEffect(() => {
-    if (!ref.current || hasAnimated) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setHasAnimated(true)
-          let start = 0
-          const step = Math.ceil(target / 40)
-          const interval = setInterval(() => {
-            start += step
-            if (start >= target) {
-              setCount(target)
-              clearInterval(interval)
-            } else {
-              setCount(start)
-            }
-          }, 30)
-        }
-      },
-      { threshold: 0.5 }
-    )
-    observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [target, hasAnimated])
-
-  return (
-    <span ref={ref} className="font-[family-name:var(--font-dm-mono)]">
-      {count}
-    </span>
-  )
-}
 
 export function EarlyAdopterBenefits() {
   return (
@@ -95,29 +56,6 @@ export function EarlyAdopterBenefits() {
           ))}
         </div>
 
-        {/* Scarcity counter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto mt-12 max-w-md text-center"
-        >
-          <p className="text-3xl font-extrabold text-[var(--teal-dark)]">
-            <AnimatedCounter target={REMAINING} /> of {TOTAL_SPOTS}
-          </p>
-          <p className="mt-1 text-sm font-medium text-[var(--grey-500)]">
-            beta places remaining
-          </p>
-          <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[var(--grey-200)]">
-            <div
-              className="h-full rounded-full bg-[var(--teal)] transition-all duration-1000"
-              style={{ width: `${FILL_PERCENT}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-[var(--grey-400)]">
-            {FILLED} spots claimed
-          </p>
-        </motion.div>
       </div>
     </section>
   )

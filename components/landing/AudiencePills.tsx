@@ -7,6 +7,7 @@ const audiences = [
   "Housing Associations",
   "Private Investors",
   "Council Housing Teams",
+  "Property Agents & Sourcers",
 ]
 
 export function AudiencePills() {

@@ -17,7 +17,7 @@ export function Footer() {
               className="h-11 sm:h-12 w-auto mix-blend-multiply"
             />
             <span className="hidden text-sm text-[var(--grey-400)] sm:inline">
-              Find viable HMOs. Spot untapped opportunities. Faster.
+              Source and vet viable HMOs. In one place.
             </span>
           </div>
 

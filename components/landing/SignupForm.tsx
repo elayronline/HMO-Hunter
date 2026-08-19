@@ -239,7 +239,7 @@ export function SignupForm() {
             disabled={state === "submitting"}
             className="w-full rounded-xl bg-[var(--teal-dark)] py-3 text-sm font-semibold text-white hover:bg-[var(--teal)] transition-colors disabled:opacity-60"
           >
-            {state === "submitting" ? "Creating account..." : "Secure My Spot"}
+            {state === "submitting" ? "Creating account..." : "Create My Account"}
           </button>
         </form>
 

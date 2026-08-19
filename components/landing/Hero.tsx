@@ -3,8 +3,9 @@
 import { motion } from "framer-motion"
 import { track } from "@vercel/analytics"
 import { VideoPlayer } from "./VideoPlayer"
+import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
-export function Hero() {
+export function Hero({ stats }: { stats: LandingStats | null }) {
   const scrollToForm = () => {
     document.getElementById("signup-form")?.scrollIntoView({ behavior: "smooth" })
   }
@@ -37,9 +38,9 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               className="font-[family-name:var(--font-plus-jakarta)] text-4xl font-extrabold leading-tight text-[var(--grey-900)] sm:text-5xl"
             >
-              Find Viable HMOs.{" "}
-              <span className="text-[var(--teal)]">Spot Untapped Opportunities.</span>{" "}
-              Faster.
+              Source{" "}
+              <span className="text-[var(--teal)]">and vet</span>{" "}
+              viable HMOs. In one place.
             </motion.h1>
 
             <motion.p
@@ -48,9 +49,17 @@ export function Hero() {
               transition={{ delay: 0.1 }}
               className="mt-6 text-lg leading-relaxed text-[var(--grey-600)]"
             >
-              The UK's first sourcing platform built exclusively for HMO professionals.
-              Search compliance data, licensing status, Article 4 zones, and yield
-              projections, all in one place.
+              A sourcing platform built exclusively for HMO professionals. Every
+              property carries its planning position in the council&rsquo;s own words, its
+              licence state, and an explicit &ldquo;not established&rdquo; where the evidence
+              stops.
+              {stats && (
+                <>
+                  {" "}
+                  {formatCount(stats.properties)} properties across{" "}
+                  {formatCount(stats.councils)} planning authorities.
+                </>
+              )}
             </motion.p>
 
             <motion.div

@@ -1,48 +1,66 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Map, ShieldCheck, TrendingUp, Building2, Lightbulb, Zap } from "lucide-react"
+import { ShieldCheck, Landmark, BadgeCheck, FileSearch, TrendingUp, LayoutGrid } from "lucide-react"
+import { formatCount, type LandingStats } from "@/lib/landing-stats"
 
-const features = [
-  {
-    icon: Map,
-    title: "Article 4 Mapping",
-    description:
-      "See Article 4 zones overlaid on every search. Never waste time on restricted areas.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Compliance Built In",
-    description:
-      "Licensing status, HMO compliance data, and regulatory checks, done automatically.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Yield Projections",
-    description:
-      "Instant yield estimates so you can assess viability before you even visit.",
-  },
-  {
-    icon: Building2,
-    title: "All Housing Types",
-    description:
-      "Temporary, shared, social, and student housing, all searchable in one place.",
-  },
-  {
-    icon: Lightbulb,
-    title: "Untapped Opportunities",
-    description:
-      "Spot properties with HMO conversion potential that aren't on anyone else's radar yet.",
-  },
-  {
-    icon: Zap,
-    title: "Move First",
-    description:
-      "Verified data means faster decisions. See it, assess it, act on it, before your competitors.",
-  },
-]
+/**
+ * Every figure quoted below comes from `stats`, counted at request time. Where
+ * a card would need a number it does not have, it states the behaviour instead
+ * — the claim has to survive the database being unreachable.
+ */
+function buildFeatures(stats: LandingStats | null) {
+  return [
+    {
+      icon: ShieldCheck,
+      title: "Article 4, in three states",
+      description: stats
+        ? `In force, confirmed outside, or not established — never a boolean. ${formatCount(
+            stats.inForce
+          )} properties sit inside a live direction and ${formatCount(
+            stats.noneFound
+          )} are positively placed outside one. The rest say so plainly instead of guessing.`
+        : "In force, confirmed outside, or not established — never a boolean. Where nothing settles the question, we say so instead of guessing.",
+    },
+    {
+      icon: Landmark,
+      title: "The council's own words",
+      description: stats
+        ? `The national planning feed is voluntary and many councils file nothing. Where it is silent we read the council's own direction and quote it — ${formatCount(
+            stats.councilVerified
+          )} properties are settled that way.`
+        : "The national planning feed is voluntary and many councils file nothing. Where it is silent we read the council's own direction and quote it.",
+    },
+    {
+      icon: BadgeCheck,
+      title: "Licence state, kept honest",
+      description:
+        "“Recorded as expired” when the register says so. “Licence term ended” when it is our copy of the date that ran out. Those are different findings, and we never merge them.",
+    },
+    {
+      icon: FileSearch,
+      title: "Check any address",
+      description:
+        "Use class, licence status and expiry, and the permitted development route to an HMO where one exists. Every report ends with the questions that still need a phone call, and exports as a PDF you can send on.",
+    },
+    {
+      icon: TrendingUp,
+      title: "Yield where there is a price",
+      description:
+        "Gross yield on purchase listings, from the asking price and room-by-room rent. Left blank where there is no price to divide by, because a zero is not a low yield.",
+    },
+    {
+      icon: LayoutGrid,
+      title: "One workspace",
+      description:
+        "Map, address check, saved properties, pipeline and an attention list, in one place instead of six browser tabs.",
+    },
+  ]
+}
 
-export function Features() {
+export function Features({ stats }: { stats: LandingStats | null }) {
+  const features = buildFeatures(stats)
+
   return (
     <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -53,11 +71,11 @@ export function Features() {
           className="text-center"
         >
           <h2 className="font-[family-name:var(--font-plus-jakarta)] text-2xl font-bold text-[var(--grey-900)] sm:text-3xl">
-            One platform. One search. Only viable opportunities.
+            One place to source them. One place to vet them.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[var(--grey-600)]">
-            HMO Hunter brings together everything you need to source HMOs and spot untapped
-            opportunities, without the spreadsheet chaos.
+            HMO Hunter brings together the planning, licensing and viability checks you
+            would otherwise do by hand, and tells you plainly where the evidence runs out.
           </p>
         </motion.div>
 

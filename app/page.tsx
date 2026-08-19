@@ -1,9 +1,8 @@
-"use client"
-
 import dynamic from "next/dynamic"
 import { Navbar } from "@/components/landing/Navbar"
 import { Hero } from "@/components/landing/Hero"
 import { AudiencePills } from "@/components/landing/AudiencePills"
+import { getLandingStats } from "@/lib/landing-stats.server"
 
 const PainPoints = dynamic(() => import("@/components/landing/PainPoints").then(m => m.PainPoints))
 const Features = dynamic(() => import("@/components/landing/Features").then(m => m.Features))
@@ -14,7 +13,13 @@ const FAQ = dynamic(() => import("@/components/landing/FAQ").then(m => m.FAQ))
 const FinalCTA = dynamic(() => import("@/components/landing/FinalCTA").then(m => m.FinalCTA))
 const Footer = dynamic(() => import("@/components/landing/Footer").then(m => m.Footer))
 
-export default function LandingPage() {
+// The quoted counts are read from the database, so the page is rendered on the
+// server and re-counted hourly rather than baked in at build time.
+export const revalidate = 3600
+
+export default async function LandingPage() {
+  const stats = await getLandingStats()
+
   return (
     <main className="min-h-screen bg-white font-[family-name:var(--font-plus-jakarta)]">
       <a
@@ -24,11 +29,11 @@ export default function LandingPage() {
         Skip to main content
       </a>
       <Navbar />
-      <Hero />
+      <Hero stats={stats} />
       <div id="main-content" />
       <AudiencePills />
       <PainPoints />
-      <Features />
+      <Features stats={stats} />
       <EarlyAdopterBenefits />
       <HowItWorks />
       <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8 bg-[var(--grey-50)]">
@@ -36,7 +41,7 @@ export default function LandingPage() {
           <SignupForm />
         </div>
       </section>
-      <FAQ />
+      <FAQ stats={stats} />
       <FinalCTA />
       <Footer />
     </main>
