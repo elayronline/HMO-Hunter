@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import {
   TIER_LABELS,
   can,
+  countResource,
   getUserEntitlements,
   type Capability,
 } from "@/lib/entitlements"
@@ -42,6 +43,14 @@ export async function GET() {
     "admin_console",
   ]
 
+  // Counted, not read from the denormalised columns — those drift, and this
+  // is shown to the reader as fact.
+  const [savedProperties, savedSearches, priceAlerts] = await Promise.all([
+    countResource(user.id, "saved_properties"),
+    countResource(user.id, "saved_searches"),
+    countResource(user.id, "price_alerts"),
+  ])
+
   return NextResponse.json({
     tier: ent.tier,
     tierLabel: TIER_LABELS[ent.tier],
@@ -59,18 +68,9 @@ export async function GET() {
     },
 
     resources: {
-      savedProperties: {
-        current: ent.savedPropertiesCount,
-        limit: ent.limits.savedProperties,
-      },
-      savedSearches: {
-        current: ent.savedSearchesCount,
-        limit: ent.limits.savedSearches,
-      },
-      priceAlerts: {
-        current: ent.activePriceAlertsCount,
-        limit: ent.limits.priceAlerts,
-      },
+      savedProperties: { current: savedProperties, limit: ent.limits.savedProperties },
+      savedSearches: { current: savedSearches, limit: ent.limits.savedSearches },
+      priceAlerts: { current: priceAlerts, limit: ent.limits.priceAlerts },
     },
   })
 }

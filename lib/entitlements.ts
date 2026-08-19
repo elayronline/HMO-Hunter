@@ -93,6 +93,39 @@ const RESOURCE_COUNT_COLUMN: Record<ResourceType, string> = {
 }
 
 /**
+ * Where the real rows live. Caps are counted from these rather than from the
+ * denormalised columns above.
+ *
+ * The stored counts drift: measured 2026-08-19, one account held
+ * saved_properties_count = 2 against a single row in saved_properties. Under
+ * the credit system that was cosmetic. Under tiers the count IS the cap, so a
+ * drifted counter would lock a Free user out at 9 saves or let them past 10.
+ * The columns are kept in step for display, but never trusted for a decision.
+ */
+const RESOURCE_TABLE: Record<ResourceType, { table: string; activeOnly: boolean }> = {
+  saved_properties: { table: "saved_properties", activeOnly: false },
+  saved_searches: { table: "saved_searches", activeOnly: false },
+  price_alerts: { table: "price_alerts", activeOnly: true },
+}
+
+/** Count the rows that actually exist. */
+export async function countResource(userId: string, resource: ResourceType): Promise<number> {
+  const supabase = createServiceRoleClient()
+  const { table, activeOnly } = RESOURCE_TABLE[resource]
+
+  let query = supabase
+    .from(table)
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+
+  if (activeOnly) query = query.eq("is_active", true)
+
+  const { count, error } = await query
+  if (error) return 0
+  return count ?? 0
+}
+
+/**
  * Pure: can this tier do this at all?
  *
  * Deliberately takes a tier rather than a user id, so the policy can be tested
@@ -250,13 +283,8 @@ export async function checkResourceCap(
     }
   }
 
-  const current =
-    resource === "saved_properties"
-      ? ent.savedPropertiesCount
-      : resource === "saved_searches"
-        ? ent.savedSearchesCount
-        : ent.activePriceAlertsCount
-
+  // Counted, not read from the stored column — see RESOURCE_TABLE.
+  const current = await countResource(userId, resource)
   const limit = limitFor(ent.tier, resource)
 
   if (isAtCap(ent.tier, resource, current)) {
