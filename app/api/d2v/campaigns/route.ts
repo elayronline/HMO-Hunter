@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { d2vCampaignCreateSchema, d2vCampaignSendSchema } from "@/lib/validation/schemas"
 import { sendLetter, isStannpConfigured } from "@/lib/integrations/stannp"
@@ -160,17 +159,11 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "No pending recipients" }, { status: 400 })
   }
 
-  // Deduct credits per recipient
-  const creditAction = campaign.channel === "email" ? "d2v_send_email" : "d2v_send_letter"
-  const creditResult = await deductCredits(user.id, creditAction as "d2v_send_email" | "d2v_send_letter", recipients.length)
-  if (!creditResult.success) {
-    return NextResponse.json({
-      error: creditResult.error || "Insufficient credits",
-      insufficientCredits: true,
-      creditsRequired: recipients.length * (campaign.channel === "email" ? 2 : 3),
-      creditsRemaining: creditResult.credits_remaining,
-    }, { status: 429 })
-  }
+  // Entitlement for this route is deliberately unresolved. It charged credits
+  // for a feature whose UI was removed in #21, and whether the feature exists
+  // at all is an open decision — so it is now authenticated-only rather than
+  // given a tier boundary invented to fill the gap. Resolve this together with
+  // the feature's own future, not as a side effect of the tier migration.
 
   // Update campaign status
   await supabase
@@ -314,7 +307,5 @@ export async function PUT(request: NextRequest) {
     success: true,
     sent_count: sentCount,
     failed_count: failedCount,
-    creditsRemaining: creditResult.credits_remaining,
-    warning: creditResult.warning,
   })
 }

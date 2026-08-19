@@ -610,8 +610,8 @@ export function D2VComposer() {
                 <Select value={campaignChannel} onValueChange={(v) => setCampaignChannel(v as D2VChannel)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="email">Email (2 credits each)</SelectItem>
-                    <SelectItem value="letter">Letter (3 credits each)</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="letter">Letter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -712,9 +712,6 @@ export function D2VComposer() {
                       {selectedPropertyIds.length} propert{selectedPropertyIds.length === 1 ? "y" : "ies"} selected
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-teal-600">
-                        {selectedPropertyIds.length * (campaignChannel === "email" ? 2 : 3)} credits
-                      </span>
                       <button
                         onClick={() => setSelectedPropertyIds([])}
                         className="text-xs text-red-600 hover:underline"

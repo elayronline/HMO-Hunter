@@ -40,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { CreditBalance } from "@/components/credit-balance"
+import { PlanStatus } from "@/components/plan-status"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 
@@ -125,7 +125,7 @@ function NavGroup({
 }
 
 /**
- * Who you are signed in as, what credit you have left, and the way out.
+ * Who you are signed in as, what your plan allows, and the way out.
  *
  * All of this used to hang off the map's own header, which meant the two pages
  * already on this shell had no sign-out at all and never showed a balance. A
@@ -149,8 +149,6 @@ function AccountMenu() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const isPremium = user?.user_metadata?.is_premium === true
-
   const signOut = async () => {
     track("sign_out")
     await createClient().auth.signOut()
@@ -167,13 +165,10 @@ function AccountMenu() {
 
   return (
     <>
-      <CreditBalance />
-
-      {isPremium && (
-        <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[0.6875rem] font-bold text-amber-600">
-          PRO
-        </span>
-      )}
+      {/* One source of truth: the chip and the limits behind it come from the
+          same endpoint. The old header read the tier from user_metadata and the
+          limits from the credits table, which could disagree. */}
+      <PlanStatus />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

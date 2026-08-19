@@ -12,11 +12,8 @@ import {
   Crown,
   User as UserIcon,
   MoreVertical,
-  Coins,
   Ban,
   CheckCircle,
-  Plus,
-  RotateCcw,
   UserX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -44,7 +41,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -61,25 +57,26 @@ import { csrfFetch } from "@/lib/csrf-client"
 interface UserData {
   id: string
   email: string
-  role: 'admin' | 'standard_pro'
+  tier: 'free' | 'pro' | 'admin'
+  hasRecord: boolean
   is_active: boolean
   deactivated_at: string | null
   deactivation_reason: string | null
   created_at: string
   last_sign_in: string | null
-  credits: {
-    daily_credits: number
-    credits_used: number
+  usage: {
     saved_properties_count: number
     saved_searches_count: number
     active_price_alerts_count: number
+    property_views_today: number
   } | null
 }
 
 interface Stats {
   total_users: number
   admin_count: number
-  standard_pro_count: number
+  pro_count: number
+  free_count: number
   active_today: number
   deactivated_count: number
 }
@@ -94,11 +91,10 @@ export default function AdminPortal() {
 
   // Modal states
   const [deactivateModal, setDeactivateModal] = useState<{ open: boolean; user: UserData | null }>({ open: false, user: null })
-  const [creditsModal, setCreditsModal] = useState<{ open: boolean; user: UserData | null }>({ open: false, user: null })
+  const [tierModal, setTierModal] = useState<{ open: boolean; user: UserData | null }>({ open: false, user: null })
   const [deactivateReason, setDeactivateReason] = useState("")
-  const [creditAmount, setCreditAmount] = useState("")
-  const [creditType, setCreditType] = useState<string>("reset")
-  const [creditReason, setCreditReason] = useState("")
+  const [tierChoice, setTierChoice] = useState<string>("pro")
+  const [tierReason, setTierReason] = useState("")
   const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
@@ -117,7 +113,7 @@ export default function AdminPortal() {
     setCurrentUserId(user.id)
 
     // Check if user is admin
-    const response = await fetch('/api/credits')
+    const response = await fetch('/api/entitlements')
     if (response.ok) {
       const data = await response.json()
       if (data.isAdmin) {
@@ -158,29 +154,51 @@ export default function AdminPortal() {
     }
   }
 
-  async function updateUserRole(userId: string, newRole: 'admin' | 'standard_pro') {
+  async function updateUserTier(userId: string, newTier: 'free' | 'pro' | 'admin', reason?: string) {
+    setActionLoading(true)
     try {
-      const response = await csrfFetch('/api/admin/users', {
-        method: 'PATCH',
+      const response = await csrfFetch(`/api/admin/users/${userId}/tier`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: newRole })
+        body: JSON.stringify({ tier: newTier, reason })
       })
+
+      const data = await response.json()
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: `User role updated to ${newRole}`,
+          title: "Tier updated",
+          description: data.unchanged
+            ? "That account was already on this tier."
+            : `Moved to ${newTier}.`,
         })
+        // The change is recorded, but say so only when it actually was.
+        if (data.auditRecorded === false) {
+          toast({
+            title: "Audit row not written",
+            description: "The tier changed, but the change was not recorded.",
+            variant: "destructive"
+          })
+        }
+        setTierModal({ open: false, user: null })
+        setTierReason("")
         fetchUsers()
       } else {
         toast({
           title: "Error",
-          description: "Failed to update user role",
+          description: data.error || "Failed to update tier",
           variant: "destructive"
         })
       }
     } catch (error) {
-      console.error('Error updating role:', error)
+      console.error('Error updating tier:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update tier",
+        variant: "destructive"
+      })
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -221,60 +239,6 @@ export default function AdminPortal() {
     }
   }
 
-  async function adjustCredits(userId: string) {
-    setActionLoading(true)
-    try {
-      const response = await csrfFetch(`/api/admin/users/${userId}/credits`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adjustment_type: creditType,
-          amount: creditType === 'reset' ? 0 : parseInt(creditAmount),
-          reason: creditReason
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        toast({
-          title: "Success",
-          description: `Credits adjusted successfully`,
-        })
-        setCreditsModal({ open: false, user: null })
-        setCreditAmount("")
-        setCreditType("reset")
-        setCreditReason("")
-        fetchUsers()
-      } else {
-        const data = await response.json()
-        toast({
-          title: "Error",
-          description: data.error || "Failed to adjust credits",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Error adjusting credits:', error)
-      toast({
-        title: "Error",
-        description: "Failed to adjust credits",
-        variant: "destructive"
-      })
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Shield className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600">Checking admin access...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -334,11 +298,11 @@ export default function AdminPortal() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Standard Pro</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-600">Pro</CardTitle>
                 <UserIcon className="w-4 h-4 text-teal-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-teal-600">{stats.standard_pro_count}</div>
+                <div className="text-2xl font-bold text-teal-600">{stats.pro_count}</div>
               </CardContent>
             </Card>
             <Card>
@@ -406,32 +370,32 @@ export default function AdminPortal() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {user.role === 'admin' ? (
+                        {user.tier === 'admin' ? (
                           <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
                             <Crown className="w-3 h-3 mr-1" />
                             Admin
                           </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            Standard Pro
+                        ) : user.tier === 'pro' ? (
+                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                            Pro
                           </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.credits ? (
-                          <div className="flex items-center gap-1">
-                            <Coins className="w-3 h-3 text-slate-400" />
-                            <span>{user.credits.credits_used} / {user.credits.daily_credits}</span>
-                          </div>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <Badge variant="secondary">Free</Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        {user.credits?.saved_properties_count ?? 0}
+                        {user.usage ? (
+                          <span>{user.usage.property_views_today}</span>
+                        ) : (
+                          // No record is an unknown, not a zero.
+                          <span className="text-slate-400">no record</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {user.credits?.active_price_alerts_count ?? 0}
+                        {user.usage?.saved_properties_count ?? 0}
+                      </TableCell>
+                      <TableCell>
+                        {user.usage?.active_price_alerts_count ?? 0}
                       </TableCell>
                       <TableCell className="text-slate-500 text-sm">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -451,30 +415,17 @@ export default function AdminPortal() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {user.role === 'standard_pro' ? (
-                                <DropdownMenuItem
-                                  onClick={() => updateUserRole(user.id, 'admin')}
-                                >
-                                  <Crown className="w-4 h-4 mr-2" />
-                                  Make Admin
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => updateUserRole(user.id, 'standard_pro')}
-                                >
-                                  <UserIcon className="w-4 h-4 mr-2" />
-                                  Remove Admin
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setTierChoice(user.tier)
+                                  setTierModal({ open: true, user })
+                                }}
+                              >
+                                <Crown className="w-4 h-4 mr-2" />
+                                Change tier
+                              </DropdownMenuItem>
 
                               <DropdownMenuSeparator />
-
-                              <DropdownMenuItem
-                                onClick={() => setCreditsModal({ open: true, user })}
-                              >
-                                <Coins className="w-4 h-4 mr-2" />
-                                Adjust Credits
-                              </DropdownMenuItem>
 
                               <DropdownMenuSeparator />
 
@@ -551,94 +502,69 @@ export default function AdminPortal() {
         </DialogContent>
       </Dialog>
 
-      {/* Adjust Credits Modal */}
-      <Dialog open={creditsModal.open} onOpenChange={(open) => setCreditsModal({ open, user: open ? creditsModal.user : null })}>
+      {/* Change tier */}
+      <Dialog
+        open={tierModal.open}
+        onOpenChange={(open) => setTierModal({ open, user: open ? tierModal.user : null })}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-amber-500" />
-              Adjust Credits
+              <Crown className="w-5 h-5 text-amber-500" />
+              Change tier
             </DialogTitle>
             <DialogDescription>
-              Adjust credits for <strong>{creditsModal.user?.email}</strong>
+              Set what <strong>{tierModal.user?.email}</strong> may do.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {creditsModal.user?.credits && (
-              <div className="bg-slate-100 p-3 rounded-lg text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Current Usage:</span>
-                  <span className="font-medium">{creditsModal.user.credits.credits_used} / {creditsModal.user.credits.daily_credits}</span>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="type">Adjustment Type</Label>
-              <Select value={creditType} onValueChange={setCreditType}>
+              <Label htmlFor="tier">Tier</Label>
+              <Select value={tierChoice} onValueChange={setTierChoice}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Select tier" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="reset">
-                    <div className="flex items-center gap-2">
-                      <RotateCcw className="w-4 h-4" />
-                      Reset Usage to 0
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="bonus">
-                    <div className="flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Give Bonus Credits
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="top_up">
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-4 h-4" />
-                      Increase Daily Limit
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="free">Free — map, list, Article 4 and licence states</SelectItem>
+                  <SelectItem value="pro">Pro — adds owner and contact data, and export</SelectItem>
+                  <SelectItem value="admin">Admin — everything, plus this console</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {creditType !== 'reset' && (
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min="1"
-                  placeholder="Enter amount"
-                  value={creditAmount}
-                  onChange={(e) => setCreditAmount(e.target.value)}
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="credit-reason">Reason (optional)</Label>
+              <Label htmlFor="tier-reason">Reason (optional)</Label>
               <Textarea
-                id="credit-reason"
-                placeholder="Enter reason for adjustment..."
-                value={creditReason}
-                onChange={(e) => setCreditReason(e.target.value)}
+                id="tier-reason"
+                placeholder="Why is this changing?"
+                value={tierReason}
+                onChange={(e) => setTierReason(e.target.value)}
               />
+              <p className="text-xs text-slate-500">
+                Recorded against your account in the tier change log.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setCreditsModal({ open: false, user: null })}
+              onClick={() => setTierModal({ open: false, user: null })}
               disabled={actionLoading}
             >
               Cancel
             </Button>
             <Button
-              onClick={() => creditsModal.user && adjustCredits(creditsModal.user.id)}
-              disabled={actionLoading || (creditType !== 'reset' && !creditAmount)}
+              onClick={() =>
+                tierModal.user &&
+                updateUserTier(
+                  tierModal.user.id,
+                  tierChoice as 'free' | 'pro' | 'admin',
+                  tierReason,
+                )
+              }
+              disabled={actionLoading}
             >
-              {actionLoading ? "Applying..." : "Apply Adjustment"}
+              {actionLoading ? "Applying..." : "Change tier"}
             </Button>
           </DialogFooter>
         </DialogContent>

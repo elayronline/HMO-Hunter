@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { pipelineDealCreateSchema, pipelineDealUpdateSchema } from "@/lib/validation/schemas"
 
@@ -62,15 +61,11 @@ export async function POST(request: NextRequest) {
 
   const { property_id, stage, label, notes, priority, expected_value } = validation.data
 
-  // Deduct credit
-  const creditResult = await deductCredits(user.id, "add_to_pipeline")
-  if (!creditResult.success) {
-    return NextResponse.json({
-      error: creditResult.error || "Insufficient credits",
-      insufficientCredits: true,
-      creditsRemaining: creditResult.credits_remaining,
-    }, { status: 429 })
-  }
+  // Entitlement for this route is deliberately unresolved. It charged credits
+  // for a feature whose UI was removed in #21, and whether the feature exists
+  // at all is an open decision — so it is now authenticated-only rather than
+  // given a tier boundary invented to fill the gap. Resolve this together with
+  // the feature's own future, not as a side effect of the tier migration.
 
   const stageHistory = [{ stage: stage || "identified", entered_at: new Date().toISOString() }]
 
@@ -105,8 +100,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ...deal,
-    creditsRemaining: creditResult.credits_remaining,
-    warning: creditResult.warning,
   }, { status: 201 })
 }
 

@@ -543,7 +543,7 @@ export function QuickOutreach({ property, className = "", variant = "button" }: 
               {/* Send */}
               <div className="flex items-center justify-between pt-2 border-t">
                 <div className="text-xs text-slate-500">
-                  {channel === "email" ? "Free — opens your email client" : "3 credits — posted via Royal Mail"}
+                  {channel === "email" ? "Opens your email client" : "Posted via Royal Mail"}
                   <span className="ml-2 text-slate-400">Ref: {mergeData.reference_code}</span>
                 </div>
                 <div className="flex gap-2">

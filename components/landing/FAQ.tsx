@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "Is it free?",
-    a: "Free during beta, with no card to enter. Usage is metered rather than unlimited: 150 credits a day, your first 20 property views free, and caps of 100 saved properties, 10 saved searches and 10 price alerts. We'll announce pricing before public launch, and beta testers will receive preferential early adopter rates.",
+    a: "Free during beta, with no card to enter — every beta account is on Pro while we build. There are two plans. Free covers the map and list, the three-state Article 4 position and the licence states, with 20 property views a day and room for 10 saved properties, 3 saved searches and 3 price alerts. Pro adds owner and contact details, CSV and PDF export, unlimited property views, and raises those limits to 100, 10 and 10. We'll announce pricing before public launch, and beta testers will receive preferential early adopter rates.",
   },
   {
     q: "How is this different from Rightmove, Zoopla, or council registers?",

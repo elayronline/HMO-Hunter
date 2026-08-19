@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits, isAdmin, getUserCredits } from "@/lib/credits"
+import { checkPropertyViewAllowance, recordPropertyView } from "@/lib/entitlements"
 
-// POST - Track property view and deduct credits (after free views used)
+// POST - Meter a property view. Free is capped per day; Pro and Admin are not.
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
 
@@ -19,34 +19,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Property ID required" }, { status: 400 })
     }
 
-    // Check if admin (no credit deduction)
-    const adminCheck = await isAdmin(user.id)
-    if (adminCheck) {
-      return NextResponse.json({
-        success: true,
-        isAdmin: true,
-        freeViewUsed: false,
-      })
+    // Views are the one thing Free meters by volume. The allowance check
+    // returns early for tiers with no limit rather than counting something
+    // nothing reads.
+    const allowance = await checkPropertyViewAllowance(user.id)
+
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        {
+          error: allowance.reason,
+          limitReached: true,
+          tier: allowance.tier,
+          limit: allowance.limit,
+        },
+        { status: 429 },
+      )
     }
 
-    // Deduct credits for property view (handles free views internally)
-    const creditResult = await deductCredits(user.id, 'property_view')
-
-    if (!creditResult.success) {
-      return NextResponse.json({
-        error: creditResult.error || "Insufficient credits",
-        insufficientCredits: true,
-        creditsRemaining: creditResult.credits_remaining,
-        resetAt: creditResult.reset_at,
-      }, { status: 429 })
-    }
+    await recordPropertyView(user.id)
 
     return NextResponse.json({
       success: true,
-      freeViewUsed: creditResult.free_view_used || false,
-      freeViewsRemaining: creditResult.free_views_remaining,
-      creditsRemaining: creditResult.credits_remaining,
-      warning: creditResult.warning,
+      tier: allowance.tier,
+      limit: allowance.limit,
+      // null remaining means the tier has no limit, which is not the same as
+      // none left. Callers must not render it as a number.
+      viewsRemaining: allowance.remaining === null ? null : Math.max(0, allowance.remaining - 1),
     })
   } catch (error) {
     console.error("[TrackPropertyView] Error:", error)

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits } from "@/lib/credits"
 import { validateBody } from "@/lib/validation/api-validation"
 import { viewingCreateSchema, viewingUpdateSchema } from "@/lib/validation/schemas"
 import { sendEmail } from "@/lib/email/resend"
@@ -88,15 +87,11 @@ export async function POST(request: NextRequest) {
     attendees, contact_name, contact_phone, contact_email,
   } = validation.data
 
-  // Deduct credit
-  const creditResult = await deductCredits(user.id, "schedule_viewing")
-  if (!creditResult.success) {
-    return NextResponse.json({
-      error: creditResult.error || "Insufficient credits",
-      insufficientCredits: true,
-      creditsRemaining: creditResult.credits_remaining,
-    }, { status: 429 })
-  }
+  // Entitlement for this route is deliberately unresolved. It charged credits
+  // for a feature whose UI was removed in #21, and whether the feature exists
+  // at all is an open decision — so it is now authenticated-only rather than
+  // given a tier boundary invented to fill the gap. Resolve this together with
+  // the feature's own future, not as a side effect of the tier migration.
 
   const { data: viewing, error } = await supabase
     .from("property_viewings")
@@ -186,8 +181,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ...viewing,
-    creditsRemaining: creditResult.credits_remaining,
-    warning: creditResult.warning,
   }, { status: 201 })
 }
 

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { deductCredits, isAdmin } from "@/lib/credits"
+import { lockReason, userCan } from "@/lib/entitlements"
 import { validateBody } from "@/lib/validation/api-validation"
 import { trackContactSchema } from "@/lib/validation/schemas"
 
-// POST - Track contact data view/copy and deduct credits
+// POST - Check entitlement for contact data, then log the access for GDPR
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
 
@@ -24,37 +24,15 @@ export async function POST(request: NextRequest) {
 
   try {
 
-    // Determine credit cost based on action
-    let creditAction: 'contact_data_view' | 'contact_data_copy'
-    if (action === 'view') {
-      creditAction = 'contact_data_view'
-    } else if (action === 'copy') {
-      creditAction = 'contact_data_copy'
-    } else {
-      // For call/email, treat as view
-      creditAction = 'contact_data_view'
-    }
-
-    // Check if admin (no credit deduction)
-    const adminCheck = await isAdmin(user.id)
-    let creditsRemaining: number | undefined = undefined
-    let creditWarning: string | null | undefined = null
-
-    if (!adminCheck) {
-      // Deduct credits
-      const creditResult = await deductCredits(user.id, creditAction)
-
-      if (!creditResult.success) {
-        return NextResponse.json({
-          error: creditResult.error || "Insufficient credits",
-          insufficientCredits: true,
-          creditsRemaining: creditResult.credits_remaining,
-          resetAt: creditResult.reset_at,
-        }, { status: 429 })
-      }
-
-      creditsRemaining = creditResult.credits_remaining
-      creditWarning = creditResult.warning
+    // Contact data is a Pro capability. Viewing and copying used to cost 2 and
+    // 3 credits respectively ON TOP of a hard is_premium lock, so the same
+    // click was gated twice by two systems that could disagree about whether
+    // the reader was entitled at all.
+    if (!(await userCan(user.id, "contact_data"))) {
+      return NextResponse.json(
+        { error: lockReason("free", "contact_data"), upgradeRequired: true },
+        { status: 403 },
+      )
     }
 
     // Log the access for GDPR compliance
@@ -73,11 +51,7 @@ export async function POST(request: NextRequest) {
       console.error("[TrackContact] Failed to log GDPR access:", logError)
     }
 
-    return NextResponse.json({
-      success: true,
-      creditsRemaining,
-      warning: creditWarning,
-    })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[TrackContact] Error:", error)
     return NextResponse.json({ error: "Failed to track contact access" }, { status: 500 })

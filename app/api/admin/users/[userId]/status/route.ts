@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
-import { isAdmin } from "@/lib/credits"
+import { isAdmin } from "@/lib/entitlements"
 
 // PATCH - Activate or deactivate a user account
 export async function PATCH(
