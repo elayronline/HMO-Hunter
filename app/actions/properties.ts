@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
 import { validateFilters, isValidISODate } from "@/lib/validation/filters"
+import { boundingBox, cityCatchment, withinCatchment } from "@/lib/properties/location"
 
 const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
@@ -140,9 +141,28 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // propertyTypes was accepted and applied here, and nothing in the product
     // ever set it — there is no control for it anywhere. A filter no caller can
     // reach is not a feature, it is a branch that has to be kept working.
-    // Only filter by city if it's not "All Cities" and no postcode is specified
-    if (validatedFilters.city && validatedFilters.city !== "All Cities" && !validatedFilters.postcodePrefix) {
-      query = query.eq("city", validatedFilters.city)
+    // Location is geographic, not a string match on the `city` column. That
+    // column is free text from whichever adapter wrote the row, and the sources
+    // disagree about granularity: `.eq("city", "Reading")` returned 0 while 74
+    // Berkshire rows sat there, and `.eq("city", "Manchester")` returned 36
+    // while omitting 55 more filed as Greater Manchester. 639 of 1,160 served
+    // properties — 55% — were unreachable from the dropdown entirely. See
+    // lib/properties/location.ts for the measurements and the reasoning.
+    //
+    // The box is the coarse cut, because PostgREST can express a rectangle and
+    // not a circle; withinCatchment trims the corners after the rows arrive.
+    // Every matching row is walked below, not just the first page, so filtering
+    // afterwards cannot silently truncate the result.
+    const catchment = validatedFilters.postcodePrefix
+      ? null
+      : cityCatchment(validatedFilters.city)
+    if (catchment) {
+      const box = boundingBox(catchment)
+      query = query
+        .gte("latitude", box.minLat)
+        .lte("latitude", box.maxLat)
+        .gte("longitude", box.minLng)
+        .lte("longitude", box.maxLng)
     }
     // Filter by postcode prefix (e.g., "M14", "E1 6")
     if (validatedFilters.postcodePrefix) {
@@ -362,19 +382,25 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       return property
     }) as Property[]
 
+    // The circle, after the box. Corners of a 15 km box reach 21 km, which is
+    // far enough to pull a neighbouring town into a city's results.
+    const located = catchment
+      ? processedData.filter((property) => withinCatchment(property, catchment))
+      : processedData
+
     propertiesCache = {
-      data: processedData,
+      data: located,
       timestamp: now,
       filters: filterKey,
     }
 
     // Debug: Log coordinate distribution
-    if (processedData.length > 0) {
-      const lats = processedData.map((p: any) => p.latitude).filter((v: any) => v != null)
-      const lngs = processedData.map((p: any) => p.longitude).filter((v: any) => v != null)
-      const nullCoords = processedData.filter((p: any) => p.latitude == null || p.longitude == null).length
+    if (located.length > 0) {
+      const lats = located.map((p: any) => p.latitude).filter((v: any) => v != null)
+      const lngs = located.map((p: any) => p.longitude).filter((v: any) => v != null)
+      const nullCoords = located.filter((p: any) => p.latitude == null || p.longitude == null).length
       console.log("[PropertiesAction] Returned:", {
-        total: processedData.length,
+        total: located.length,
         withCoords: lats.length,
         nullCoords,
         lat: lats.length > 0 ? { min: Math.min(...lats), max: Math.max(...lats) } : "none",
@@ -382,7 +408,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       })
     }
 
-    return processedData
+    return located
   } catch {
     // On any error, return cached data or empty array
     if (propertiesCache) {

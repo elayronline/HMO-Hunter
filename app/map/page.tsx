@@ -58,6 +58,7 @@ import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
+import { cityCatchment, catchmentLabel } from "@/lib/properties/location"
 import { HelpCircle, SlidersHorizontal } from "lucide-react"
 import { AppShell, ShellButton } from "@/components/app-shell"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -121,6 +122,14 @@ function MapPage() {
   const [showFullDetails, setShowFullDetails] = useState(false)
 
   const [selectedLocation, setSelectedLocation] = useState<SearchLocation>(DEFAULT_LOCATION)
+  /**
+   * The catchment behind the location filter, or null for All Cities and for a
+   * postcode search (which is exact and needs no radius). Resolved here only to
+   * describe the filter on screen — the query resolves its own from the same
+   * table, rather than trusting a centre sent from the browser.
+   */
+  const selectedCatchment =
+    selectedLocation.type === "city" ? cityCatchment(selectedLocation.name) : null
 
   /**
    * [minimum, maximum], each `null` for "no limit" — which is where both rest,
@@ -929,6 +938,21 @@ function MapPage() {
                     selectedLocation={selectedLocation}
                     onLocationChange={setSelectedLocation}
                   />
+                  {/*
+                    "Near", not "in", and the distance said out loud. The filter
+                    matches on the property's own coordinate rather than on the
+                    `city` column, because that column holds a town on some rows
+                    and a county on others — see lib/properties/location.ts. The
+                    consequence a reader has to know is that a catchment does
+                    not stop at a boundary: pick Bradford and properties on the
+                    Leeds side of the gap between them are inside both.
+                  */}
+                  {selectedCatchment && (
+                    <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                      Showing properties {catchmentLabel(selectedCatchment)} centre.
+                      Catchments overlap where cities sit close together.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -1548,7 +1572,13 @@ function MapPage() {
               ) : (
                 <span>
                   Showing <span className="font-bold">{displayProperties.length}</span> properties
-                  {selectedLocation.name !== "All Cities" && <span className="opacity-70"> in {selectedLocation.name}</span>}
+                  {/* "in Reading" would overstate it — see the Location note. */}
+                  {selectedCatchment && (
+                    <span className="opacity-70"> {catchmentLabel(selectedCatchment)}</span>
+                  )}
+                  {!selectedCatchment && selectedLocation.type === "postcode" && (
+                    <span className="opacity-70"> in {selectedLocation.postcode}</span>
+                  )}
                 </span>
               )}
             </div>
