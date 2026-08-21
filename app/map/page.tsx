@@ -1380,9 +1380,16 @@ function MapPage() {
                   <Search className="w-3.5 h-3.5" />
                   Filters
                 </button>
-                <div className="shrink-0 text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">{displayProperties.length}</span> properties
-                </div>
+                {/*
+                  The count used to be stated here too. Measured at 1440px it
+                  appeared three times within 132 vertical pixels — the shell
+                  subtitle ("1,158 of 1,158 properties shown"), this bar, and
+                  the list's own sort bar 42px below — and in two formats,
+                  because this one had no thousands separator. The subtitle
+                  carries filtered-of-total; the sort bar carries the list's
+                  own count beside the control that reorders it. This one sat
+                  between them and added neither.
+                */}
               </div>
             </div>
           )}
@@ -1536,6 +1543,7 @@ function MapPage() {
               loading={loading}
               savedPropertyIds={savedPropertyIds}
               coincidentCounts={coincidentCounts}
+              onResetFilters={handleResetFilters}
             />
           )}
 
