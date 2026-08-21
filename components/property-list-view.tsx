@@ -69,10 +69,6 @@ interface PropertyListViewProps {
  */
 function getUseBadge(property: Property) {
   const { licence } = categorise(property as CategorisableProperty)
-  const end = licenceExpiry(property)
-  const until = end && !Number.isNaN(new Date(end).getTime())
-    ? new Date(end).toLocaleDateString("en-GB", { month: "short", year: "numeric" })
-    : null
   switch (licence) {
     case "licensed":
       return { label: "Existing HMO", icon: ShieldCheck, bg: "bg-teal-100", text: "text-teal-800" }
@@ -82,8 +78,28 @@ function getUseBadge(property: Property) {
       // The register's own word, on 15 properties.
       return { label: "HMO — recorded as expired", icon: AlertTriangle, bg: "bg-red-100", text: "text-red-700" }
     case "licence_term_ended":
+      // "Licensed HMO until Apr 2025" was the label here, and the tense was
+      // wrong by construction: this state is reachable only when
+      // daysToExpiry < 0 (categorise, category.ts), so the date printed is
+      // ALWAYS in the past — a median of 0.7 years and up to 1.4 across the 82
+      // properties holding it on 2026-08-21. It read as a present-tense claim
+      // of licensing, with the only word doing the negating — "until" — the
+      // quietest one in the label, and a badge is read at a glance.
+      //
+      // The refusal to say "expired" is deliberate and kept: the register did
+      // not say that (83 of these carry licence_status "active") and the term
+      // may have been renewed since we last read it. The past tense now sits in
+      // the verb rather than a preposition, which is how getUseEvidence below
+      // has always phrased it — "term ran out Apr 2025 · register has not said
+      // it expired". The badge was the surface that lost the nuance.
+      // The date is deliberately not repeated here. getUseEvidence prints
+      // "Licence <ref> · term ran out Apr 2025 · register has not said it
+      // expired" two lines below, and that line wraps in full while this pill
+      // truncates inside the image overlay — so the truncating half is the
+      // wrong place to carry the fact a reader needs to check against the
+      // council register. Status here, evidence there, each said once.
       return {
-        label: until ? `Licensed HMO until ${until}` : "Licensed HMO — term ended",
+        label: "HMO — licence term ended",
         icon: Clock,
         bg: "bg-amber-100",
         text: "text-amber-800",
