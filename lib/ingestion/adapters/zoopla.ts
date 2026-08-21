@@ -129,7 +129,19 @@ export class ZooplaAdapter extends SourceAdapter {
       for (const listing of data.listing) {
         try {
           const propertyPostcode = this.normalizePostcode(listing.outcode + " " + (listing.incode || ""))
-          const city = listing.county || listing.post_town || this.getCityFromPostcode(propertyPostcode)
+          // `listing.county` used to win here, ahead of post_town, and that
+          // single choice is most of why the column was unusable: Zoopla
+          // returns both, so a Reading property arrived as "Berkshire" and a
+          // Birmingham one as "West Midlands". Neither is wrong, both are the
+          // wrong unit, and 639 of 1,160 served rows ended up under a name the
+          // map's dropdown never offered.
+          //
+          // The district is asked of postcodes.io instead. Zoopla's own fields
+          // are not used as a fallback: post_town and county are two further
+          // units (Southampton is a post town, Test Valley is its district),
+          // and reintroducing either would restore the mixture in a quieter
+          // form. Null is the honest answer when the postcode does not resolve.
+          const city = await this.getDistrictFromPostcode(propertyPostcode)
 
           // Zoopla has been seen to return rentals against a sale query, so the
           // response is classified rather than trusted. Rentals are still

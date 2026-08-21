@@ -177,7 +177,7 @@ export class PropertyDataHMOAdapter extends SourceAdapter {
             title: `Licensed HMO - ${cleanAddress}`,
             address: cleanAddress,
             postcode: propertyPostcode,
-            city: this.getCityFromPostcode(propertyPostcode),
+            city: await this.getDistrictFromPostcode(propertyPostcode),
             latitude: lat,
             longitude: lng,
             // A licence register record, not a rental listing. There is no
