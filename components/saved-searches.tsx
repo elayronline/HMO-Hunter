@@ -23,7 +23,13 @@ import { toast } from "@/hooks/use-toast"
 import { csrfFetch } from "@/lib/csrf-client"
 
 export interface SearchFilters {
-  priceRange: number[]
+  /**
+   * [minimum, maximum], each `null` for "no limit". Searches saved before
+   * 2026-08-21 hold two numbers always — the slider could not record an absent
+   * bound — so the load path runs them through migrateSavedPriceRange rather
+   * than restoring [50000, 2000000] as a real band.
+   */
+  priceRange: (number | null)[]
   /**
    * Optional because searches saved before the sourcing categories replaced
    * the built-form filter have no such field. Loading one must not assert a

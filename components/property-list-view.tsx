@@ -25,6 +25,13 @@ interface PropertyListViewProps {
   /** Switches to the map, flies to this property and selects it. */
   onShowOnMap?: (property: Property) => void
   loading: boolean
+  /**
+   * Clears every filter. The map's empty state has always offered this; the
+   * list's said only "No properties match your filters." and left the reader
+   * to find the reset themselves. #21 made the list the default view, which
+   * promoted the weaker of the two empty states to the one most people meet.
+   */
+  onResetFilters?: () => void
   savedPropertyIds: Set<string>
   /**
    * How many other properties share this one's exact coordinate. 452 of 2,958
@@ -62,10 +69,6 @@ interface PropertyListViewProps {
  */
 function getUseBadge(property: Property) {
   const { licence } = categorise(property as CategorisableProperty)
-  const end = licenceExpiry(property)
-  const until = end && !Number.isNaN(new Date(end).getTime())
-    ? new Date(end).toLocaleDateString("en-GB", { month: "short", year: "numeric" })
-    : null
   switch (licence) {
     case "licensed":
       return { label: "Existing HMO", icon: ShieldCheck, bg: "bg-teal-100", text: "text-teal-800" }
@@ -75,8 +78,28 @@ function getUseBadge(property: Property) {
       // The register's own word, on 15 properties.
       return { label: "HMO — recorded as expired", icon: AlertTriangle, bg: "bg-red-100", text: "text-red-700" }
     case "licence_term_ended":
+      // "Licensed HMO until Apr 2025" was the label here, and the tense was
+      // wrong by construction: this state is reachable only when
+      // daysToExpiry < 0 (categorise, category.ts), so the date printed is
+      // ALWAYS in the past — a median of 0.7 years and up to 1.4 across the 82
+      // properties holding it on 2026-08-21. It read as a present-tense claim
+      // of licensing, with the only word doing the negating — "until" — the
+      // quietest one in the label, and a badge is read at a glance.
+      //
+      // The refusal to say "expired" is deliberate and kept: the register did
+      // not say that (83 of these carry licence_status "active") and the term
+      // may have been renewed since we last read it. The past tense now sits in
+      // the verb rather than a preposition, which is how getUseEvidence below
+      // has always phrased it — "term ran out Apr 2025 · register has not said
+      // it expired". The badge was the surface that lost the nuance.
+      // The date is deliberately not repeated here. getUseEvidence prints
+      // "Licence <ref> · term ran out Apr 2025 · register has not said it
+      // expired" two lines below, and that line wraps in full while this pill
+      // truncates inside the image overlay — so the truncating half is the
+      // wrong place to carry the fact a reader needs to check against the
+      // council register. Status here, evidence there, each said once.
       return {
-        label: until ? `Licensed HMO until ${until}` : "Licensed HMO — term ended",
+        label: "HMO — licence term ended",
         icon: Clock,
         bg: "bg-amber-100",
         text: "text-amber-800",
@@ -199,6 +222,7 @@ export const PropertyListView = memo(function PropertyListView({
   loading,
   savedPropertyIds,
   coincidentCounts,
+  onResetFilters,
 }: PropertyListViewProps) {
   const [sortKey, setSortKey] = useState<SortKey>("licence_expiry")
   const [page, setPage] = useState(1)
@@ -255,9 +279,9 @@ export const PropertyListView = memo(function PropertyListView({
   if (loading) {
     return (
       <div className="flex-1 overflow-y-auto bg-slate-50 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-xl bg-slate-200" />
+            <div key={i} className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
           ))}
         </div>
       </div>
@@ -267,7 +291,14 @@ export const PropertyListView = memo(function PropertyListView({
   if (properties.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">No properties match your filters.</p>
+        <p className="text-sm text-slate-500">
+          No properties match your filters.
+          {onResetFilters && (
+            <button onClick={onResetFilters} className="ml-1 underline text-teal-700 hover:text-teal-800">
+              Reset filters
+            </button>
+          )}
+        </p>
       </div>
     )
   }
@@ -277,7 +308,7 @@ export const PropertyListView = memo(function PropertyListView({
       {/* Sort bar */}
       <div className="sticky top-0 z-10 flex items-center justify-between bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-2.5">
         <p className="text-xs text-slate-500">
-          <span className="font-semibold text-slate-700">{properties.length}</span> properties
+          <span className="font-semibold text-slate-700">{properties.length.toLocaleString()}</span> properties
         </p>
         <div className="flex items-center gap-2">
           <label htmlFor="sort-select" className="text-xs text-slate-500">Sort by</label>
@@ -295,7 +326,16 @@ export const PropertyListView = memo(function PropertyListView({
       </div>
 
       {/* Property grid */}
-      <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/*
+        Columns follow the CONTAINER, not the viewport.
+        `xl:grid-cols-4` asked whether the window was >=1280px, but this list
+        sits ~490px inside it (nav 215 + filters 232). At a 1280 viewport the
+        container is 745px and still took four columns — 169px cards, on which
+        every one of 24 sampled cards clipped its address. Opening the detail
+        panel made it 171px without changing the count. auto-fill solves both
+        cases at once and never goes below 220px.
+      */}
+      <div className="grid gap-3 p-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
         {paginatedProperties.map((property) => {
           const status = getUseBadge(property)
           const isSelected = selectedProperty?.id === property.id
@@ -332,17 +372,29 @@ export const PropertyListView = memo(function PropertyListView({
                 <div className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">
                   {getPrice(property)}
                 </div>
-                {/* Listing type badge */}
-                <div className={`absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full ${
-                  property.listing_type === "purchase" ? "bg-blue-600 text-white" : "bg-slate-700 text-white"
-                }`}>
-                  {property.listing_type === "purchase" ? "FOR SALE" : "OFF MARKET"}
-                </div>
+                {/*
+                  Listing type, and only where it adds something.
+
+                  "OFF MARKET" here said the same words as the price slot below,
+                  which falls back to "Off market" when there is no asking price
+                  — and it lost the collision: measured at a 209px card, the
+                  status pill (top-2 right-2, 171px wide) covered 72px of this
+                  badge's 92px, 78% of it, at identical y. Two labels saying one
+                  thing, and the redundant one was the one being obscured.
+
+                  "FOR SALE" stays: there the price slot shows an actual price,
+                  so the badge is the only thing naming the listing type.
+                */}
+                {property.listing_type === "purchase" && (
+                  <div className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                    FOR SALE
+                  </div>
+                )}
                 {/* Status badge */}
                 {status && (
-                  <div className={`absolute top-2 right-2 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
-                    <status.icon className="w-3 h-3" />
-                    {status.label}
+                  <div className={`absolute top-2 right-2 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full max-w-[calc(100%-1rem)] ${status.bg} ${status.text}`}>
+                    <status.icon className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{status.label}</span>
                   </div>
                 )}
                 {/* Save indicator */}
@@ -360,7 +412,7 @@ export const PropertyListView = memo(function PropertyListView({
                 {/* Address */}
                 <div className="flex items-start gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                  <p className="text-sm font-medium text-slate-800 line-clamp-1">{property.address}</p>
+                  <p className="text-sm font-medium text-slate-800 line-clamp-2">{property.address}</p>
                 </div>
                 <p className="mt-0.5 ml-5 text-xs text-slate-500">{property.postcode}</p>
 
@@ -472,8 +524,8 @@ export const PropertyListView = memo(function PropertyListView({
       {page < totalPages && (
         <div className="flex flex-col items-center gap-2 py-6 pb-8">
           <p className="text-xs text-slate-500">
-            Showing <span className="font-semibold text-slate-700">{paginatedProperties.length}</span> of{" "}
-            <span className="font-semibold text-slate-700">{sorted.length}</span> properties
+            Showing <span className="font-semibold text-slate-700">{paginatedProperties.length.toLocaleString()}</span> of{" "}
+            <span className="font-semibold text-slate-700">{sorted.length.toLocaleString()}</span> properties
           </p>
           <button
             onClick={() => setPage(p => p + 1)}

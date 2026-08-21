@@ -58,6 +58,7 @@ import { PropertyDetailCard } from "@/components/property-detail-card"
 import { PropertyAnalyticsCard } from "@/components/property-analytics-card"
 import { useToast } from "@/hooks/use-toast"
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough"
+import { cityCatchment, catchmentLabel } from "@/lib/properties/location"
 import { HelpCircle, SlidersHorizontal } from "lucide-react"
 import { AppShell, ShellButton } from "@/components/app-shell"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -66,8 +67,9 @@ import {
   SOURCING_LABELS,
   sourcingCategory,
   SOURCING_DESCRIPTIONS,
-  PRICE_SLIDER_MIN,
-  PRICE_SLIDER_MAX,
+  PRICE_LADDER,
+  formatPriceOption,
+  migrateSavedPriceRange,
   inSegment,
   type CategorisableProperty,
   type Article4Position,
@@ -120,14 +122,27 @@ function MapPage() {
   const [showFullDetails, setShowFullDetails] = useState(false)
 
   const [selectedLocation, setSelectedLocation] = useState<SearchLocation>(DEFAULT_LOCATION)
+  /**
+   * The catchment behind the location filter, or null for All Cities and for a
+   * postcode search (which is exact and needs no radius). Resolved here only to
+   * describe the filter on screen — the query resolves its own from the same
+   * table, rather than trusting a centre sent from the browser.
+   */
+  const selectedCatchment =
+    selectedLocation.type === "city" ? cityCatchment(selectedLocation.name) : null
 
-  const [priceRange, setPriceRange] = useState([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+  /**
+   * [minimum, maximum], each `null` for "no limit" — which is where both rest,
+   * so an untouched panel sends no price condition at all. See PRICE_LADDER for
+   * why the two-handle slider that stood here went.
+   */
+  const [priceRange, setPriceRange] = useState<[number | null, number | null]>([null, null])
   const [sourcingCategories, setSourcingCategories] = useState<SourcingCategory[]>([
     "existing_off_market",
     "for_sale_hmo",
     "change_of_use",
   ])
-  const priceRangeKey = priceRange.join(",")
+  const priceRangeKey = priceRange.map((v) => v ?? "any").join(",")
   const sourcingKey = sourcingCategories.join(",")
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<
@@ -490,8 +505,10 @@ function MapPage() {
    */
   function currentFilters() {
     return {
-      minPrice: priceRange[0],
-      maxPrice: priceRange[1],
+      // undefined, not null: validateFilters keeps only numbers, and an absent
+      // bound has to reach the query as absent rather than as a value of zero.
+      minPrice: priceRange[0] ?? undefined,
+      maxPrice: priceRange[1] ?? undefined,
       sourcingCategories,
       city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
       postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
@@ -596,7 +613,7 @@ function MapPage() {
   }
 
   const handleResetFilters = () => {
-    setPriceRange([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+    setPriceRange([null, null])
     setSourcingCategories(["existing_off_market", "for_sale_hmo", "change_of_use"])
     setSelectedLocation(DEFAULT_LOCATION)
     setMinEpcRating(null)
@@ -800,23 +817,67 @@ function MapPage() {
             {searchExpanded && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-2.5 block">
-                    Purchase Price (£{priceRange[0].toLocaleString()} - £{priceRange[1].toLocaleString()})
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">
+                    Purchase Price
                   </label>
-                  <div className="px-1">
-                    <Slider
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      min={PRICE_SLIDER_MIN}
-                      max={PRICE_SLIDER_MAX}
-                      step={10000}
-                      className="mb-3"
-                    />
+                  {/*
+                    Two dropdowns off one ladder, like-for-like with Rightmove's
+                    — see PRICE_LADDER for what they replace and why. Each list
+                    is cut against the other end, so a maximum below the chosen
+                    minimum is not an option that exists; there is no inverted
+                    pair to detect afterwards and no empty result to explain.
+                  */}
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={priceRange[0] === null ? "any" : String(priceRange[0])}
+                      onValueChange={(value) =>
+                        setPriceRange(([, max]) => [value === "any" ? null : Number(value), max])
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200" aria-label="Minimum price">
+                        <SelectValue placeholder="No min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">No min</SelectItem>
+                        {PRICE_LADDER.filter((v) => priceRange[1] === null || v <= priceRange[1]).map((v) => (
+                          <SelectItem key={v} value={String(v)}>
+                            {formatPriceOption(v)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="shrink-0 text-xs text-slate-400">to</span>
+                    <Select
+                      value={priceRange[1] === null ? "any" : String(priceRange[1])}
+                      onValueChange={(value) =>
+                        setPriceRange(([min]) => [min, value === "any" ? null : Number(value)])
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200" aria-label="Maximum price">
+                        <SelectValue placeholder="No max" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">No max</SelectItem>
+                        {PRICE_LADDER.filter((v) => priceRange[0] === null || v >= priceRange[0]).map((v) => (
+                          <SelectItem key={v} value={String(v)}>
+                            {formatPriceOption(v)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>£{priceRange[0].toLocaleString()}</span>
-                    <span>£{priceRange[1].toLocaleString()}</span>
-                  </div>
+                  {/*
+                    The behaviour, not a count. Stating "457 of 1,160 have no
+                    asking price" here would go stale on the next sync, and it
+                    cannot be computed from the properties in hand once a price
+                    is set — that list is the filter's own output. Every other
+                    control in this panel says what it does with the rows it
+                    cannot judge; until now this one was the exception.
+                  */}
+                  <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                    Off-market properties have no asking price and are always
+                    shown. A price narrows only the properties that carry one.
+                  </p>
                 </div>
 
                 <div>
@@ -877,6 +938,21 @@ function MapPage() {
                     selectedLocation={selectedLocation}
                     onLocationChange={setSelectedLocation}
                   />
+                  {/*
+                    "Near", not "in", and the distance said out loud. The filter
+                    matches on the property's own coordinate rather than on the
+                    `city` column, because that column holds a town on some rows
+                    and a county on others — see lib/properties/location.ts. The
+                    consequence a reader has to know is that a catchment does
+                    not stop at a boundary: pick Bradford and properties on the
+                    Leeds side of the gap between them are inside both.
+                  */}
+                  {selectedCatchment && (
+                    <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                      Showing properties {catchmentLabel(selectedCatchment)} centre.
+                      Catchments overlap where cities sit close together.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -917,7 +993,7 @@ function MapPage() {
               isFurnished,
             }}
             onLoadFilters={(filters: SearchFilters) => {
-              setPriceRange(filters.priceRange)
+              setPriceRange(migrateSavedPriceRange(filters.priceRange))
               // Searches saved before the sourcing categories existed carry the
               // old built-form list instead. Leave the current selection alone
               // rather than restoring a filter the search never recorded.
@@ -1380,9 +1456,16 @@ function MapPage() {
                   <Search className="w-3.5 h-3.5" />
                   Filters
                 </button>
-                <div className="shrink-0 text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">{displayProperties.length}</span> properties
-                </div>
+                {/*
+                  The count used to be stated here too. Measured at 1440px it
+                  appeared three times within 132 vertical pixels — the shell
+                  subtitle ("1,158 of 1,158 properties shown"), this bar, and
+                  the list's own sort bar 42px below — and in two formats,
+                  because this one had no thousands separator. The subtitle
+                  carries filtered-of-total; the sort bar carries the list's
+                  own count beside the control that reorders it. This one sat
+                  between them and added neither.
+                */}
               </div>
             </div>
           )}
@@ -1489,7 +1572,13 @@ function MapPage() {
               ) : (
                 <span>
                   Showing <span className="font-bold">{displayProperties.length}</span> properties
-                  {selectedLocation.name !== "All Cities" && <span className="opacity-70"> in {selectedLocation.name}</span>}
+                  {/* "in Reading" would overstate it — see the Location note. */}
+                  {selectedCatchment && (
+                    <span className="opacity-70"> {catchmentLabel(selectedCatchment)}</span>
+                  )}
+                  {!selectedCatchment && selectedLocation.type === "postcode" && (
+                    <span className="opacity-70"> in {selectedLocation.postcode}</span>
+                  )}
                 </span>
               )}
             </div>
@@ -1536,6 +1625,7 @@ function MapPage() {
               loading={loading}
               savedPropertyIds={savedPropertyIds}
               coincidentCounts={coincidentCounts}
+              onResetFilters={handleResetFilters}
             />
           )}
 

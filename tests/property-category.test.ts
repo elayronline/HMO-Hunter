@@ -285,6 +285,22 @@ describe("licence evidence reads only published columns", () => {
     expect(categorise(ranOut, NOW).licence).toBe("licence_term_ended")
   })
 
+  // Why this matters to the copy: the list badge read "Licensed HMO until Apr
+  // 2025" for this state, a present-tense claim of licensing carrying a date
+  // that had passed 16 months earlier. It was not an unlucky row — the state is
+  // unreachable with a future date, so the label was wrong on every property
+  // that ever carried it. Any wording for licence_term_ended has to be past
+  // tense; this pins the fact that makes that so.
+  it("is unreachable with a date still in the future, so the term always HAS ended", () => {
+    const future = property({ licensed_hmo: true, hmo_licence_expiry: "2030-01-01" })
+    expect(categorise(future, NOW).licence).not.toBe("licence_term_ended")
+
+    const ranOut = property({ licensed_hmo: true, hmo_licence_expiry: "2025-04-01" })
+    const { licence, daysToExpiry } = categorise(ranOut, NOW)
+    expect(licence).toBe("licence_term_ended")
+    expect(daysToExpiry).toBeLessThan(0)
+  })
+
   it("still lets a revoked licence be expired before its date", () => {
     const revoked = property({
       licensed_hmo: true,

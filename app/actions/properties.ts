@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
 import { validateFilters, isValidISODate } from "@/lib/validation/filters"
-import { PRICE_SLIDER_MAX } from "@/lib/properties/category"
+import { boundingBox, cityCatchment, withinCatchment } from "@/lib/properties/location"
 
 const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
@@ -91,12 +91,20 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // price filter rather than failing it. Until it was removed, setting a price
     // range and then filtering by licence expiry left the slider visibly set and
     // silently ignored.
-    if (validatedFilters.minPrice) {
+    //
+    // Both ends are now absent when unset, so neither needs a special case. The
+    // max used to carry one — `maxPrice < PRICE_SLIDER_MAX`, because the
+    // slider's top stop meant "no limit" and reading it literally excluded 330
+    // properties — while the min never got the matching case. `if (minPrice)`
+    // was true at the slider's own resting value of 50,000, so every query ever
+    // sent carried `purchase_price >= 50000`. Nothing in the table sits below
+    // that today, which is the only reason it was never seen; sub-50k northern
+    // terraces are exactly the stock this product is for, and they would have
+    // been invisible at rest on the day they were ingested.
+    if (validatedFilters.minPrice !== undefined) {
       query = query.or(`purchase_price.gte.${validatedFilters.minPrice},purchase_price.is.null`)
     }
-    // The slider's own maximum means "no upper limit", not "£2,000,000". Treated
-    // literally it excluded 330 properties on a ceiling the user never chose.
-    if (validatedFilters.maxPrice && validatedFilters.maxPrice < PRICE_SLIDER_MAX) {
+    if (validatedFilters.maxPrice !== undefined) {
       query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},purchase_price.is.null`)
     }
 
@@ -133,9 +141,28 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // propertyTypes was accepted and applied here, and nothing in the product
     // ever set it — there is no control for it anywhere. A filter no caller can
     // reach is not a feature, it is a branch that has to be kept working.
-    // Only filter by city if it's not "All Cities" and no postcode is specified
-    if (validatedFilters.city && validatedFilters.city !== "All Cities" && !validatedFilters.postcodePrefix) {
-      query = query.eq("city", validatedFilters.city)
+    // Location is geographic, not a string match on the `city` column. That
+    // column is free text from whichever adapter wrote the row, and the sources
+    // disagree about granularity: `.eq("city", "Reading")` returned 0 while 74
+    // Berkshire rows sat there, and `.eq("city", "Manchester")` returned 36
+    // while omitting 55 more filed as Greater Manchester. 639 of 1,160 served
+    // properties — 55% — were unreachable from the dropdown entirely. See
+    // lib/properties/location.ts for the measurements and the reasoning.
+    //
+    // The box is the coarse cut, because PostgREST can express a rectangle and
+    // not a circle; withinCatchment trims the corners after the rows arrive.
+    // Every matching row is walked below, not just the first page, so filtering
+    // afterwards cannot silently truncate the result.
+    const catchment = validatedFilters.postcodePrefix
+      ? null
+      : cityCatchment(validatedFilters.city)
+    if (catchment) {
+      const box = boundingBox(catchment)
+      query = query
+        .gte("latitude", box.minLat)
+        .lte("latitude", box.maxLat)
+        .gte("longitude", box.minLng)
+        .lte("longitude", box.maxLng)
     }
     // Filter by postcode prefix (e.g., "M14", "E1 6")
     if (validatedFilters.postcodePrefix) {
@@ -355,19 +382,25 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       return property
     }) as Property[]
 
+    // The circle, after the box. Corners of a 15 km box reach 21 km, which is
+    // far enough to pull a neighbouring town into a city's results.
+    const located = catchment
+      ? processedData.filter((property) => withinCatchment(property, catchment))
+      : processedData
+
     propertiesCache = {
-      data: processedData,
+      data: located,
       timestamp: now,
       filters: filterKey,
     }
 
     // Debug: Log coordinate distribution
-    if (processedData.length > 0) {
-      const lats = processedData.map((p: any) => p.latitude).filter((v: any) => v != null)
-      const lngs = processedData.map((p: any) => p.longitude).filter((v: any) => v != null)
-      const nullCoords = processedData.filter((p: any) => p.latitude == null || p.longitude == null).length
+    if (located.length > 0) {
+      const lats = located.map((p: any) => p.latitude).filter((v: any) => v != null)
+      const lngs = located.map((p: any) => p.longitude).filter((v: any) => v != null)
+      const nullCoords = located.filter((p: any) => p.latitude == null || p.longitude == null).length
       console.log("[PropertiesAction] Returned:", {
-        total: processedData.length,
+        total: located.length,
         withCoords: lats.length,
         nullCoords,
         lat: lats.length > 0 ? { min: Math.min(...lats), max: Math.max(...lats) } : "none",
@@ -375,7 +408,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
       })
     }
 
-    return processedData
+    return located
   } catch {
     // On any error, return cached data or empty array
     if (propertiesCache) {
