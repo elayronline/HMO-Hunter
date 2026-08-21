@@ -4,7 +4,13 @@ export interface PropertyListing {
   title: string
   address: string
   postcode: string
-  city: string
+  /**
+   * The local authority district, or null when the postcode did not resolve to
+   * one. Nullable deliberately: an unplaced property is not a property in some
+   * other authority, and the column's whole problem was values invented to
+   * avoid an empty cell. See getDistrictFromPostcode.
+   */
+  city: string | null
   latitude: number
   longitude: number
   price_pcm?: number
@@ -114,6 +120,18 @@ export interface IngestionResult {
   timestamp: Date
 }
 
+/**
+ * One postcodes.io lookup, cached. The coordinates and the district come from
+ * the same response, so asking for one and then the other would be two calls
+ * for a payload we already hold.
+ */
+type PostcodeLookup = {
+  lat: number
+  lng: number
+  /** `admin_district`: the local authority. Null when the API did not supply one. */
+  district: string | null
+}
+
 export abstract class SourceAdapter {
   abstract name: string
   abstract type: "hmo_register" | "enrichment_api" | "partner_api"
@@ -125,51 +143,57 @@ export abstract class SourceAdapter {
     return postcode.toUpperCase().replace(/\s+/g, " ").trim()
   }
 
-  // Map postcode prefix to city
-  protected getCityFromPostcode(postcode: string): string {
-    const prefix = postcode.toUpperCase().replace(/\s+/g, "").slice(0, 2)
-    const singlePrefix = prefix.slice(0, 1)
-
-    // UK postcode area to city mapping
-    const postcodeToCity: Record<string, string> = {
-      // London areas
-      "E": "London", "EC": "London", "N": "London", "NW": "London",
-      "SE": "London", "SW": "London", "W": "London", "WC": "London",
-      // Manchester
-      "M": "Manchester",
-      // Birmingham
-      "B": "Birmingham",
-      // Leeds
-      "LS": "Leeds",
-      // Liverpool
-      "L": "Liverpool",
-      // Newcastle
-      "NE": "Newcastle",
-      // Nottingham
-      "NG": "Nottingham",
-      // Sheffield
-      "S": "Sheffield",
-      // Bristol
-      "BS": "Bristol",
-      // Leicester
-      "LE": "Leicester",
-      // Cardiff
-      "CF": "Cardiff",
-      // Edinburgh
-      "EH": "Edinburgh",
-      // Glasgow
-      "G": "Glasgow",
-      // Belfast
-      "BT": "Belfast",
-    }
-
-    // Try two-letter prefix first, then single letter
-    return postcodeToCity[prefix] || postcodeToCity[singlePrefix] || "Unknown"
+  /**
+   * The local authority district a postcode sits in, or null.
+   *
+   * This is what `city` holds now, and it holds nothing else. The column used
+   * to be a mixture: Zoopla's `county` on some rows, a post town on others, and
+   * a guess from the postcode on the rest, so "Berkshire" and "Reading" both
+   * appeared in a column the map then matched on exactly. PR #28 stopped the
+   * filter reading it; this stops the mixture being written.
+   *
+   * The district is the right unit for this product rather than merely a
+   * consistent one: it is the body that issues HMO licences and makes Article 4
+   * directions, so it is the unit every other question here is already asked in.
+   *
+   * Note for London: districts are boroughs, so a postcode in NW5 resolves to
+   * "Camden" rather than "London". That is a real change in what the column
+   * says, and the right one — "London" was never the licensing authority for
+   * anything.
+   *
+   * WHAT THIS REPLACES, and why none of it survived. `getCityFromPostcode`
+   * took the first two letters of the postcode, looked them up in a 21-entry
+   * table, and **fell back to the first letter alone** when that missed. A UK
+   * postcode area is the letters before the first digit — "SO16" is area SO,
+   * not S — so the fallback did not degrade, it fabricated:
+   *
+   *     SO -> "Sheffield" (126 rows)   BN -> "Birmingham" (107)
+   *     EX -> "London" (37)            SP -> "Sheffield" (9)
+   *     BR -> "Birmingham" (8)         LL -> "Liverpool" (3)
+   *
+   * Five rows in the table still carried one of those on 2026-08-21 (2 SO rows
+   * reading "Sheffield", 3 LL rows in North Wales reading "Liverpool"); the
+   * rest were saved only by Zoopla having supplied a county. The PropertyData
+   * adapter had no county to fall back on and called it directly.
+   *
+   * The table also mapped BT to Belfast, and BT is the postcode area for the
+   * whole of Northern Ireland — Derry, Lisburn and Newry included.
+   *
+   * A table of areas could have been repaired, but a postcode area is not a
+   * district either (M covers Salford and Stockport), so repairing it would
+   * have left the column mixed in a subtler way. postcodes.io answers the
+   * actual question, this class already calls it to geocode, and the district
+   * arrives in the same response that the coordinates do — it was being
+   * fetched and discarded.
+   */
+  protected async getDistrictFromPostcode(postcode: string): Promise<string | null> {
+    const lookup = await this.lookupPostcode(postcode)
+    return lookup?.district ?? null
   }
 
   // Cache for address lookups to avoid repeated API calls
   private static addressCache: Map<string, { lat: number; lng: number }> = new Map()
-  private static postcodeCache: Map<string, { lat: number; lng: number }> = new Map()
+  private static postcodeCache: Map<string, PostcodeLookup> = new Map()
 
   // Rate limiter for Nominatim (max 1 request per second)
   private static lastNominatimCall = 0
@@ -313,49 +337,56 @@ export abstract class SourceAdapter {
    * Geocode postcode centroid using postcodes.io (UK only)
    */
   private async geocodePostcode(postcode: string): Promise<{ lat: number; lng: number } | null> {
+    const lookup = await this.lookupPostcode(postcode)
+    return lookup ? { lat: lookup.lat, lng: lookup.lng } : null
+  }
+
+  /**
+   * One postcodes.io call, cached, returning everything this class reads from
+   * it. Split out from geocodePostcode because the district and the coordinates
+   * arrive together and the district used to be dropped on the floor.
+   *
+   * A missing district is null rather than a guess. postcodes.io resolved 199
+   * of 200 sampled live postcodes on 2026-08-21, so this is not a common path,
+   * but an unresolvable postcode has to leave the column empty: a property
+   * whose authority nobody established is not a property in some other
+   * authority.
+   */
+  protected async lookupPostcode(postcode: string): Promise<PostcodeLookup | null> {
     if (!postcode) return null
 
     const normalizedPostcode = postcode.toUpperCase().replace(/\s+/g, "").trim()
 
-    // Check postcode cache
     if (SourceAdapter.postcodeCache.has(normalizedPostcode)) {
       return SourceAdapter.postcodeCache.get(normalizedPostcode)!
     }
 
-    try {
-      const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalizedPostcode)}`)
+    // postcodes.io wants the space for some inputs and tolerates it for the
+    // rest, so the spaced form is the retry rather than the first attempt.
+    const spacedPostcode = normalizedPostcode.length > 4
+      ? `${normalizedPostcode.slice(0, -3)} ${normalizedPostcode.slice(-3)}`
+      : normalizedPostcode
 
-      if (response.ok) {
+    for (const candidate of [normalizedPostcode, spacedPostcode]) {
+      try {
+        const response = await fetch(
+          `https://api.postcodes.io/postcodes/${encodeURIComponent(candidate)}`
+        )
+        if (!response.ok) continue
         const data = await response.json()
         if (data.status === 200 && data.result) {
-          const coords = {
+          const lookup: PostcodeLookup = {
             lat: data.result.latitude,
             lng: data.result.longitude,
+            district: data.result.admin_district ?? null,
           }
-          SourceAdapter.postcodeCache.set(normalizedPostcode, coords)
-          return coords
+          SourceAdapter.postcodeCache.set(normalizedPostcode, lookup)
+          return lookup
         }
+      } catch (error) {
+        console.error(`[Geocode] postcodes.io error for ${candidate}:`, error)
       }
-
-      // Try with space in postcode
-      const spacedPostcode = normalizedPostcode.length > 4
-        ? `${normalizedPostcode.slice(0, -3)} ${normalizedPostcode.slice(-3)}`
-        : normalizedPostcode
-
-      const response2 = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(spacedPostcode)}`)
-      if (response2.ok) {
-        const data2 = await response2.json()
-        if (data2.status === 200 && data2.result) {
-          const coords = {
-            lat: data2.result.latitude,
-            lng: data2.result.longitude,
-          }
-          SourceAdapter.postcodeCache.set(normalizedPostcode, coords)
-          return coords
-        }
-      }
-    } catch (error) {
-      console.error(`[Geocode] postcodes.io error for ${postcode}:`, error)
+      if (candidate === spacedPostcode) break
     }
 
     return null

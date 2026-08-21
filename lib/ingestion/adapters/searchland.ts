@@ -28,8 +28,19 @@ interface SearchlandHMORecord {
 }
 
 /**
- * Target councils/areas to fetch HMOs from
- * Maps council names (as they appear in API) to city names for our database
+ * Target councils/areas to fetch HMOs from.
+ *
+ * ⚠️ This map also collapses the council into a city name, and for London that
+ * means throwing away the district: "Camden" is stored as "London". That is the
+ * value `city` is now supposed to hold — the licensing authority — and this
+ * adapter already has it, first-hand, from the register it is reading.
+ *
+ * Left as it stands because the same map drives the per-city fetch quotas
+ * (minPerCity, cityCounts, `cities.includes(city)`), so separating the target
+ * list from the stored value is a change to this adapter's control flow rather
+ * than a rename. Do that before running Searchland again. The two adapters that
+ * wrote the current table — Zoopla and PropertyData — resolve the district from
+ * the postcode instead; see getDistrictFromPostcode in lib/types/ingestion.ts.
  */
 const TARGET_COUNCILS: Record<string, string> = {
   // London Boroughs
