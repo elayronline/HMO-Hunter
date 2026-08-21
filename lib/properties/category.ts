@@ -372,9 +372,91 @@ export function sourcingCategory(property: CategorisableProperty): SourcingCateg
 }
 
 /**
- * The top of the price slider. At this value the filter is off rather than
- * clamped: a slider that cannot express "no maximum" silently hides everything
- * above its own range.
+ * The price options, taken value-for-value from Rightmove's for-sale price
+ * dropdowns (read from the live filter on 2026-08-21).
+ *
+ * What this replaces: a two-handle slider running 50,000 to 2,000,000 in flat
+ * 10,000 steps. Neither bound was ever chosen. `useState([50000, 2000000])`
+ * arrived in ee53e17 on 12 February with the original page scaffold and
+ * survived three reworks untouched; the only deliberate act taken on it was
+ * 1f10de2 making the top stop mean "no upper limit", because read literally it
+ * "excluded 330 properties on a ceiling the user never chose".
+ *
+ * That left the number disarmed as a filter but still governing the scale, and
+ * as a ruler it was wrong in both directions. Measured against the served set
+ * on 2026-08-21: 1,160 properties, cheapest 399,995, median 1,200,000, dearest
+ * 1,995,000, none below 50,000 and none above 2,000,000. So the bottom 17.9% of
+ * the track selected nothing at all, while 64% of priced stock was crammed into
+ * the top half.
+ *
+ * A ladder fixes what a linear track cannot. The steps are 10,000 up to
+ * 300,000, 25,000 to 500,000, 50,000 to 1m and 250,000 above it — fine where
+ * HMO stock is bought, coarse where it is not — and it carries no ceiling: the
+ * top entry is 20,000,000 and "no maximum" is a first-class choice rather than
+ * a stop that silently means something else.
+ *
+ * Rightmove's ladder skips 750,000 (700,000 then 800,000). That is copied
+ * rather than corrected: like-for-like with the control every UK buyer already
+ * knows is the point, and inventing a rung would break the correspondence.
  */
-export const PRICE_SLIDER_MAX = 2_000_000
-export const PRICE_SLIDER_MIN = 50_000
+export const PRICE_LADDER: readonly number[] = [
+  50_000, 60_000, 70_000, 80_000, 90_000,
+  100_000, 110_000, 120_000, 125_000, 130_000, 140_000, 150_000, 160_000,
+  170_000, 175_000, 180_000, 190_000,
+  200_000, 210_000, 220_000, 230_000, 240_000, 250_000, 260_000, 270_000,
+  280_000, 290_000,
+  300_000, 325_000, 350_000, 375_000, 400_000, 425_000, 450_000, 475_000,
+  500_000, 550_000, 600_000, 650_000, 700_000, 800_000, 900_000,
+  1_000_000, 1_250_000, 1_500_000, 1_750_000, 2_000_000, 2_500_000, 3_000_000,
+  4_000_000, 5_000_000, 7_500_000, 10_000_000, 15_000_000, 20_000_000,
+]
+
+/**
+ * A price bound that is not set. `null` means "no minimum" / "no maximum" and
+ * is what both ends rest at, so an untouched control sends no price condition
+ * at all. The old slider had no way to say this: its max meant no-limit by a
+ * special case in the query, and its min never got the matching case, so every
+ * query carried `purchase_price >= 50000` whether or not the user had asked
+ * for it.
+ */
+export const PRICE_ANY = null
+
+/**
+ * The old slider's rest position, kept for one purpose: a saved search recorded
+ * before 2026-08-21 stores `priceRange: [50000, 2000000]` for "I set no price",
+ * and loading that pair literally would apply a floor and a ceiling the user
+ * never chose. Read on load, never written. Delete once no stored search holds
+ * the pair (one did on 2026-08-21, "newcastle").
+ */
+export const LEGACY_SLIDER_MIN = 50_000
+export const LEGACY_SLIDER_MAX = 2_000_000
+
+/**
+ * Reads a saved search's stored `priceRange` into the [min, max] pair the panel
+ * now holds, where `null` means no limit.
+ *
+ * A search saved under the slider recorded two numbers always, because the
+ * slider could not express an absent bound — so `[50000, 2000000]` is not a
+ * £50k–£2m band, it is the untouched control. Restoring it literally would
+ * apply a floor and a ceiling the person saving it never asked for, and the
+ * ceiling would hide anything above £2m the moment such a row exists.
+ *
+ * Only the exact resting pair is treated this way. `[50000, 800000]` records a
+ * real maximum and keeps it; `[300000, 2000000]` records a real minimum and
+ * loses only the ceiling.
+ */
+export function migrateSavedPriceRange(
+  stored: readonly (number | null)[] | undefined
+): [number | null, number | null] {
+  if (!stored || stored.length < 2) return [null, null]
+  const [min, max] = stored
+  return [
+    min === LEGACY_SLIDER_MIN || min === null || min === undefined ? null : min,
+    max === LEGACY_SLIDER_MAX || max === null || max === undefined ? null : max,
+  ]
+}
+
+/** "£1,250,000" — the ladder's own labelling, shared by the panel and its tests. */
+export function formatPriceOption(value: number): string {
+  return `£${value.toLocaleString("en-GB")}`
+}

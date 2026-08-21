@@ -66,8 +66,9 @@ import {
   SOURCING_LABELS,
   sourcingCategory,
   SOURCING_DESCRIPTIONS,
-  PRICE_SLIDER_MIN,
-  PRICE_SLIDER_MAX,
+  PRICE_LADDER,
+  formatPriceOption,
+  migrateSavedPriceRange,
   inSegment,
   type CategorisableProperty,
   type Article4Position,
@@ -121,13 +122,18 @@ function MapPage() {
 
   const [selectedLocation, setSelectedLocation] = useState<SearchLocation>(DEFAULT_LOCATION)
 
-  const [priceRange, setPriceRange] = useState([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+  /**
+   * [minimum, maximum], each `null` for "no limit" — which is where both rest,
+   * so an untouched panel sends no price condition at all. See PRICE_LADDER for
+   * why the two-handle slider that stood here went.
+   */
+  const [priceRange, setPriceRange] = useState<[number | null, number | null]>([null, null])
   const [sourcingCategories, setSourcingCategories] = useState<SourcingCategory[]>([
     "existing_off_market",
     "for_sale_hmo",
     "change_of_use",
   ])
-  const priceRangeKey = priceRange.join(",")
+  const priceRangeKey = priceRange.map((v) => v ?? "any").join(",")
   const sourcingKey = sourcingCategories.join(",")
   const [minEpcRating, setMinEpcRating] = useState<"A" | "B" | "C" | "D" | "E" | null>(null)
   const [article4Filter, setArticle4Filter] = useState<
@@ -490,8 +496,10 @@ function MapPage() {
    */
   function currentFilters() {
     return {
-      minPrice: priceRange[0],
-      maxPrice: priceRange[1],
+      // undefined, not null: validateFilters keeps only numbers, and an absent
+      // bound has to reach the query as absent rather than as a value of zero.
+      minPrice: priceRange[0] ?? undefined,
+      maxPrice: priceRange[1] ?? undefined,
       sourcingCategories,
       city: selectedLocation.type === "city" ? selectedLocation.name : "All Cities",
       postcodePrefix: selectedLocation.type === "postcode" ? selectedLocation.postcode : undefined,
@@ -596,7 +604,7 @@ function MapPage() {
   }
 
   const handleResetFilters = () => {
-    setPriceRange([PRICE_SLIDER_MIN, PRICE_SLIDER_MAX])
+    setPriceRange([null, null])
     setSourcingCategories(["existing_off_market", "for_sale_hmo", "change_of_use"])
     setSelectedLocation(DEFAULT_LOCATION)
     setMinEpcRating(null)
@@ -800,23 +808,67 @@ function MapPage() {
             {searchExpanded && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-2.5 block">
-                    Purchase Price (£{priceRange[0].toLocaleString()} - £{priceRange[1].toLocaleString()})
+                  <label className="text-xs font-medium text-slate-700 mb-2 block">
+                    Purchase Price
                   </label>
-                  <div className="px-1">
-                    <Slider
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      min={PRICE_SLIDER_MIN}
-                      max={PRICE_SLIDER_MAX}
-                      step={10000}
-                      className="mb-3"
-                    />
+                  {/*
+                    Two dropdowns off one ladder, like-for-like with Rightmove's
+                    — see PRICE_LADDER for what they replace and why. Each list
+                    is cut against the other end, so a maximum below the chosen
+                    minimum is not an option that exists; there is no inverted
+                    pair to detect afterwards and no empty result to explain.
+                  */}
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={priceRange[0] === null ? "any" : String(priceRange[0])}
+                      onValueChange={(value) =>
+                        setPriceRange(([, max]) => [value === "any" ? null : Number(value), max])
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200" aria-label="Minimum price">
+                        <SelectValue placeholder="No min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">No min</SelectItem>
+                        {PRICE_LADDER.filter((v) => priceRange[1] === null || v <= priceRange[1]).map((v) => (
+                          <SelectItem key={v} value={String(v)}>
+                            {formatPriceOption(v)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="shrink-0 text-xs text-slate-400">to</span>
+                    <Select
+                      value={priceRange[1] === null ? "any" : String(priceRange[1])}
+                      onValueChange={(value) =>
+                        setPriceRange(([min]) => [min, value === "any" ? null : Number(value)])
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-white border-slate-200" aria-label="Maximum price">
+                        <SelectValue placeholder="No max" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">No max</SelectItem>
+                        {PRICE_LADDER.filter((v) => priceRange[0] === null || v >= priceRange[0]).map((v) => (
+                          <SelectItem key={v} value={String(v)}>
+                            {formatPriceOption(v)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>£{priceRange[0].toLocaleString()}</span>
-                    <span>£{priceRange[1].toLocaleString()}</span>
-                  </div>
+                  {/*
+                    The behaviour, not a count. Stating "457 of 1,160 have no
+                    asking price" here would go stale on the next sync, and it
+                    cannot be computed from the properties in hand once a price
+                    is set — that list is the filter's own output. Every other
+                    control in this panel says what it does with the rows it
+                    cannot judge; until now this one was the exception.
+                  */}
+                  <p className="text-[11px] leading-snug text-slate-500 mt-1.5">
+                    Off-market properties have no asking price and are always
+                    shown. A price narrows only the properties that carry one.
+                  </p>
                 </div>
 
                 <div>
@@ -917,7 +969,7 @@ function MapPage() {
               isFurnished,
             }}
             onLoadFilters={(filters: SearchFilters) => {
-              setPriceRange(filters.priceRange)
+              setPriceRange(migrateSavedPriceRange(filters.priceRange))
               // Searches saved before the sourcing categories existed carry the
               // old built-form list instead. Leave the current selection alone
               // rather than restoring a filter the search never recorded.

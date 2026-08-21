@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server"
 import type { Property, PropertyFilters } from "@/lib/types/database"
 import { validateFilters, isValidISODate } from "@/lib/validation/filters"
-import { PRICE_SLIDER_MAX } from "@/lib/properties/category"
 
 const CACHE_DURATION = 60000 // 1 minute cache (reduced for debugging)
 let propertiesCache: { data: Property[]; timestamp: number; filters: string } | null = null
@@ -91,12 +90,20 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
     // price filter rather than failing it. Until it was removed, setting a price
     // range and then filtering by licence expiry left the slider visibly set and
     // silently ignored.
-    if (validatedFilters.minPrice) {
+    //
+    // Both ends are now absent when unset, so neither needs a special case. The
+    // max used to carry one — `maxPrice < PRICE_SLIDER_MAX`, because the
+    // slider's top stop meant "no limit" and reading it literally excluded 330
+    // properties — while the min never got the matching case. `if (minPrice)`
+    // was true at the slider's own resting value of 50,000, so every query ever
+    // sent carried `purchase_price >= 50000`. Nothing in the table sits below
+    // that today, which is the only reason it was never seen; sub-50k northern
+    // terraces are exactly the stock this product is for, and they would have
+    // been invisible at rest on the day they were ingested.
+    if (validatedFilters.minPrice !== undefined) {
       query = query.or(`purchase_price.gte.${validatedFilters.minPrice},purchase_price.is.null`)
     }
-    // The slider's own maximum means "no upper limit", not "£2,000,000". Treated
-    // literally it excluded 330 properties on a ceiling the user never chose.
-    if (validatedFilters.maxPrice && validatedFilters.maxPrice < PRICE_SLIDER_MAX) {
+    if (validatedFilters.maxPrice !== undefined) {
       query = query.or(`purchase_price.lte.${validatedFilters.maxPrice},purchase_price.is.null`)
     }
 
