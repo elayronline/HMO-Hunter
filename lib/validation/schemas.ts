@@ -154,6 +154,50 @@ export const zooplaIngestSchema = z
     { message: "minBedrooms cannot exceed maxBedrooms", path: ["minBedrooms"] },
   )
 
+/**
+ * Rightmove (Apify) ingest — purchase stock only.
+ *
+ * HMO Hunter sources properties to BUY. A rental listing is a competitor's
+ * finished product, not sourcing inventory.
+ *
+ * So there is deliberately **no `listingType` field here** — not one defaulting
+ * to "purchase", none at all — and the object is `.strict()`, so a caller that
+ * passes `listingType: "rent"` gets a validation error rather than having it
+ * quietly ignored. `zooplaIngestSchema` defaults that field to "rent" and it is
+ * how 1,632 rental rows arrived; a default is a sourcing policy hidden in code.
+ * The only way to make the policy hold is to leave the caller no way to express
+ * the other thing.
+ *
+ * `maxPrice` and `minBedrooms` are required, not defaulted, for the same reason
+ * they are on a Zoopla sale run: an unbounded query returns the top of the
+ * market rather than HMO stock. `minBedrooms` floors at 3 because a property
+ * with fewer is not an HMO conversion candidate.
+ */
+export const rightmoveIngestSchema = z
+  .object({
+    postcode: z.string().min(2).max(10).optional(),
+    area: z.string().min(2).max(60).optional(),
+    limit: z.number().int().positive().max(100).default(20),
+    minPrice: z.number().int().nonnegative().optional(),
+    maxPrice: z.number().int().positive(),
+    minBedrooms: z.number().int().min(3).max(60),
+    maxBedrooms: z.number().int().min(0).max(60).optional(),
+    radiusMiles: z.number().min(0).max(5).default(0.25),
+  })
+  .strict()
+  .refine((v) => Boolean(v.postcode || v.area), {
+    message: "Either postcode or area is required",
+    path: ["area"],
+  })
+  .refine((v) => v.minPrice === undefined || v.minPrice <= v.maxPrice, {
+    message: "minPrice cannot exceed maxPrice",
+    path: ["minPrice"],
+  })
+  .refine((v) => v.maxBedrooms === undefined || v.minBedrooms <= v.maxBedrooms, {
+    message: "minBedrooms cannot exceed maxBedrooms",
+    path: ["minBedrooms"],
+  })
+
 export const trackContactSchema = z.object({
   propertyId: z.string().uuid("Invalid property ID"),
   action: z.enum(["view", "call", "email", "copy"], {
@@ -300,3 +344,4 @@ export type D2VTemplateCreate = z.infer<typeof d2vTemplateCreateSchema>
 export type D2VCampaignCreate = z.infer<typeof d2vCampaignCreateSchema>
 export type ViewingCreate = z.infer<typeof viewingCreateSchema>
 export type ViewingUpdate = z.infer<typeof viewingUpdateSchema>
+export type RightmoveIngest = z.infer<typeof rightmoveIngestSchema>
