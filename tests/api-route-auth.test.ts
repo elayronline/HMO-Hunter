@@ -119,3 +119,43 @@ describe("the Article 4 council payload is gated on a session, not a query strin
     expect(code).toMatch(/internal \? "private, no-store"/)
   })
 })
+
+/**
+ * A route that calls another route has to carry the credential.
+ *
+ * /api/enrich-all and /api/enrich-all-images orchestrate their work by
+ * HTTP-fetching this application's own enrichment routes, and sent only
+ * Content-Type. Those routes are guarded, so every sub-call received 401 — or
+ * 503 where ADMIN_API_KEY is unset — and the orchestrator reported zero
+ * enriched with no error a reader could act on. It broke when admin-auth was
+ * introduced to close the publicly-writable enrich endpoints, and stayed broken
+ * because nothing tested it.
+ *
+ * /api/enrich-article4 failed identically against /api/article4-data and was
+ * found only by running an enrichment by hand. The lesson is that guarding a
+ * route and keeping its callers working are two different properties, and the
+ * scan above only proves the first.
+ */
+describe("routes that call other routes forward their credential", () => {
+  const ORCHESTRATORS = [
+    join(API_DIR, "enrich-all", "route.ts"),
+    join(API_DIR, "enrich-all-images", "route.ts"),
+  ]
+
+  for (const file of ORCHESTRATORS) {
+    it(`${file} does not fetch a guarded route with bare headers`, () => {
+      const src = readFileSync(file, "utf8")
+      // The failing shape: a self-call whose only header is Content-Type.
+      expect(src).not.toMatch(/headers:\s*\{\s*"Content-Type":\s*"application\/json"\s*\}[\s\S]{0,80}?\/api\//)
+      expect(src).toMatch(/adminHeaders\(request\)/)
+    })
+
+    it(`${file} takes the key from the request, not the environment`, () => {
+      const src = readFileSync(file, "utf8")
+      // Reading process.env here would let the orchestrator act with more
+      // authority than the caller that invoked it.
+      expect(src).toMatch(/request\.headers\.get\("x-admin-key"\)/)
+      expect(src).not.toMatch(/"x-admin-key":\s*process\.env/)
+    })
+  }
+})
