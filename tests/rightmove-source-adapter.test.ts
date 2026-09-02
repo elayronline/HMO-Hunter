@@ -116,3 +116,44 @@ describe("the sort order does not bias the sample by price", () => {
     expect(RIGHTMOVE_SORT_NEWEST).toBe("6")
   })
 })
+
+/**
+ * The ingest writes both columns that say "this could be an HMO".
+ *
+ * hmo_status is a string with a check constraint; is_potential_hmo is a boolean
+ * with no constraint at all. app/actions/properties.ts builds the served set
+ * from the BOOLEAN:
+ *
+ *   .or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
+ *
+ * so a row carrying hmo_status "Potential HMO" and is_potential_hmo false is in
+ * the table and on no screen. That is what happened: all 1,185 ingested
+ * properties were invisible, and the page reported 902 — the old stock alone.
+ *
+ * The asymmetry is what made it easy to miss. The constrained column rejects a
+ * bad write loudly, so it gets attention; the unconstrained one defaults to
+ * false in silence. Two columns holding one idea is the same shape as the
+ * is_premium/credits double-gate migration 018 removed, and the
+ * licensed_hmo/licence_status split PR #26 fixed.
+ */
+describe("the ingest route sets both HMO-status columns", () => {
+  const src = readFileSync(join("app", "api", "ingest-rightmove", "route.ts"), "utf8")
+
+  it("writes the boolean the served-set filter reads", () => {
+    expect(src).toMatch(/is_potential_hmo:\s*true/)
+  })
+
+  it("writes the string the check constraint governs", () => {
+    expect(src).toMatch(/hmo_status:\s*"Potential HMO"/)
+  })
+
+  it("sets them on the same row object, not in different places", () => {
+    const statusAt = src.indexOf('hmo_status: "Potential HMO"')
+    const boolAt = src.indexOf("is_potential_hmo: true")
+    expect(statusAt).toBeGreaterThan(-1)
+    expect(boolAt).toBeGreaterThan(statusAt)
+    // No object literal closes between them, so they cannot end up on
+    // different rows or in different branches.
+    expect(src.slice(statusAt, boolAt)).not.toContain("}")
+  })
+})

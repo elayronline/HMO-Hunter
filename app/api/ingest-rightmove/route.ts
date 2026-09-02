@@ -69,6 +69,25 @@ export async function POST(request: Request) {
        * price ceiling and a bedroom floor before a run can be expressed.
        */
       hmo_status: "Potential HMO",
+      /*
+       * Set together, because they are one fact recorded in two columns and the
+       * read path only consults the boolean.
+       *
+       * app/actions/properties.ts filters the served set with
+       *   .or("licensed_hmo.eq.true,is_potential_hmo.eq.true,licence_status.eq.expired")
+       * so a row with hmo_status "Potential HMO" and is_potential_hmo false is
+       * in the table and on no screen. That is exactly what happened: 1,185
+       * rows ingested and none of them rendered, because the string column has
+       * a check constraint that rejects a bad write loudly while the boolean
+       * silently defaults to false.
+       *
+       * Across the rest of the estate the two never disagree — 827 rows pair
+       * "Potential HMO" with true. Writing one without the other is the same
+       * shape as the is_premium/credits double-gate migration 018 removed and
+       * the licensed_hmo/licence_status split PR #26 fixed: two columns holding
+       * one idea, which drift the moment a writer remembers only one.
+       */
+      is_potential_hmo: true,
       source_name: "Rightmove",
       last_seen_at: new Date().toISOString(),
       last_ingested_at: new Date().toISOString(),
