@@ -23,23 +23,39 @@ import { RATE_LIMITS, checkRateLimit, type RateLimitPreset } from "@/lib/rate-li
 
 let redisClient: Redis | null = null
 
+/**
+ * Two naming conventions reach the same instance, and both have to work.
+ *
+ * Provisioning Upstash through the Vercel Marketplace injects KV_REST_API_URL
+ * and KV_REST_API_TOKEN. Signing up at upstash.com directly gives you
+ * UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. This module read only
+ * the second pair, so the marketplace install — the route Vercel actually
+ * recommends — provisioned a working Redis that the application then ignored,
+ * silently falling back to the per-instance counter it was meant to replace.
+ *
+ * Reading both is not a compatibility shim; it is the honest description of how
+ * this credential arrives. The Upstash names are preferred because they say
+ * what the service is: KV_REST_API_URL would equally describe Vercel KV,
+ * Cloudflare KV or anything else behind a REST key-value API.
+ */
+function redisCredentials(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+  return url && token ? { url, token } : null
+}
+
 export function getRedis(): Redis | null {
   if (redisClient) return redisClient
 
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return null
-  }
+  const credentials = redisCredentials()
+  if (!credentials) return null
 
-  redisClient = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  })
-
+  redisClient = new Redis(credentials)
   return redisClient
 }
 
 export function isRedisConfigured(): boolean {
-  return !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN
+  return redisCredentials() !== null
 }
 
 // ============================================================

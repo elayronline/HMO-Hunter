@@ -354,3 +354,35 @@ describe("rate limiting has one set of numbers and one entry point", () => {
     }
   })
 })
+
+/**
+ * The credential arrives under two different names.
+ *
+ * Provisioning Upstash through the Vercel Marketplace injects KV_REST_API_URL
+ * and KV_REST_API_TOKEN. Signing up at upstash.com directly gives
+ * UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. lib/redis.ts read only
+ * the second pair, so the marketplace route — the one Vercel recommends, and
+ * the one used here — provisioned a working Redis that the application then
+ * ignored, falling silently back to the per-instance counter it was meant to
+ * replace. Nothing would have reported that: the fallback is the correct
+ * behaviour for an absent Redis, and an ignored one looks identical.
+ */
+describe("Redis credentials are read under either naming convention", () => {
+  const src = readFileSync(join("lib", "redis.ts"), "utf8")
+
+  it("accepts the Vercel Marketplace names", () => {
+    expect(src).toMatch(/process\.env\.KV_REST_API_URL/)
+    expect(src).toMatch(/process\.env\.KV_REST_API_TOKEN/)
+  })
+
+  it("accepts the direct-signup names", () => {
+    expect(src).toMatch(/process\.env\.UPSTASH_REDIS_REST_URL/)
+    expect(src).toMatch(/process\.env\.UPSTASH_REDIS_REST_TOKEN/)
+  })
+
+  it("resolves both through one accessor, so the two cannot drift", () => {
+    expect(src).toMatch(/function redisCredentials\(\)/)
+    // isConfigured and the client must agree about what "configured" means.
+    expect(src).toMatch(/return redisCredentials\(\) !== null/)
+  })
+})
