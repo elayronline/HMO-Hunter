@@ -14,6 +14,8 @@
 
 import { Redis } from "@upstash/redis"
 import { Ratelimit } from "@upstash/ratelimit"
+import { NextResponse, type NextRequest } from "next/server"
+import { RATE_LIMITS, checkRateLimit, type RateLimitPreset } from "@/lib/rate-limit"
 
 // ============================================================
 // REDIS CLIENT
@@ -44,21 +46,40 @@ export function isRedisConfigured(): boolean {
 // DISTRIBUTED RATE LIMITING
 // ============================================================
 
-let rateLimiters: Record<string, Ratelimit> | null = null
+let rateLimiters: Record<RateLimitPreset, Ratelimit> | null = null
 
-function getRateLimiters(): Record<string, Ratelimit> | null {
+/**
+ * The limiters, built from RATE_LIMITS so the two paths cannot disagree.
+ *
+ * These were previously a second hardcoded copy of the same six numbers. They
+ * happened to match, which is worse than not matching: nothing would have
+ * caught the day they stopped, and the effective limit would then depend on
+ * whether Redis was configured — a rate limit that changes silently with
+ * deployment configuration is not a rate limit anyone can reason about.
+ */
+function getRateLimiters(): Record<RateLimitPreset, Ratelimit> | null {
   if (rateLimiters) return rateLimiters
 
   const redis = getRedis()
   if (!redis) return null
 
+  const build = (preset: RateLimitPreset) =>
+    new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(
+        RATE_LIMITS[preset].maxRequests,
+        `${Math.round(RATE_LIMITS[preset].windowMs / 1000)} s`
+      ),
+      prefix: `rl:${preset}`,
+    })
+
   rateLimiters = {
-    standard: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "60 s"), prefix: "rl:standard" }),
-    enrichment: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, "60 s"), prefix: "rl:enrich" }),
-    auth: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "60 s"), prefix: "rl:auth" }),
-    admin: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, "60 s"), prefix: "rl:admin" }),
-    search: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, "60 s"), prefix: "rl:search" }),
-    cron: new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(1, "60 s"), prefix: "rl:cron" }),
+    standard: build("standard"),
+    enrichment: build("enrichment"),
+    auth: build("auth"),
+    admin: build("admin"),
+    search: build("search"),
+    cron: build("cron"),
   }
 
   return rateLimiters
@@ -84,6 +105,67 @@ export async function checkDistributedRateLimit(
     remaining: result.remaining,
     reset: result.reset,
   }
+}
+
+/**
+ * The rate limit middleware enforces — distributed where possible, local where not.
+ *
+ * ORDER MATTERS AND SO DOES THE FALLBACK
+ *
+ * Redis is asked first because it is the only one of the two that can count
+ * across instances. When it is unconfigured, checkDistributedRateLimit returns
+ * null and this drops to the per-instance counter rather than allowing the
+ * request unchecked: a missing environment variable must not silently remove a
+ * protection.
+ *
+ * When Redis is configured but UNREACHABLE, the same thing happens, and that is
+ * a deliberate trade. Failing closed on a rate limiter means an Upstash outage
+ * takes the whole site down; failing open entirely means an outage removes the
+ * limit. Falling back to the local counter keeps a limit in force — a weaker
+ * one, per instance — and the error is logged rather than swallowed so the
+ * degradation is visible.
+ */
+export async function enforceRateLimit(
+  request: NextRequest,
+  preset: RateLimitPreset,
+  keyPrefix: string
+): Promise<NextResponse | null> {
+  const { maxRequests, windowMs } = RATE_LIMITS[preset]
+
+  if (isRedisConfigured()) {
+    try {
+      const forwarded = request.headers.get("x-forwarded-for")
+      const ip =
+        forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown"
+      const result = await checkDistributedRateLimit(`${keyPrefix}:${ip}`, preset)
+
+      if (result) {
+        if (result.success) return null
+        const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))
+        return NextResponse.json(
+          {
+            error: "Too many requests",
+            message: `Rate limit exceeded. Try again in ${retryAfter}s.`,
+            retryAfter,
+          },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(retryAfter),
+              "X-RateLimit-Limit": String(maxRequests),
+              "X-RateLimit-Remaining": String(Math.max(0, result.remaining)),
+              "X-RateLimit-Reset": String(Math.ceil(result.reset / 1000)),
+            },
+          }
+        )
+      }
+    } catch (error) {
+      // Visible, not swallowed: the site is now rate limiting per instance.
+      console.error("[RateLimit] Redis unavailable, falling back to in-memory:", error)
+    }
+  }
+
+  return checkRateLimit(request, { maxRequests, windowMs, keyPrefix })
 }
 
 // ============================================================

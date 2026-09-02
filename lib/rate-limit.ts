@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// Redis distributed rate limiting is available via lib/redis.ts
-// Use checkDistributedRateLimit() in API routes for multi-instance support.
-// This file provides in-memory rate limiting for middleware (edge runtime).
+// In-memory rate limiting, and the shared RATE_LIMITS presets.
+// The distributed path that middleware actually calls is enforceRateLimit() in
+// lib/redis.ts, which falls back to checkRateLimit() here when Redis is absent
+// or unreachable.
 
 interface RateLimitEntry {
   count: number
@@ -51,17 +52,25 @@ interface RateLimitOptions {
 }
 
 /**
- * Rate limit check for API routes.
- * Uses Upstash Redis when configured, falls back to in-memory.
+ * The in-memory rate limit. Per instance, and only ever per instance.
+ *
+ * This said "Uses Upstash Redis when configured, falls back to in-memory" and
+ * never touched Redis — lib/redis.ts was imported by nothing at all. On a
+ * platform that runs each request in a possibly-fresh isolate, a Map is a
+ * counter that resets whenever the platform feels like it, so the docstring
+ * described protection the deployment did not have.
+ *
+ * It remains the fallback, which is a real job: when Redis is unreachable this
+ * is better than nothing, and better than failing the request. But the
+ * distributed path is enforceRateLimit() in lib/redis.ts, and that is what
+ * middleware calls.
+ *
  * Returns null if allowed, or a NextResponse if rate limited.
  */
 export function checkRateLimit(
   request: NextRequest,
   options: RateLimitOptions
 ): NextResponse | null {
-  // Try distributed rate limiting if Redis is configured
-  // Note: This is sync in middleware, so Redis check is best-effort.
-  // For full distributed support, use the async checkDistributedRateLimit() in API routes.
   const { maxRequests, windowMs, keyPrefix = "" } = options
 
   // Get client identifier
@@ -134,6 +143,8 @@ export const RATE_LIMITS = {
   search: { maxRequests: 30, windowMs: 60 * 1000 },
   cron: { maxRequests: 1, windowMs: 60 * 1000 },
 } as const
+
+export type RateLimitPreset = keyof typeof RATE_LIMITS
 
 // Export store size for monitoring
 export function getRateLimitStoreSize(): number {

@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { CACHE_TTL, cacheThrough } from "@/lib/cache"
 import { TTLCache } from "@/lib/cache"
 import { generateCSRFToken } from "@/lib/csrf"
@@ -292,5 +294,63 @@ describe("Payment: Credit Packages", () => {
 
   it("most expensive package should be under £100", () => {
     expect(PACKAGES[PACKAGES.length - 1].price_pence).toBeLessThan(10000)
+  })
+})
+
+/**
+ * Rate limiting is distributed when it can be, and says so honestly when it is not.
+ *
+ * lib/rate-limit.ts documented itself as "Uses Upstash Redis when configured,
+ * falls back to in-memory" and never touched Redis: lib/redis.ts, which holds a
+ * complete Upstash implementation, was imported by no file in the codebase. On a
+ * platform that may run each request in a fresh isolate, the Map it actually
+ * used is a counter that resets whenever the platform feels like it — so the
+ * deployment had a docstring where it thought it had a protection.
+ *
+ * These are static checks. The distributed path cannot be exercised here
+ * because no Upstash instance is configured in any environment; what is
+ * verified live is the fallback, which returns 429 after the preset's limit.
+ */
+describe("rate limiting has one set of numbers and one entry point", () => {
+  const redisSrc = readFileSync(join("lib", "redis.ts"), "utf8")
+  const rlSrc = readFileSync(join("lib", "rate-limit.ts"), "utf8")
+  const mwSrc = readFileSync("middleware.ts", "utf8")
+
+  it("derives the Redis limiters from RATE_LIMITS rather than restating them", () => {
+    expect(redisSrc).toMatch(/RATE_LIMITS\[preset\]\.maxRequests/)
+    // The six numbers must not be written out a second time.
+    expect(redisSrc).not.toMatch(/slidingWindow\(\s*60\s*,/)
+    expect(redisSrc).not.toMatch(/slidingWindow\(\s*10\s*,/)
+  })
+
+  it("no longer claims to use Redis from the in-memory path", () => {
+    // The phrase may still appear where the comment quotes what it used to say
+    // — recording the old claim is how the next reader learns why the file is
+    // shaped this way. What must not exist is the phrase asserted as current
+    // behaviour, i.e. on a doc line that is not reporting history.
+    const claims = rlSrc
+      .split("\n")
+      .filter((l) => /Uses Upstash Redis when configured/.test(l))
+      .filter((l) => !/This said|used to|previously/i.test(l))
+    expect(claims).toEqual([])
+  })
+
+  it("routes middleware through the distributed entry point", () => {
+    expect(mwSrc).toMatch(/await enforceRateLimit\(request, preset, pathname\)/)
+    // The sync counter must not be middleware's direct call any more.
+    expect(mwSrc).not.toMatch(/checkRateLimit\(request/)
+  })
+
+  it("falls back rather than allowing the request when Redis is absent or broken", () => {
+    // Unconfigured: checkDistributedRateLimit returns null, so the local
+    // counter still runs. Unreachable: the catch logs and does the same.
+    expect(redisSrc).toMatch(/return checkRateLimit\(request, \{ maxRequests, windowMs, keyPrefix \}\)/)
+    expect(redisSrc).toMatch(/console\.error\("\[RateLimit\] Redis unavailable/)
+  })
+
+  it("keeps every preset covered by both paths", () => {
+    for (const preset of Object.keys(RATE_LIMITS)) {
+      expect(redisSrc, `redis limiter for ${preset}`).toMatch(new RegExp(`${preset}: build\\("${preset}"\\)`))
+    }
   })
 })
