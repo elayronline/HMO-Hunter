@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { KammaEnrichmentAdapter, type KammaLicensingData } from "@/lib/ingestion/enrichment/kamma"
 import { apiConfig } from "@/lib/config/api-config"
+import { requireAuth } from "@/lib/api-auth"
 
 /**
  * POST /api/kamma-check
@@ -9,6 +10,8 @@ import { apiConfig } from "@/lib/config/api-config"
  * Returns licensing schemes, Article 4 status, and compliance complexity
  */
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const body = await request.json()
     const { postcode, uprn, address, bedrooms } = body
@@ -105,6 +108,8 @@ export async function POST(request: Request) {
  * Returns API status and usage info
  */
 export async function GET() {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   const isConfigured = apiConfig.kamma?.enabled
 
   return NextResponse.json({

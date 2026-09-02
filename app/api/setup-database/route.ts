@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const maxDuration = 300
 
@@ -9,7 +10,9 @@ export const maxDuration = 300
  * Seeds sample properties across UK cities with proper coordinates.
  * Uses admin client to bypass RLS.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const supabase = supabaseAdmin
 
@@ -144,7 +147,9 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "Use POST to set up the database with sample properties",
     description: "This will seed sample properties across multiple UK cities with proper coordinates",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
+import { requireAuth } from "@/lib/api-auth"
 
 const zoopla = new ZooplaAdapter()
 
@@ -267,6 +268,8 @@ function calculateExactMatchScore(
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   const searchParams = request.nextUrl.searchParams
   const postcode = searchParams.get("postcode")
   const address = searchParams.get("address")

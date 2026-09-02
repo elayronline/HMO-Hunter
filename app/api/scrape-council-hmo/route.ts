@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/scrape-council-hmo
@@ -13,6 +14,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * }
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   const log: string[] = []
   const enriched: string[] = []
   const failed: string[] = []
@@ -441,7 +444,9 @@ async function fetchLeedsHMO(address: string, postcode: string) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "POST to scrape council HMO registers for licence holder contact details",
     supportedCouncils: [

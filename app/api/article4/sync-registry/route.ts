@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { buildCouncilRegistry, type CouncilRecord } from "@/lib/article4/registry"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,7 +36,9 @@ function toCouncilRow(c: CouncilRecord) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -66,7 +69,9 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 

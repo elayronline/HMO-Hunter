@@ -3,9 +3,27 @@ import { createClient } from "@supabase/supabase-js"
 import { fetchHmoIngestSet, PLANIT_SOURCE } from "@/lib/planning/planit"
 import { classifyHmoApplication } from "@/lib/planning/hmo-classifier"
 import { normaliseCouncilName } from "@/lib/article4/coverage"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+/**
+ * This route is both a Vercel cron target (vercel.json, 06:00 daily) and an
+ * operational endpoint. It writes to hmo_planning_decisions through the service
+ * role key, and until now it accepted either from anyone on the internet.
+ *
+ * Two credentials are allowed because there are genuinely two callers. Both
+ * fail closed: an unset CRON_SECRET makes the Bearer branch unmatchable rather
+ * than open, and requireAdmin() already refuses everything when ADMIN_API_KEY
+ * is unset.
+ */
+function denyUnlessCronOrAdmin(request: Request): NextResponse | null {
+  const secret = process.env.CRON_SECRET
+  if (secret && request.headers.get("authorization") === `Bearer ${secret}`) return null
+  return requireAdmin(request)
+}
+
 
 export const maxDuration = 300
 
@@ -18,7 +36,10 @@ function isoDaysAgo(days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = denyUnlessCronOrAdmin(request)
+  if (denied) return denied
+
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -47,6 +68,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = denyUnlessCronOrAdmin(request)
+  if (denied) return denied
+
   try {
     const body = await request.json().catch(() => ({}))
     const lookbackDays = Math.min(Number(body.lookbackDays) || DEFAULT_LOOKBACK_DAYS, 3650)

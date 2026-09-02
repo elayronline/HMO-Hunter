@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAuth } from "@/lib/api-auth"
 
 /**
  * POST /api/info-request
@@ -16,6 +17,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * }
  */
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const body = await request.json()
     const { propertyId, propertyAddress, postcode, city, requestType } = body
@@ -80,6 +83,8 @@ export async function POST(request: Request) {
  * Returns pending info requests for admin review
  */
 export async function GET() {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const { data: requests, error } = await supabaseAdmin
       .from("info_requests")

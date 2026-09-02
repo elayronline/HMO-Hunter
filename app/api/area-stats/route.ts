@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { ZooplaAdapter, type AreaStatistics } from "@/lib/ingestion/adapters/zoopla"
+import { requireAuth } from "@/lib/api-auth"
 
 const zoopla = new ZooplaAdapter()
 
@@ -8,6 +9,8 @@ const cache = new Map<string, { data: AreaStatistics; timestamp: number }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
     // Absence of a key is not absence of stock. Every fetch on the adapter
     // returns empty when unconfigured, which is indistinguishable from a search
     // that matched nothing — so say which it is.

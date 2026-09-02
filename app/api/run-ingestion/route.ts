@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
 import { runIngestion } from "@/app/actions/ingestion"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const maxDuration = 300 // 5 minutes timeout
 
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     // Check for optional source filter in request body
     let sourceName: string | undefined
@@ -47,7 +50,9 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "Use POST to run ingestion from all configured APIs",
     sources: [

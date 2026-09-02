@@ -14,13 +14,16 @@ import {
   DATA_CONSTRAINTS,
   INTELLIGENCE_OBJECTIVES,
 } from "@/lib/config/ai-intelligence"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * GET /api/intelligence
  *
  * Returns intelligence capabilities and system configuration
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     systemPrompt: AI_SYSTEM_PROMPT,
     dataSources: DATA_SOURCE_PRIORITIES,
@@ -52,6 +55,8 @@ export async function GET() {
  * }
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const body = await request.json().catch(() => ({}))
     const { propertyIds, city, limit = 50, format = "summary" } = body

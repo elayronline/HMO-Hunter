@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/geocode-properties
@@ -14,6 +15,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * }
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []
@@ -272,7 +275,9 @@ async function geocodeAddress(address: string, postcode: string): Promise<{ lat:
  * GET /api/geocode-properties
  * Returns info about geocoding endpoint
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   // Check how many properties might need re-geocoding
   const { data: properties } = await supabaseAdmin
     .from("properties")

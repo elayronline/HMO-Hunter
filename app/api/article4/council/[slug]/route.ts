@@ -4,6 +4,7 @@ import { buildCouncilAssessment } from "@/lib/article4/assessment"
 import { forRedistribution } from "@/lib/article4/provenance"
 import { forceStateOn, type CouncilRecord, type CoverageLevel } from "@/lib/article4/registry"
 import { applyCuratedOverlay, curatedBySlug, assessCurated } from "@/lib/article4/curated"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -74,9 +75,22 @@ export async function GET(
     const { slug } = await params
     const url = new URL(request.url)
 
-    // Callers outside the product get the redistribution-filtered payload. The
-    // internal app passes ?internal=1 to see licence-restricted values.
-    const internal = url.searchParams.get("internal") === "1"
+    /*
+     * Licence-restricted values are gated on a session, not on a query string.
+     *
+     * This read `url.searchParams.get("internal") === "1"`, so the filter that
+     * exists to honour a source's redistribution terms was switched off by the
+     * caller — anyone appending ?internal=1 received the unfiltered payload.
+     * That is not an access control, it is a preference the requester states
+     * about themselves.
+     *
+     * The product's own UI is authenticated, so a session is the honest test
+     * for "is this the internal app". Anonymous callers keep the filtered
+     * payload they were always meant to get.
+     */
+    const supabaseSession = await createServerClient()
+    const { data: { user } } = await supabaseSession.auth.getUser()
+    const internal = user != null
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -141,7 +155,13 @@ export async function GET(
 
     return NextResponse.json(payload, {
       headers: {
-        "Cache-Control": "public, max-age=3600",
+        /*
+         * The internal payload must never enter a shared cache. It varies by
+         * session, and `public` would let a CDN serve one signed-in reader's
+         * unfiltered response to an anonymous one — reintroducing the leak this
+         * change closes, at the cache layer.
+         */
+        "Cache-Control": internal ? "private, no-store" : "public, max-age=3600",
         "X-Data-Source": record.source ?? "planning.data.gov.uk",
       },
     })

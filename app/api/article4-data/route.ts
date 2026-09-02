@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/api-auth"
 
 // Official UK Government Planning Data API
 const PLANNING_DATA_API = "https://www.planning.data.gov.uk/entity.json"
@@ -242,7 +243,32 @@ async function buildGeoJSON(): Promise<GeoJSON.FeatureCollection> {
   }
 }
 
+/**
+ * The Article 4 GeoJSON, cached, for callers inside the server.
+ *
+ * /api/enrich-article4 used to reach this data by HTTP-fetching this very
+ * route. That worked only while the route was unauthenticated: adding a session
+ * guard to it (correctly — it was one of 26 open endpoints) made the server's
+ * own request 401, and the enricher reported "No Article 4 data available" for
+ * every property. An internal HTTP round-trip to your own API is a needless hop
+ * that also has to carry credentials it does not have.
+ *
+ * The proper home for this is lib/article4/. It stays here for now because
+ * moving 200 lines mid-session is a bigger risk than exporting the function,
+ * and every caller goes through this one accessor either way.
+ */
+export async function getArticle4GeoJSON(): Promise<GeoJSON.FeatureCollection> {
+  const now = Date.now()
+  if (cachedData && now - cacheTimestamp < CACHE_DURATION) return cachedData
+  const data = await buildGeoJSON()
+  cachedData = data
+  cacheTimestamp = Date.now()
+  return data
+}
+
 export async function GET() {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const now = Date.now()
 
