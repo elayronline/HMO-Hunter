@@ -96,7 +96,55 @@ describe("the rent estimate is a stated average, not a plausible-looking number"
     expect(route).not.toMatch(/purchasePrice\s*=\s*Math\.round\(annualRent/)
   })
 
-  it("does not overwrite an advertised let price with a computed one", () => {
-    expect(route).toContain("!property.price_pcm ? totalRent : property.price_pcm")
+  // This assertion used to pin the opposite: that the route wrote its computed
+  // rent whenever a property was listing_type "rent" and had no price yet,
+  // guarding only against overwriting a figure that already existed. That guard
+  // aimed at the right target and still let 216 licence-register records through
+  // — they are listing_type "rent" because there is no off_market value for
+  // them, and they have no price because nobody is letting them. The condition
+  // was not too loose; writing the column at all was the mistake. See the
+  // dedicated describe block below.
+  it("does not write a computed rent into the advertised-price column", () => {
+    expect(route).not.toContain("!property.price_pcm ? totalRent : property.price_pcm")
+  })
+})
+
+/**
+ * price_pcm means "a landlord is advertising this". Nothing computed goes in it.
+ *
+ * /api/enrich-rents used to write its modelled figure there whenever a property
+ * was listing_type "rent" and had no price yet. That guard was aimed at the
+ * right target — never overwrite a real advertised figure — but it did not
+ * consider a property that is not advertised at all.
+ *
+ * propertydata-hmo.ts stores licence-register records as listing_type "rent",
+ * because there is no off_market value to give them, and they carry no price
+ * because nobody is letting them. Both conditions, exactly. 216 register records
+ * were handed a monthly rent for a letting that does not exist, and the property
+ * card reports that column as what the property achieves today.
+ *
+ * Narrowing the condition would only move the hole, so the column is simply not
+ * written from a computed value. The modelled figure lives in
+ * estimated_gross_monthly_rent, which the hero reads and labels as modelled.
+ */
+describe("computed rents never reach price_pcm", () => {
+  const RENT_ROUTE = join("app", "api", "enrich-rents", "route.ts")
+
+  it("enrich-rents does not assign price_pcm", () => {
+    const src = readFileSync(RENT_ROUTE, "utf8")
+    // Strip comments so the explanation above (which names the column) does not
+    // trip the check that the code no longer sets it.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n")
+    expect(code).not.toMatch(/price_pcm\s*:/)
+  })
+
+  it("still writes the modelled figure to its own column", () => {
+    const src = readFileSync(RENT_ROUTE, "utf8")
+    expect(src).toMatch(/estimated_gross_monthly_rent\s*:/)
+    expect(src).toMatch(/estimated_rent_per_room\s*:/)
   })
 })

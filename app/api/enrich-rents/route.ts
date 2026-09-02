@@ -106,13 +106,26 @@ export async function POST(request: Request) {
         const annualRent = totalRent * 12
         const grossYield = purchasePrice > 0 ? (annualRent / purchasePrice) * 100 : null
 
+        // price_pcm is NOT written here, at all.
+        //
+        // What stood here wrote the computed rent whenever a property was
+        // listing_type "rent" and had no price yet — guarding, correctly, against
+        // overwriting a real advertised figure. The case it did not consider is a
+        // property that is not advertised at all.
+        //
+        // lib/ingestion/adapters/propertydata-hmo.ts stores licence-register
+        // records as listing_type "rent" because there is no off_market value to
+        // give them, and they carry no price because nobody is letting them. That
+        // is both conditions, so 216 register records were handed a monthly rent
+        // for a letting that does not exist — a modelled number in the column the
+        // property detail card reports as what the property achieves today.
+        //
+        // Narrowing the condition would only move the hole. price_pcm means "a
+        // landlord is advertising this", so nothing computed belongs in it under
+        // any condition; the modelled figure already has its own column below,
+        // and the hero reads that one and says on its face that it is modelled.
         const updateData: Record<string, any> = {
           estimated_rent_per_room: rent.rate,
-          // Never over an advertised figure. price_pcm is reported as what the
-          // property achieves today rather than as an estimate, so overwriting a
-          // real let price with a computed one would make that sentence false.
-          price_pcm:
-            property.listing_type === "rent" && !property.price_pcm ? totalRent : property.price_pcm,
           estimated_gross_monthly_rent: totalRent,
           estimated_annual_income: annualRent,
         }
@@ -238,10 +251,9 @@ export async function GET() {
     },
     dataProvided: {
       estimated_rent_per_room: "Per-room monthly rent based on city market rates",
-      price_pcm: "Total monthly rent (rooms × per-room rent) for rental listings",
       estimated_gross_monthly_rent: "Total monthly rental income",
       estimated_annual_income: "Annual rental income",
-      purchase_price: "Estimated purchase price (if not set) based on ~7% yield",
+      // purchase_price is deliberately absent: this route no longer derives one.
       estimated_yield_percentage: "Gross rental yield percentage",
     },
   })
