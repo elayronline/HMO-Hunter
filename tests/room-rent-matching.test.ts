@@ -93,3 +93,46 @@ describe("matching a property to a city rate", () => {
     for (const s of samples) expect(known.has(s.rate)).toBe(true)
   })
 })
+
+/**
+ * The band travels with the rate.
+ *
+ * hero-metrics-bar graded an observed rent per room against £400/£600 —
+ * invented at that call site, and flat across a country where Hull's band is
+ * £350–500 and London's is £650–1100. Carrying min and max here means a caller
+ * places a rent inside its own city's published range instead.
+ */
+describe("roomRent carries the published band, not just the average", () => {
+  it("returns the city band for a recognised city", () => {
+    const r = roomRent("Hull")
+    expect(r.basis).toBe("city")
+    expect(r.min).toBe(350)
+    expect(r.max).toBe(500)
+    expect(r.rate).toBeGreaterThanOrEqual(r.min)
+    expect(r.rate).toBeLessThanOrEqual(r.max)
+  })
+
+  it("returns the band when the city was matched via the council", () => {
+    const r = roomRent("East Riding", "Kingston upon Hull, City of")
+    expect(r.city).toBe("Hull")
+    expect(r.min).toBe(350)
+    expect(r.max).toBe(500)
+  })
+
+  it("returns the national band, flagged as national, when no city matches", () => {
+    const r = roomRent("Somewhere", "Some District Council")
+    expect(r.basis).toBe("national")
+    expect(r.min).toBeGreaterThan(0)
+    expect(r.max).toBeGreaterThan(r.min)
+  })
+
+  // The bands must not overlap into nonsense: every city's max exceeds its min,
+  // and the average sits inside its own band.
+  it("holds a coherent band for every city in the table", () => {
+    for (const [city, band] of Object.entries(CITY_ROOM_RENTS)) {
+      expect(band.min, `${city} min < max`).toBeLessThan(band.max)
+      expect(band.avg, `${city} avg >= min`).toBeGreaterThanOrEqual(band.min)
+      expect(band.avg, `${city} avg <= max`).toBeLessThanOrEqual(band.max)
+    }
+  })
+})

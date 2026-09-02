@@ -148,3 +148,42 @@ describe("computed rents never reach price_pcm", () => {
     expect(src).toMatch(/estimated_rent_per_room\s*:/)
   })
 })
+
+/**
+ * The hero bar shows observed figures, or arithmetic on observed figures.
+ *
+ * PR #26 removed "Net Yield" (grossYield × 0.7) and "Cashflow" (30% costs, 75%
+ * LTV, 5.5% interest, all hardcoded) from property-detail-card.tsx. The audit
+ * found both still live in hero-metrics-bar.tsx — the same two figures, on the
+ * same page, because the fix was applied to one component and not its twin.
+ *
+ * That is the failure this block exists to catch: not the original mistake, but
+ * a correct fix landing on one call site while its duplicate keeps rendering.
+ */
+describe("the hero metrics bar states nothing it cannot source", () => {
+  const HERO = join("components", "hero-metrics-bar.tsx")
+  // Comments describe the removed arithmetic, so they must not count as its
+  // presence — the same trap as the enrich-rents check above.
+  const code = readFileSync(HERO, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n")
+
+  it("does not apply a flat haircut to a yield and call it net", () => {
+    expect(code).not.toMatch(/netYield/)
+    expect(code).not.toMatch(/\*\s*0\.7\b/)
+  })
+
+  it("does not model cashflow from assumed costs, LTV and interest", () => {
+    expect(code).not.toMatch(/monthlyCashflow/)
+    expect(code).not.toMatch(/0\.055/)
+    expect(code).not.toMatch(/0\.75\b/)
+    expect(code).not.toMatch(/\*\s*0\.3\b/)
+  })
+
+  it("does not label a metric Net Yield or Cashflow", () => {
+    expect(code).not.toMatch(/"Net Yield"/)
+    expect(code).not.toMatch(/"Cashflow"/)
+  })
+})

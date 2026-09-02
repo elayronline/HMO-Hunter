@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types/database"
+import { roomRent, type RoomRent } from "@/lib/properties/room-rents"
 
 interface HeroMetricsBarProps {
   property: Property
@@ -10,20 +11,6 @@ interface HeroMetricsBarProps {
 
 type MetricStatus = "positive" | "neutral" | "negative"
 
-function getYieldStatus(netYield: number | null): MetricStatus {
-  if (!netYield) return "neutral"
-  if (netYield >= 6) return "positive"
-  if (netYield >= 4) return "neutral"
-  return "negative"
-}
-
-function getCashflowStatus(cashflow: number | null): MetricStatus {
-  if (cashflow === null) return "neutral"
-  if (cashflow >= 200) return "positive"
-  if (cashflow >= 0) return "neutral"
-  return "negative"
-}
-
 function getPricePerRoomStatus(pricePerRoom: number | null): MetricStatus {
   if (!pricePerRoom) return "neutral"
   if (pricePerRoom < 60000) return "positive"
@@ -31,10 +18,32 @@ function getPricePerRoomStatus(pricePerRoom: number | null): MetricStatus {
   return "negative"
 }
 
-function getRentPerRoomStatus(rentPerRoom: number | null): MetricStatus {
+/**
+ * Where an observed rent per room sits in its city's published band.
+ *
+ * This read backwards: under £400 was "Good" and over £600 was "Poor". The
+ * shape was copied from getPricePerRoomStatus above, where low genuinely is
+ * better because that is what a buyer pays — but rent per room is what the
+ * property earns, so the copy needed inverting and was not. A £700/room
+ * property showed red and a £350/room one showed green.
+ *
+ * The thresholds are no longer flat national numbers either. £400 and £600 were
+ * invented at this call site, and room rents are not national: the table this
+ * now reads puts Hull's band at £350–500 and London's at £650–1100, so a single
+ * pair of figures called the same rent good in one city and poor in another.
+ * The band comes from CITY_ROOM_RENTS, the same source as the modelled yield
+ * shown below this bar.
+ *
+ * With no city rate held, this returns neutral rather than judging against the
+ * national fallback. The status dot has one word to say it in and "Average"
+ * would be a claim; declining to grade is the honest answer where the basis is
+ * a national default rather than this property's own market.
+ */
+function getRentPerRoomStatus(rentPerRoom: number | null, band: RoomRent): MetricStatus {
   if (!rentPerRoom) return "neutral"
-  if (rentPerRoom < 400) return "positive"
-  if (rentPerRoom <= 600) return "neutral"
+  if (band.basis === "national") return "neutral"
+  if (rentPerRoom >= band.max) return "positive"
+  if (rentPerRoom >= band.min) return "neutral"
   return "negative"
 }
 
@@ -57,26 +66,30 @@ const statusDots: Record<MetricStatus, string> = {
 }
 
 export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
-  // Calculate metrics
-  const monthlyRent = property.listing_type === "purchase"
-    ? (property.estimated_rent_per_room ? property.estimated_rent_per_room * property.bedrooms : null)
-    : property.price_pcm
-
-  const grossYield = (() => {
-    if (property.listing_type !== "purchase" || !property.purchase_price || !monthlyRent) return null
-    return (monthlyRent * 12 / property.purchase_price) * 100
-  })()
-
-  const netYield = grossYield ? grossYield * 0.7 : null
-
-  const monthlyCashflow = (() => {
-    if (!property.purchase_price || !monthlyRent) return null
-    const annualRent = monthlyRent * 12
-    const costs = annualRent * 0.3
-    const mortgage = property.purchase_price * 0.75 * 0.055
-    return Math.round((annualRent - costs - mortgage) / 12)
-  })()
-
+  /*
+   * Net yield and monthly cashflow were removed from this bar.
+   *
+   * The same two figures were removed from components/property-detail-card.tsx
+   * in PR #26 and survived here, on the same page, because the fix was applied
+   * to one component and not its twin. Both rendered on /property/[id].
+   *
+   * "Net Yield" was `grossYield * 0.7` — a flat 30% haircut presented as a
+   * distinct metric, with a traffic light on it and nothing saying where the
+   * 30% came from. Cashflow was
+   *   (annualRent - annualRent * 0.3 - purchase_price * 0.75 * 0.055) / 12
+   * — an assumed cost ratio, an assumed 75% LTV and an assumed 5.5% interest
+   * rate, rendered as a signed pound figure a reader would take for their own.
+   * The rent both started from was itself modelled
+   * (`estimated_rent_per_room × bedrooms`), so neither number had an observed
+   * input beyond the asking price.
+   *
+   * Gross yield is not shown here either: this bar has one line per metric and
+   * no room to state a basis, and PR #26's finding was that a colour-coded
+   * threshold on a modelled number endorses it. The modelled yield still
+   * appears on this page — PropertyDetailCard renders it directly below, with
+   * its basis written on the face of the panel, which is where it can be read
+   * honestly. What is left here is observed, or arithmetic on observed values.
+   */
   const pricePerRoom = property.purchase_price && property.bedrooms
     ? Math.round(property.purchase_price / property.bedrooms)
     : null
@@ -93,6 +106,10 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
       ? Math.round(property.price_pcm / property.bedrooms)
       : null
 
+  // Same lookup the detail card uses for the yield basis, so the two panels on
+  // this page grade a rent against the same published band.
+  const rentBand = roomRent(property.city, property.article_4_council)
+
   const metrics = !hasAskingPrice ? [
     {
       label: "Let At",
@@ -102,7 +119,7 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     {
       label: "Rent/Room",
       value: rentPerRoom ? `£${rentPerRoom.toLocaleString()}` : "—",
-      status: getRentPerRoomStatus(rentPerRoom),
+      status: getRentPerRoomStatus(rentPerRoom, rentBand),
     },
     {
       label: "Rooms",
@@ -111,21 +128,19 @@ export function HeroMetricsBar({ property, className }: HeroMetricsBarProps) {
     },
   ] : [
     {
-      label: "Net Yield",
-      value: netYield ? `${netYield.toFixed(1)}%` : "—",
-      status: getYieldStatus(netYield),
-    },
-    {
-      label: "Cashflow",
-      value: monthlyCashflow !== null
-        ? `${monthlyCashflow >= 0 ? "+" : ""}£${Math.abs(monthlyCashflow).toLocaleString()}`
-        : "—",
-      status: getCashflowStatus(monthlyCashflow),
+      label: "Asking",
+      value: property.purchase_price ? `£${property.purchase_price.toLocaleString()}` : "—",
+      status: "neutral" as const,
     },
     {
       label: "Price/Room",
       value: pricePerRoom ? `£${(pricePerRoom / 1000).toFixed(0)}k` : "—",
       status: getPricePerRoomStatus(pricePerRoom),
+    },
+    {
+      label: "Rooms",
+      value: property.bedrooms ? String(property.bedrooms) : "—",
+      status: "neutral" as const,
     },
   ]
 
