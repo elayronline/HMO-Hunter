@@ -57,7 +57,7 @@ export class PropertyDataHMOAdapter extends SourceAdapter {
       "N4 2HA",   // Finsbury Park
       "E17 4PP",  // Walthamstow
       // Manchester
-      "M14 5SX",  // Fallowfield - major student HMO area
+      "M14 6EA",  // Fallowfield - major student HMO area
       "M13 9PL",  // Rusholme
       "M20 2WS",  // Withington
       "M19 2QP",  // Levenshulme
