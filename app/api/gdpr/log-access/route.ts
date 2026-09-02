@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase-admin"
 import { createClient } from "@/lib/supabase/server"
+import {
+  CONTACT_ACCESS_TYPES,
+  logContactAccess,
+  requestMetadata,
+  type ContactAccessType,
+} from "@/lib/gdpr/contact-access-log"
 
 /**
  * POST /api/gdpr/log-access
@@ -22,8 +27,7 @@ export async function POST(request: Request) {
     }
 
     // Validate access type
-    const validAccessTypes = ["view", "copy", "export", "call", "email"]
-    if (!validAccessTypes.includes(accessType)) {
+    if (!CONTACT_ACCESS_TYPES.includes(accessType as ContactAccessType)) {
       return NextResponse.json(
         { error: "Invalid access type" },
         { status: 400 }
@@ -34,28 +38,23 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Get request metadata
-    const userAgent = request.headers.get("user-agent") || "unknown"
-    const forwardedFor = request.headers.get("x-forwarded-for")
-    const ipAddress = forwardedFor?.split(",")[0]?.trim() || "unknown"
-
-    // Insert audit log
-    const { error } = await supabaseAdmin
-      .from("contact_access_log")
-      .insert({
-        user_id: user?.id || null,
-        property_id: propertyId,
-        owner_name: ownerName || null,
-        data_accessed: Array.isArray(dataAccessed) ? dataAccessed : [dataAccessed],
-        access_type: accessType,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      })
+    // Shared with /api/track-contact, which writes the row directly rather than
+    // posting here — see lib/gdpr/contact-access-log.ts for why.
+    const { ipAddress, userAgent } = requestMetadata(request)
+    const { error } = await logContactAccess({
+      userId: user?.id ?? null,
+      propertyId,
+      ownerName: ownerName ?? null,
+      dataAccessed: Array.isArray(dataAccessed) ? dataAccessed : [dataAccessed],
+      accessType: accessType as ContactAccessType,
+      ipAddress,
+      userAgent,
+    })
 
     if (error) {
-      console.error("Error logging access:", error)
-      // Don't fail the request if logging fails
-      // Just log the error and continue
+      console.error("[GDPR] access log write FAILED:", error)
+      // The read is not denied because the audit write failed, but the failure
+      // is not swallowed either.
     }
 
     return NextResponse.json({ success: true })

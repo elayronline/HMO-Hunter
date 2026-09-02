@@ -159,3 +159,52 @@ describe("routes that call other routes forward their credential", () => {
     })
   }
 })
+
+/**
+ * The GDPR access log has to record who, not just what.
+ *
+ * /api/track-contact posted to /api/gdpr/log-access to record that a user had
+ * read an owner's contact details. The call failed in two independent ways.
+ *
+ * It sent no cookies, so the endpoint's getUser() returned null and the row
+ * would have carried user_id: null — an audit log that says contact data was
+ * accessed but not by whom, which is precisely the question a subject access
+ * request asks.
+ *
+ * And its URL was `${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/gdpr/log-access`.
+ * That variable is set in no environment, so the string began with a bare slash;
+ * server-side fetch requires an absolute URL and threw. The throw landed in a
+ * catch that only wrote to the console. contact_access_log held 0 rows for the
+ * life of the feature.
+ *
+ * The caller already holds the authenticated user and the real request, so it
+ * writes the row itself.
+ */
+describe("contact access is logged against the user who accessed it", () => {
+  const TRACK = join(API_DIR, "track-contact", "route.ts")
+  const code = readFileSync(TRACK, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
+    .join("\n")
+
+  it("does not reach the log by fetching another route", () => {
+    expect(code).not.toMatch(/fetch\(/)
+  })
+
+  it("writes the row with the authenticated user's id", () => {
+    expect(code).toMatch(/logContactAccess\(/)
+    expect(code).toMatch(/userId:\s*user\.id/)
+  })
+
+  it("surfaces a failed audit write instead of swallowing it", () => {
+    expect(code).toMatch(/if \(logError\)/)
+  })
+
+  it("shares one implementation with the log endpoint", () => {
+    const endpoint = readFileSync(join(API_DIR, "gdpr", "log-access", "route.ts"), "utf8")
+    expect(endpoint).toMatch(/logContactAccess/)
+    // Neither may hand-roll its own insert against the audit table.
+    expect(endpoint).not.toMatch(/from\("contact_access_log"\)\s*\n?\s*\.insert/)
+  })
+})
