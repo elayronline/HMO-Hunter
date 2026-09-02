@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
 import { validateBody } from "@/lib/validation/api-validation"
 import { zooplaIngestSchema } from "@/lib/validation/schemas"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -25,6 +26,8 @@ const zoopla = new ZooplaAdapter()
  * zooplaIngestSchema for the full account.
  */
 export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     // Absence of a key is not absence of stock. Every fetch on the adapter
     // returns empty when unconfigured, which is indistinguishable from a search
@@ -227,7 +230,9 @@ export async function POST(request: NextRequest) {
 /**
  * GET endpoint to check available areas
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "Use POST to ingest Zoopla properties",
     usage: {

@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import fs from "fs"
 import path from "path"
 import readline from "readline"
+import { requireAuth } from "@/lib/api-auth"
 
 // In-memory cache for CSV data (loaded on first request)
 let broadbandCache: Map<string, BroadbandData> | null = null
@@ -21,6 +22,8 @@ interface BroadbandData {
  * Look up broadband availability for a postcode
  */
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   const { searchParams } = new URL(request.url)
   const postcode = searchParams.get("postcode")?.toUpperCase().replace(/\s+/g, "")
 
@@ -158,6 +161,8 @@ async function loadCSVCache(): Promise<void> {
  * Bulk lookup for multiple postcodes
  */
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const body = await request.json()
     const postcodes: string[] = body.postcodes || []

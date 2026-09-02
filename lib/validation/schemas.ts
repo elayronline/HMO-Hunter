@@ -154,6 +154,90 @@ export const zooplaIngestSchema = z
     { message: "minBedrooms cannot exceed maxBedrooms", path: ["minBedrooms"] },
   )
 
+/**
+ * Rightmove (Apify) ingest — purchase stock only.
+ *
+ * HMO Hunter sources properties to BUY. A rental listing is a competitor's
+ * finished product, not sourcing inventory.
+ *
+ * So there is deliberately **no `listingType` field here** — not one defaulting
+ * to "purchase", none at all — and the object is `.strict()`, so a caller that
+ * passes `listingType: "rent"` gets a validation error rather than having it
+ * quietly ignored. `zooplaIngestSchema` defaults that field to "rent" and it is
+ * how 1,632 rental rows arrived; a default is a sourcing policy hidden in code.
+ * The only way to make the policy hold is to leave the caller no way to express
+ * the other thing.
+ *
+ * `maxPrice` and `minBedrooms` are required, not defaulted, for the same reason
+ * they are on a Zoopla sale run: an unbounded query returns the top of the
+ * market rather than HMO stock. `minBedrooms` floors at 3 because a property
+ * with fewer is not an HMO conversion candidate.
+ */
+export const rightmoveIngestSchema = z
+  .object({
+    postcode: z.string().min(2).max(10).optional(),
+    area: z.string().min(2).max(60).optional(),
+    limit: z.number().int().positive().max(100).default(20),
+    minPrice: z.number().int().nonnegative().optional(),
+    maxPrice: z.number().int().positive(),
+    minBedrooms: z.number().int().min(3).max(60),
+    maxBedrooms: z.number().int().min(0).max(60).optional(),
+    radiusMiles: z.number().min(0).max(5).default(0.25),
+  })
+  .strict()
+  .refine((v) => Boolean(v.postcode || v.area), {
+    message: "Either postcode or area is required",
+    path: ["area"],
+  })
+  .refine((v) => v.minPrice === undefined || v.minPrice <= v.maxPrice, {
+    message: "minPrice cannot exceed maxPrice",
+    path: ["minPrice"],
+  })
+  .refine((v) => v.maxBedrooms === undefined || v.minBedrooms <= v.maxBedrooms, {
+    message: "minBedrooms cannot exceed maxBedrooms",
+    path: ["minBedrooms"],
+  })
+
+/**
+ * LoopNet commercial ingest — Class E conversion stock only.
+ *
+ * Two things are deliberately absent, for the same reason `listingType` is
+ * absent from rightmoveIngestSchema: a caller must not be able to ask for them.
+ *
+ * There is no `searchType`. LoopNet offers for-sale, for-lease and auctions; a
+ * lease is not sourcing inventory, and the adapter's start URL is a for-sale
+ * search. There is no way to express the others here.
+ *
+ * There is no passthrough for actor options. `includeListingDetails` bills at
+ * $0.05 per property — a hundred of them is the whole monthly free tier in one
+ * run — and `agent-record` at $0.0035. The adapter builds its actor payload from
+ * a literal with those hardcoded false, so a request cannot reach them, and
+ * `.strict()` here means an attempt is an error rather than a silently dropped
+ * key.
+ *
+ * `maxItems` is capped at 100 because the free plan is: the actor returns at
+ * most 100 rows for a non-paying account, and asking for more spends the run
+ * without returning them.
+ */
+export const loopnetIngestSchema = z
+  .object({
+    /**
+     * A loopnet.co.uk search URL. Free-text search resolves through a
+     * token-gated geocoder that failed on probe, and the actor's own log names
+     * startUrls as the token-free path — so a URL is the input, not a place.
+     */
+    searchUrl: z
+      .string()
+      .url()
+      .refine((u) => /^https:\/\/(www\.)?loopnet\.co\.uk\//.test(u), {
+        message:
+          "Must be a loopnet.co.uk search URL. loopnet.com is the US site: its listings are priced in dollars and are not UK conversion stock.",
+      })
+      .default("https://www.loopnet.co.uk/search/commercial-real-estate/united-kingdom/for-sale/"),
+    maxItems: z.number().int().positive().max(100).default(50),
+  })
+  .strict()
+
 export const trackContactSchema = z.object({
   propertyId: z.string().uuid("Invalid property ID"),
   action: z.enum(["view", "call", "email", "copy"], {
@@ -300,3 +384,5 @@ export type D2VTemplateCreate = z.infer<typeof d2vTemplateCreateSchema>
 export type D2VCampaignCreate = z.infer<typeof d2vCampaignCreateSchema>
 export type ViewingCreate = z.infer<typeof viewingCreateSchema>
 export type ViewingUpdate = z.infer<typeof viewingUpdateSchema>
+export type RightmoveIngest = z.infer<typeof rightmoveIngestSchema>
+export type LoopnetIngest = z.infer<typeof loopnetIngestSchema>

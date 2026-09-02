@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { runIngestion } from "@/app/actions/ingestion"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const maxDuration = 300 // 5 minutes
 
@@ -9,7 +10,9 @@ export const maxDuration = 300 // 5 minutes
  *
  * Clears sample data and fetches fresh data from all APIs
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   const log: string[] = []
 
   try {
@@ -100,7 +103,9 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   // Check current data status
   const { data: properties, error } = await supabaseAdmin
     .from("properties")

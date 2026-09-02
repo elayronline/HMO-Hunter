@@ -9,6 +9,7 @@ import {
   toLegacyBoolean,
 } from "@/lib/article4/coverage"
 import { requireAdmin } from "@/lib/admin-auth"
+import { getArticle4GeoJSON } from "@/app/api/article4-data/route"
 import {
   ARTICLE4_SOURCE_COUNCIL_VERIFIED,
   curatedNegativeFor,
@@ -137,10 +138,11 @@ export async function POST(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Fetch Article 4 areas from our API
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-    const article4Response = await fetch(`${baseUrl}/api/article4-data`)
-    const article4Data = await article4Response.json()
+    // Called directly rather than fetched over HTTP from our own API. The
+    // round-trip version broke the moment /api/article4-data grew a session
+    // guard: the server has no session, so it received 401 and this route
+    // reported "No Article 4 data available" for every property.
+    const article4Data = await getArticle4GeoJSON()
 
     if (!article4Data.features || article4Data.features.length === 0) {
       return NextResponse.json({ error: "No Article 4 data available" }, { status: 500 })
@@ -253,12 +255,12 @@ export async function POST(request: Request) {
             try {
               if (feature.geometry.type === "MultiPolygon") {
                 if (pointInMultiPolygon(point, feature.geometry.coordinates)) {
-                  matchedAreaName = feature.properties.name || feature.properties.description
+                  matchedAreaName = feature.properties?.name || feature.properties?.description
                   break
                 }
               } else if (feature.geometry.type === "Polygon") {
                 if (pointInPolygon(point, feature.geometry.coordinates[0])) {
-                  matchedAreaName = feature.properties.name || feature.properties.description
+                  matchedAreaName = feature.properties?.name || feature.properties?.description
                   break
                 }
               }

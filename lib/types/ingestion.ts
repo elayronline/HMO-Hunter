@@ -28,6 +28,13 @@ export interface PropertyListing {
   bathrooms: number
   description?: string
   images?: string[]
+  /**
+   * The one image a card shows. Separate from images[] because the map passes
+   * it straight to the gallery without falling back to images[0]
+   * (app/map/page.tsx:1844), so a row with photos and no primary_image renders
+   * blank. An adapter that has photos should set both.
+   */
+  primary_image?: string
   floor_plans?: string[]
   is_furnished?: boolean
   is_student_friendly?: boolean

@@ -96,7 +96,141 @@ describe("the rent estimate is a stated average, not a plausible-looking number"
     expect(route).not.toMatch(/purchasePrice\s*=\s*Math\.round\(annualRent/)
   })
 
-  it("does not overwrite an advertised let price with a computed one", () => {
-    expect(route).toContain("!property.price_pcm ? totalRent : property.price_pcm")
+  // This assertion used to pin the opposite: that the route wrote its computed
+  // rent whenever a property was listing_type "rent" and had no price yet,
+  // guarding only against overwriting a figure that already existed. That guard
+  // aimed at the right target and still let 216 licence-register records through
+  // — they are listing_type "rent" because there is no off_market value for
+  // them, and they have no price because nobody is letting them. The condition
+  // was not too loose; writing the column at all was the mistake. See the
+  // dedicated describe block below.
+  it("does not write a computed rent into the advertised-price column", () => {
+    expect(route).not.toContain("!property.price_pcm ? totalRent : property.price_pcm")
+  })
+})
+
+/**
+ * price_pcm means "a landlord is advertising this". Nothing computed goes in it.
+ *
+ * /api/enrich-rents used to write its modelled figure there whenever a property
+ * was listing_type "rent" and had no price yet. That guard was aimed at the
+ * right target — never overwrite a real advertised figure — but it did not
+ * consider a property that is not advertised at all.
+ *
+ * propertydata-hmo.ts stores licence-register records as listing_type "rent",
+ * because there is no off_market value to give them, and they carry no price
+ * because nobody is letting them. Both conditions, exactly. 216 register records
+ * were handed a monthly rent for a letting that does not exist, and the property
+ * card reports that column as what the property achieves today.
+ *
+ * Narrowing the condition would only move the hole, so the column is simply not
+ * written from a computed value. The modelled figure lives in
+ * estimated_gross_monthly_rent, which the hero reads and labels as modelled.
+ */
+describe("computed rents never reach price_pcm", () => {
+  const RENT_ROUTE = join("app", "api", "enrich-rents", "route.ts")
+
+  it("enrich-rents does not assign price_pcm", () => {
+    const src = readFileSync(RENT_ROUTE, "utf8")
+    // Strip comments so the explanation above (which names the column) does not
+    // trip the check that the code no longer sets it.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n")
+    expect(code).not.toMatch(/price_pcm\s*:/)
+  })
+
+  it("still writes the modelled figure to its own column", () => {
+    const src = readFileSync(RENT_ROUTE, "utf8")
+    expect(src).toMatch(/estimated_gross_monthly_rent\s*:/)
+    expect(src).toMatch(/estimated_rent_per_room\s*:/)
+  })
+})
+
+/**
+ * The hero bar shows observed figures, or arithmetic on observed figures.
+ *
+ * PR #26 removed "Net Yield" (grossYield × 0.7) and "Cashflow" (30% costs, 75%
+ * LTV, 5.5% interest, all hardcoded) from property-detail-card.tsx. The audit
+ * found both still live in hero-metrics-bar.tsx — the same two figures, on the
+ * same page, because the fix was applied to one component and not its twin.
+ *
+ * That is the failure this block exists to catch: not the original mistake, but
+ * a correct fix landing on one call site while its duplicate keeps rendering.
+ */
+describe("the hero metrics bar states nothing it cannot source", () => {
+  const HERO = join("components", "hero-metrics-bar.tsx")
+  // Comments describe the removed arithmetic, so they must not count as its
+  // presence — the same trap as the enrich-rents check above.
+  const code = readFileSync(HERO, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n")
+
+  it("does not apply a flat haircut to a yield and call it net", () => {
+    expect(code).not.toMatch(/netYield/)
+    expect(code).not.toMatch(/\*\s*0\.7\b/)
+  })
+
+  it("does not model cashflow from assumed costs, LTV and interest", () => {
+    expect(code).not.toMatch(/monthlyCashflow/)
+    expect(code).not.toMatch(/0\.055/)
+    expect(code).not.toMatch(/0\.75\b/)
+    expect(code).not.toMatch(/\*\s*0\.3\b/)
+  })
+
+  it("does not label a metric Net Yield or Cashflow", () => {
+    expect(code).not.toMatch(/"Net Yield"/)
+    expect(code).not.toMatch(/"Cashflow"/)
+  })
+})
+
+/**
+ * PaTMa records that it got an answer, not that it asked a question.
+ *
+ * Three separate claims, all measured on 2026-09-02 and all now removed:
+ *
+ * 1. `patma_enriched_at` was stamped before either response was examined, so a
+ *    property whose lookups both returned 403 was written and counted as
+ *    "Updated". 664 rows carried the timestamp; 144 carried a median. 78% of
+ *    the "enriched" estate held no PaTMa data, and coverage read as though the
+ *    integration was working while its account was rejected upstream.
+ *
+ * 2. `Math.round(data.mean || 0)` stored a missing mean as £0 — a figure no
+ *    source stated, in a column that otherwise holds real comparables.
+ *
+ * 3. estimated_rental_yield took the median SOLD price, multiplied it by 0.004
+ *    ("~0.4% monthly"), called that a rent, annualised it and divided by the
+ *    asking price. Every input after the sold price was invented, and the
+ *    comment beside it said so: "would need rental data for accurate yield".
+ *    Same shape as the failure in CLAUDE.md, where a route divided a rent it
+ *    had made up by a random yield and stored the result as a purchase price.
+ */
+describe("the PaTMa enricher claims only what PaTMa returned", () => {
+  const PATMA = join("app", "api", "enrich-patma", "route.ts")
+  const code = readFileSync(PATMA, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n")
+
+  it("does not derive a rent from a sold price", () => {
+    expect(code).not.toMatch(/0\.004/)
+    expect(code).not.toMatch(/estimatedMonthlyRent/)
+    expect(code).not.toMatch(/estimated_rental_yield/)
+  })
+
+  it("does not store a missing price as zero", () => {
+    expect(code).not.toMatch(/Math\.round\([^)]*\|\|\s*0\s*\)/)
+  })
+
+  it("stamps the timestamp only after data was retrieved", () => {
+    // The timestamp must be assigned after the guard, not in the initial object.
+    expect(code).not.toMatch(/const updateData[^=]*=\s*\{\s*patma_enriched_at/)
+    expect(code).toMatch(/if \(!retrieved\)/)
+    expect(code).toMatch(/updateData\.patma_enriched_at = new Date\(\)/)
   })
 })

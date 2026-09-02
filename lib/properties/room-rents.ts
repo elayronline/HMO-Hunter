@@ -79,6 +79,13 @@ export type RentBasis = "city" | "national"
 
 export interface RoomRent {
   rate: number
+  /**
+   * The bottom and top of the published band for this city, carried alongside
+   * the average so a caller can place an *observed* rent within it rather than
+   * against a threshold invented at the call site. Same source as `rate`.
+   */
+  min: number
+  max: number
   basis: RentBasis
   /** The city the rate was matched on, where one was. */
   city: string | null
@@ -122,7 +129,7 @@ export function roomRent(
 ): RoomRent {
   const byCity = city ? CITY_ROOM_RENTS[city] : undefined
   if (byCity) {
-    return { rate: byCity.avg, basis: "city", city: city as string, matchedOn: "city" }
+    return { rate: byCity.avg, min: byCity.min, max: byCity.max, basis: "city", city: city as string, matchedOn: "city" }
   }
 
   const cityFromCouncil = council
@@ -134,11 +141,19 @@ export function roomRent(
   if (cityFromCouncil && CITY_ROOM_RENTS[cityFromCouncil]) {
     return {
       rate: CITY_ROOM_RENTS[cityFromCouncil].avg,
+      min: CITY_ROOM_RENTS[cityFromCouncil].min,
+      max: CITY_ROOM_RENTS[cityFromCouncil].max,
       basis: "city",
       city: cityFromCouncil,
       matchedOn: "council",
     }
   }
 
-  return { rate: CITY_ROOM_RENTS["_default"].avg, basis: "national", city: null }
+  return {
+    rate: CITY_ROOM_RENTS["_default"].avg,
+    min: CITY_ROOM_RENTS["_default"].min,
+    max: CITY_ROOM_RENTS["_default"].max,
+    basis: "national",
+    city: null,
+  }
 }

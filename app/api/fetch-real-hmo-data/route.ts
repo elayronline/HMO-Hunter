@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAdmin } from "@/lib/admin-auth"
 
 /**
  * POST /api/fetch-real-hmo-data
@@ -8,6 +9,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * These are actual working data sources with licence holder info
  */
 export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   const log: string[] = []
   const enriched: string[] = []
 
@@ -135,7 +138,9 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "POST to check real HMO data sources",
     note: "Most publicly available HMO registers do NOT include licence holder contact details (phone/email) for privacy reasons",

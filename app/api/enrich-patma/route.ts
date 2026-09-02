@@ -16,6 +16,10 @@ export async function POST(request: Request) {
   const log: string[] = []
   const updated: string[] = []
   const failed: string[] = []
+  // Separate from `failed`: nothing went wrong with the request, PaTMa simply
+  // published nothing for this postcode or rejected the account. Counting those
+  // as enriched is what made 78% of the "enriched" rows hold no PaTMa data.
+  const skipped: string[] = []
 
   try {
     const body = await request.json().catch(() => ({}))
@@ -95,35 +99,88 @@ export async function POST(request: Request) {
           }
         )
 
-        const updateData: any = {
-          patma_enriched_at: new Date().toISOString(),
+        /*
+         * A price PaTMa did not publish is absent, not zero.
+         *
+         * This read `Math.round(data.mean || 0)`, so a null mean was stored as
+         * £0 — a figure no source stated, in a column that otherwise holds real
+         * comparables and with nothing to tell the two apart.
+         */
+        const price = (v: unknown): number | undefined => {
+          const n = typeof v === "number" ? v : Number(v)
+          return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined
         }
+
+        const updateData: any = {}
+        let retrieved = false
 
         if (askingResponse.ok) {
           const askingData = await askingResponse.json()
           if (askingData.data) {
-            updateData.patma_asking_price_mean = Math.round(askingData.data.mean || 0)
-            updateData.patma_asking_price_median = Math.round(askingData.data.median || 0)
-            updateData.patma_search_radius_miles = askingData.data.radius
+            const mean = price(askingData.data.mean)
+            const median = price(askingData.data.median)
+            if (mean !== undefined) updateData.patma_asking_price_mean = mean
+            if (median !== undefined) updateData.patma_asking_price_median = median
+            if (askingData.data.radius != null) updateData.patma_search_radius_miles = askingData.data.radius
+            if (mean !== undefined || median !== undefined) retrieved = true
           }
         }
 
         if (soldResponse.ok) {
           const soldData = await soldResponse.json()
           if (soldData.data) {
-            updateData.patma_sold_price_mean = Math.round(soldData.data.mean || 0)
-            updateData.patma_sold_price_median = Math.round(soldData.data.median || 0)
-            updateData.patma_price_data_points = soldData.data.data_points
+            const mean = price(soldData.data.mean)
+            const median = price(soldData.data.median)
+            if (mean !== undefined) updateData.patma_sold_price_mean = mean
+            if (median !== undefined) updateData.patma_sold_price_median = median
+            if (soldData.data.data_points != null) updateData.patma_price_data_points = soldData.data.data_points
+            if (mean !== undefined || median !== undefined) retrieved = true
           }
         }
 
-        // Calculate estimated yield if we have purchase price and sold price data
-        if (property.purchase_price && updateData.patma_sold_price_median) {
-          // This is a rough estimate - would need rental data for accurate yield
-          const estimatedMonthlyRent = updateData.patma_sold_price_median * 0.004 // ~0.4% monthly
-          const annualRent = estimatedMonthlyRent * 12
-          updateData.estimated_rental_yield = ((annualRent / property.purchase_price) * 100).toFixed(2)
+        /*
+         * estimated_rental_yield is no longer derived here.
+         *
+         * What stood here took PaTMa's median SOLD price, multiplied it by
+         * 0.004 — an undisclosed constant, annotated "~0.4% monthly" — called
+         * the result a monthly rent, annualised it, divided by the asking price
+         * and stored the answer as a yield. Every input after the sold price
+         * was invented, and the comment beside it admitted the method: "This is
+         * a rough estimate - would need rental data for accurate yield."
+         *
+         * It is the same shape as the failure recorded in CLAUDE.md, where a
+         * route divided a rent it had itself made up by a random yield and
+         * stored the result as a purchase price. A disclosed yield already
+         * exists: /api/enrich-rents writes estimated_gross_monthly_rent from a
+         * named city room rate, and the property card prints that basis on its
+         * face. Two yields computed different ways, one of them silent, is how
+         * a reader stops being able to trust either.
+         *
+         * The column is empty across the estate (0 rows) and rendered nowhere,
+         * so nothing is lost by not writing it.
+         */
+
+        /*
+         * The timestamp records that PaTMa answered, not that it was asked.
+         *
+         * patma_enriched_at was stamped unconditionally, before either response
+         * was examined, so a property whose lookups both 403'd was written and
+         * counted as "Updated". Measured on 2026-09-02: 664 rows carried the
+         * timestamp and 144 carried a median — 78% of the "enriched" rows held
+         * no PaTMa data at all, and coverage read as though the integration was
+         * mostly working while its account was rejected upstream.
+         */
+        if (!retrieved) {
+          const reason = !askingResponse.ok || !soldResponse.ok
+            ? `PaTMa returned ${askingResponse.status}/${soldResponse.status}`
+            : "PaTMa published no comparables for this postcode"
+          log.push(`  Skipped: ${property.address} (${reason})`)
+          skipped.push(property.address)
+          await new Promise(resolve => setTimeout(resolve, 300))
+          continue
         }
+
+        updateData.patma_enriched_at = new Date().toISOString()
 
         const { error: updateError } = await supabaseAdmin
           .from("properties")
@@ -136,7 +193,7 @@ export async function POST(request: Request) {
         } else {
           const priceInfo = updateData.patma_sold_price_median
             ? `median sold £${updateData.patma_sold_price_median.toLocaleString()}`
-            : "no price data"
+            : "asking prices only"
           log.push(`  Updated: ${property.address} (${priceInfo})`)
           updated.push(property.address)
         }
@@ -153,7 +210,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: `Enriched ${updated.length} properties with PaTMa price data`,
-      summary: { processed: properties.length, enriched: updated.length, failed: failed.length },
+      summary: {
+        processed: properties.length,
+        enriched: updated.length,
+        skipped: skipped.length,
+        failed: failed.length,
+      },
       log,
       updated,
       failed,
@@ -191,7 +253,8 @@ export async function GET() {
       "patma_sold_price_median - Median sold price",
       "patma_price_data_points - Number of comparable sales",
       "patma_search_radius_miles - Search radius used",
-      "estimated_rental_yield - Calculated yield estimate",
+      // estimated_rental_yield is deliberately absent: this route no longer
+      // derives one. The disclosed yield comes from /api/enrich-rents.
     ],
     usage: {
       method: "POST",

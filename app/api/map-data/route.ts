@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { requireAuth } from "@/lib/api-auth"
 
 /**
  * GET /api/map-data
@@ -8,6 +9,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
  * Use this to debug map marker issues.
  */
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   const { searchParams } = new URL(request.url)
   const city = searchParams.get("city") || "London"
 

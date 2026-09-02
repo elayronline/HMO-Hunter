@@ -8,6 +8,7 @@ import {
   MIN_DECISIONS_FOR_RATE,
   type DecisionRow,
 } from "@/lib/planning/decision-stats"
+import { requireAuth } from "@/lib/api-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -26,6 +27,8 @@ const DISCLAIMER =
  *   (no params)                  national summary with per-council breakdown
  */
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   try {
     const url = new URL(request.url)
     const council = url.searchParams.get("council")

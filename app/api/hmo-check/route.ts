@@ -5,6 +5,7 @@ import { assessConversion } from "@/lib/properties/conversion"
 import { assessUseClass } from "@/lib/properties/use-class"
 import { curatedBySlug, assessCurated } from "@/lib/article4/curated"
 import { toSlug } from "@/lib/article4/registry"
+import { requireAuth } from "@/lib/api-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -19,6 +20,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  * as though it were certain.
  */
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (!auth.authenticated) return auth.response
   const url = new URL(request.url)
   const query = (url.searchParams.get("address") ?? "").trim()
 

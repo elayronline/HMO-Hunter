@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { enforceRateLimit } from "@/lib/redis"
+import type { RateLimitPreset } from "@/lib/rate-limit"
 import { validateCSRF, ensureCSRFCookie } from "@/lib/csrf"
 
 export async function middleware(request: NextRequest) {
@@ -8,21 +9,22 @@ export async function middleware(request: NextRequest) {
 
   // Apply rate limiting to API routes
   if (pathname.startsWith("/api/")) {
-    let rateLimitConfig: { maxRequests: number; windowMs: number } = RATE_LIMITS.standard
-
     // Stricter limits for sensitive endpoints
+    let preset: RateLimitPreset = "standard"
     if (pathname.includes("/auth/")) {
-      rateLimitConfig = RATE_LIMITS.auth
+      preset = "auth"
     } else if (pathname.includes("/enrich")) {
-      rateLimitConfig = RATE_LIMITS.enrichment
+      preset = "enrichment"
     } else if (pathname.includes("/admin")) {
-      rateLimitConfig = RATE_LIMITS.admin
+      preset = "admin"
+    } else if (pathname.startsWith("/api/cron/")) {
+      preset = "cron"
     }
 
-    const rateLimitResponse = checkRateLimit(request, {
-      ...rateLimitConfig,
-      keyPrefix: pathname
-    })
+    // Distributed when Redis is configured, per-instance when it is not.
+    // Previously this called the in-memory counter directly while its own
+    // docstring claimed otherwise.
+    const rateLimitResponse = await enforceRateLimit(request, preset, pathname)
 
     if (rateLimitResponse) {
       return rateLimitResponse

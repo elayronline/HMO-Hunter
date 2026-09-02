@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { ZooplaAdapter } from "@/lib/ingestion/adapters/zoopla"
+import { requireAdmin } from "@/lib/admin-auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -11,6 +12,8 @@ const zoopla = new ZooplaAdapter()
  * Finds HMO properties that exist on Zoopla and updates their images
  */
 export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
     // Absence of a key is not absence of stock. Every fetch on the adapter
     // returns empty when unconfigured, which is indistinguishable from a search
     // that matched nothing — so say which it is.

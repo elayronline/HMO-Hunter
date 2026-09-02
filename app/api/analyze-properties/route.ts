@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { PotentialHMOAnalyzer } from "@/lib/ingestion/enrichment/potential-hmo-analyzer"
+import { requireAdmin } from "@/lib/admin-auth"
 
 export const maxDuration = 300 // 5 minutes timeout
 
@@ -11,7 +12,9 @@ export const maxDuration = 300 // 5 minutes timeout
  * This should be run after ingestion to populate the is_potential_hmo, hmo_classification,
  * and deal_score fields.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   try {
     const supabase = await createClient()
     const analyzer = new PotentialHMOAnalyzer()
@@ -93,7 +96,9 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
   return NextResponse.json({
     message: "Use POST to analyze properties for potential HMO status",
     description: "This endpoint analyzes existing properties to identify HMO conversion opportunities",

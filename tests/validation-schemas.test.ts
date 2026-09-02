@@ -8,6 +8,8 @@ import {
   exportRequestSchema,
   propertyFiltersSchema,
   zooplaIngestSchema,
+  rightmoveIngestSchema,
+  loopnetIngestSchema,
 } from "@/lib/validation/schemas"
 
 describe("uuidSchema", () => {
@@ -397,5 +399,90 @@ describe("zooplaIngestSchema — an unbounded sale run must be unrepresentable",
     const result = zooplaIngestSchema.safeParse({ area: "Nottingham" })
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.listingType).toBe("rent")
+  })
+})
+
+describe("rightmoveIngestSchema — rent is unrepresentable, not merely non-default", () => {
+  const buy = (over: Record<string, unknown> = {}) =>
+    rightmoveIngestSchema.safeParse({ area: "Nottingham", maxPrice: 500000, minBedrooms: 4, ...over })
+
+  it("accepts a bounded purchase run", () => {
+    expect(buy().success).toBe(true)
+  })
+
+  // The whole point. zooplaIngestSchema takes listingType and defaults it to
+  // "rent"; this one has no such field, and .strict() means asking for rentals
+  // is an error rather than a silently dropped key.
+  it("rejects a run that asks for rentals", () => {
+    const result = buy({ listingType: "rent" })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects listingType even when it says purchase", () => {
+    expect(buy({ listingType: "purchase" }).success).toBe(false)
+  })
+
+  it("rejects an unbounded run with no ceiling", () => {
+    const result = rightmoveIngestSchema.safeParse({ area: "Nottingham", minBedrooms: 4 })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects a run with no bedroom floor", () => {
+    const result = rightmoveIngestSchema.safeParse({ area: "Nottingham", maxPrice: 500000 })
+    expect(result.success).toBe(false)
+  })
+
+  // Fewer than three bedrooms is not an HMO conversion candidate.
+  it("rejects a bedroom floor below 3", () => {
+    expect(buy({ minBedrooms: 2 }).success).toBe(false)
+  })
+
+  it("requires either a postcode or an area", () => {
+    const result = rightmoveIngestSchema.safeParse({ maxPrice: 500000, minBedrooms: 4 })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects a price range that inverts", () => {
+    expect(buy({ minPrice: 600000 }).success).toBe(false)
+  })
+
+  it("rejects a bedroom range that inverts", () => {
+    expect(buy({ minBedrooms: 6, maxBedrooms: 4 }).success).toBe(false)
+  })
+
+  it("defaults the search radius rather than leaving it unset", () => {
+    const result = buy()
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.radiusMiles).toBe(0.25)
+  })
+})
+
+describe("loopnetIngestSchema — a caller cannot reach the expensive events", () => {
+  it("defaults to the UK for-sale search", () => {
+    const r = loopnetIngestSchema.safeParse({})
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect(r.data.searchUrl).toMatch(/loopnet\.co\.uk/)
+      expect(r.data.maxItems).toBe(50)
+    }
+  })
+
+  // loopnet.com is the US site. Its prices are USD, and purchase_price is read
+  // as sterling everywhere downstream.
+  it("rejects the US site", () => {
+    expect(
+      loopnetIngestSchema.safeParse({ searchUrl: "https://www.loopnet.com/search/commercial-real-estate/for-sale/" })
+        .success
+    ).toBe(false)
+  })
+
+  // $0.05 per property detail — 100 of them is the entire monthly free tier.
+  it("rejects an attempt to switch on a billed actor option", () => {
+    expect(loopnetIngestSchema.safeParse({ includeListingDetails: true }).success).toBe(false)
+    expect(loopnetIngestSchema.safeParse({ searchType: "for-lease" }).success).toBe(false)
+  })
+
+  it("caps maxItems at the free plan's ceiling", () => {
+    expect(loopnetIngestSchema.safeParse({ maxItems: 500 }).success).toBe(false)
   })
 })
