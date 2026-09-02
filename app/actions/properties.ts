@@ -24,6 +24,66 @@ async function safeSupabaseQuery<T>(
   }
 }
 
+/**
+ * The columns the list and map actually read.
+ *
+ * getProperties() selected "*" — all 184 columns — and returns the result to the
+ * browser through a Server Action, which Next serialises into the RSC payload.
+ * At 902 served rows that was roughly 9 MB and survived. Correcting
+ * is_potential_hmo took the served set to 2,089 and the payload to 21.4 MB, and
+ * the page stopped rendering: the action still returned 200, the client just
+ * never got usable data. The ceiling was always there; the row count found it.
+ *
+ * Measured over the live served set:
+ *
+ *     description   6.11 MB   28.6%      <- panel only
+ *     images        4.68 MB   21.9%      <- superseded by primary_image
+ *     other 182     ~10.6 MB             <- mostly JSON key overhead:
+ *                                           184 keys x 2,089 rows
+ *
+ * So the win is as much about dropping KEYS as values. This projection is 48
+ * columns and measures 2.85 MB — an 87% reduction, and the query time falls
+ * from 4.2s to 1.3s.
+ *
+ * WHAT IS DELIBERATELY ABSENT
+ *
+ * `description`, `images` and `floor_plans` are read only by the selected-
+ * property panel, which now refetches the whole row by id on selection. A list
+ * of 2,089 properties should not carry the detail of all of them so that one
+ * can be opened.
+ *
+ * `primary_image` replaces `images` for the card. PropertyImage takes the first
+ * non-stock URL from the array; measured across all 2,094 rows, primary_image
+ * already equals that value on every row that has one — 1,927 matches, zero
+ * differences — so the card renders identically from a 0.22 MB column instead
+ * of a 4.68 MB one.
+ *
+ * ADDING A FIELD TO A CARD MEANS ADDING IT HERE. That is the cost of a
+ * projection, and it is the right trade: the alternative is a page that works
+ * until the row count grows.
+ */
+const LIST_COLUMNS = [
+  // identity and position
+  "id", "external_id", "title", "address", "postcode", "city", "latitude", "longitude",
+  // listing basics shown on the card
+  "listing_type", "property_type", "purchase_price", "price_pcm", "bedrooms", "bathrooms",
+  "primary_image", "image_url", "source_name", "source_url", "created_at",
+  // categorise() / inSegment() / sourcingCategory() — see CategorisableProperty
+  "hmo_status", "is_potential_hmo", "licensed_hmo", "licence_status", "licence_checked_at",
+  "hmo_licence_expiry", "hmo_licence_reference", "max_occupants",
+  // Article4Position, and the labels the card prints beside it
+  "article_4_status", "article_4_area", "article_4_area_name", "article_4_council",
+  // figures the card and the segment counts read
+  "epc_rating", "gross_internal_area_sqm", "floor_area_band", "lettable_rooms",
+  "estimated_rent_per_room", "estimated_gross_monthly_rent", "estimated_yield_percentage",
+  "deal_score", "broadband_max_down", "has_fiber", "is_furnished", "is_ex_local_authority",
+  // owner presence drives a count on the map page; the values themselves are
+  // gated by entitlement further down
+  "owner_name", "company_name", "company_number", "contact_data_opted_out",
+  // filtered on
+  "is_stale",
+].join(",")
+
 export async function getProperties(filters?: Partial<PropertyFilters>): Promise<Property[]> {
   // Validate and sanitize all filter inputs
   const validatedFilters = filters ? validateFilters(filters) : {}
@@ -54,7 +114,7 @@ export async function getProperties(filters?: Partial<PropertyFilters>): Promise
   try {
     const supabase = await createClient()
 
-    let query = supabase.from("properties").select("*").order("created_at", { ascending: false })
+    let query = supabase.from("properties").select(LIST_COLUMNS).order("created_at", { ascending: false })
 
     query = query.or("is_stale.eq.false,is_stale.is.null")
 

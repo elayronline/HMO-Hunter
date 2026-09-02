@@ -354,7 +354,19 @@ export const PropertyListView = memo(function PropertyListView({
                 isSelected ? "border-teal-500 ring-1 ring-teal-500" : "border-slate-200"
               }`}
             >
-              {/* Image */}
+              {/*
+                Image.
+
+                existingImages takes primary_image, not the images array:
+                getProperties() no longer returns the array — see LIST_COLUMNS in
+                app/actions/properties.ts, where it was 4.68 MB of a 21.4 MB
+                payload that stopped the page rendering.
+
+                PropertyImage picks the first non-stock URL out of what it is
+                given. Measured across all 2,094 rows, primary_image already
+                equals that value on every row that has one — 1,927 matches,
+                zero differences — so the card renders exactly as before.
+              */}
               <div className="relative h-36 overflow-hidden rounded-t-xl bg-slate-100">
                 <PropertyImage
                   address={property.address}
@@ -363,7 +375,7 @@ export const PropertyListView = memo(function PropertyListView({
                   longitude={property.longitude}
                   bedrooms={property.bedrooms}
                   listingType={property.listing_type}
-                  existingImages={property.images ?? undefined}
+                  existingImages={property.primary_image ? [property.primary_image] : undefined}
                   width={400}
                   height={200}
                   className="h-full w-full object-cover"

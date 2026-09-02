@@ -113,6 +113,36 @@ function MapPage() {
   // Initialize state from URL params for persistence across navigation
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+
+  /*
+   * Selecting a property shows the list row at once, then replaces it with the
+   * full record.
+   *
+   * getProperties() no longer returns every column — see LIST_COLUMNS in
+   * app/actions/properties.ts. Carrying `description`, `images` and
+   * `floor_plans` for 2,089 properties so that one of them can be opened put
+   * 21.4 MB through a Server Action and stopped the page rendering at all.
+   *
+   * So the panel fetches what it needs when it is opened. The list row is set
+   * first, deliberately: it already carries the address, price and status the
+   * panel shows above the fold, so the panel opens instantly and fills in
+   * rather than flashing a spinner. A failed refetch leaves the list row in
+   * place — fewer fields, but nothing blank and nothing wrong.
+   */
+  const selectProperty = useCallback((property: Property) => {
+    setSelectedProperty(property)
+    void getPropertyById(property.id)
+      .then((full) => {
+        if (full) {
+          setSelectedProperty((current) =>
+            current && current.id === full.id ? full : current
+          )
+        }
+      })
+      .catch(() => {
+        // Keep the list row. It is a subset, not a wrong answer.
+      })
+  }, [])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
   const skipNextAuthUpdate = useRef(false)
@@ -276,7 +306,7 @@ function MapPage() {
   // the map. All three, or the reader arrives at a map centred somewhere else
   // with no indication which pin was theirs.
   const handleShowOnMap = useCallback((property: Property) => {
-    setSelectedProperty(property)
+    selectProperty(property)
     setRightPanelOpen(true)
     setMapFocus({ property, nonce: Date.now() })
     setViewMode("map")
@@ -1604,7 +1634,7 @@ function MapPage() {
                 properties={displayProperties}
                 selectedProperty={selectedProperty}
                 onPropertySelect={(property) => {
-                  setSelectedProperty(property)
+                  selectProperty(property)
                   setRightPanelOpen(true)
                 }}
                 loading={loading}
@@ -1618,7 +1648,7 @@ function MapPage() {
               properties={displayProperties}
               selectedProperty={selectedProperty}
               onPropertySelect={(property) => {
-                setSelectedProperty(property)
+                selectProperty(property)
                 setRightPanelOpen(true)
               }}
               onShowOnMap={handleShowOnMap}
@@ -1899,7 +1929,7 @@ function MapPage() {
                     comparisonMetric={comparisonMetric}
                     onMetricChange={setComparisonMetric}
                     onPropertySelect={(p) => {
-                      setSelectedProperty(p)
+                      selectProperty(p)
                       setShowFullDetails(false)
                     }}
                     calculateROI={calculateROI}
@@ -2293,7 +2323,7 @@ function MapPage() {
         onShowPropertyDetails={() => {
           // Select first property to demo the details panel
           if (properties.length > 0 && !selectedProperty) {
-            setSelectedProperty(properties[0])
+            selectProperty(properties[0])
             setRightPanelOpen(true)
           } else if (selectedProperty) {
             setRightPanelOpen(true)
