@@ -187,3 +187,50 @@ describe("the hero metrics bar states nothing it cannot source", () => {
     expect(code).not.toMatch(/"Cashflow"/)
   })
 })
+
+/**
+ * PaTMa records that it got an answer, not that it asked a question.
+ *
+ * Three separate claims, all measured on 2026-09-02 and all now removed:
+ *
+ * 1. `patma_enriched_at` was stamped before either response was examined, so a
+ *    property whose lookups both returned 403 was written and counted as
+ *    "Updated". 664 rows carried the timestamp; 144 carried a median. 78% of
+ *    the "enriched" estate held no PaTMa data, and coverage read as though the
+ *    integration was working while its account was rejected upstream.
+ *
+ * 2. `Math.round(data.mean || 0)` stored a missing mean as £0 — a figure no
+ *    source stated, in a column that otherwise holds real comparables.
+ *
+ * 3. estimated_rental_yield took the median SOLD price, multiplied it by 0.004
+ *    ("~0.4% monthly"), called that a rent, annualised it and divided by the
+ *    asking price. Every input after the sold price was invented, and the
+ *    comment beside it said so: "would need rental data for accurate yield".
+ *    Same shape as the failure in CLAUDE.md, where a route divided a rent it
+ *    had made up by a random yield and stored the result as a purchase price.
+ */
+describe("the PaTMa enricher claims only what PaTMa returned", () => {
+  const PATMA = join("app", "api", "enrich-patma", "route.ts")
+  const code = readFileSync(PATMA, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n")
+
+  it("does not derive a rent from a sold price", () => {
+    expect(code).not.toMatch(/0\.004/)
+    expect(code).not.toMatch(/estimatedMonthlyRent/)
+    expect(code).not.toMatch(/estimated_rental_yield/)
+  })
+
+  it("does not store a missing price as zero", () => {
+    expect(code).not.toMatch(/Math\.round\([^)]*\|\|\s*0\s*\)/)
+  })
+
+  it("stamps the timestamp only after data was retrieved", () => {
+    // The timestamp must be assigned after the guard, not in the initial object.
+    expect(code).not.toMatch(/const updateData[^=]*=\s*\{\s*patma_enriched_at/)
+    expect(code).toMatch(/if \(!retrieved\)/)
+    expect(code).toMatch(/updateData\.patma_enriched_at = new Date\(\)/)
+  })
+})
