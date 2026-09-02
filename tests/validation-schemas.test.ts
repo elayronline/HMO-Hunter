@@ -9,6 +9,7 @@ import {
   propertyFiltersSchema,
   zooplaIngestSchema,
   rightmoveIngestSchema,
+  loopnetIngestSchema,
 } from "@/lib/validation/schemas"
 
 describe("uuidSchema", () => {
@@ -453,5 +454,35 @@ describe("rightmoveIngestSchema — rent is unrepresentable, not merely non-defa
     const result = buy()
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.radiusMiles).toBe(0.25)
+  })
+})
+
+describe("loopnetIngestSchema — a caller cannot reach the expensive events", () => {
+  it("defaults to the UK for-sale search", () => {
+    const r = loopnetIngestSchema.safeParse({})
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect(r.data.searchUrl).toMatch(/loopnet\.co\.uk/)
+      expect(r.data.maxItems).toBe(50)
+    }
+  })
+
+  // loopnet.com is the US site. Its prices are USD, and purchase_price is read
+  // as sterling everywhere downstream.
+  it("rejects the US site", () => {
+    expect(
+      loopnetIngestSchema.safeParse({ searchUrl: "https://www.loopnet.com/search/commercial-real-estate/for-sale/" })
+        .success
+    ).toBe(false)
+  })
+
+  // $0.05 per property detail — 100 of them is the entire monthly free tier.
+  it("rejects an attempt to switch on a billed actor option", () => {
+    expect(loopnetIngestSchema.safeParse({ includeListingDetails: true }).success).toBe(false)
+    expect(loopnetIngestSchema.safeParse({ searchType: "for-lease" }).success).toBe(false)
+  })
+
+  it("caps maxItems at the free plan's ceiling", () => {
+    expect(loopnetIngestSchema.safeParse({ maxItems: 500 }).success).toBe(false)
   })
 })

@@ -198,6 +198,46 @@ export const rightmoveIngestSchema = z
     path: ["minBedrooms"],
   })
 
+/**
+ * LoopNet commercial ingest — Class E conversion stock only.
+ *
+ * Two things are deliberately absent, for the same reason `listingType` is
+ * absent from rightmoveIngestSchema: a caller must not be able to ask for them.
+ *
+ * There is no `searchType`. LoopNet offers for-sale, for-lease and auctions; a
+ * lease is not sourcing inventory, and the adapter's start URL is a for-sale
+ * search. There is no way to express the others here.
+ *
+ * There is no passthrough for actor options. `includeListingDetails` bills at
+ * $0.05 per property — a hundred of them is the whole monthly free tier in one
+ * run — and `agent-record` at $0.0035. The adapter builds its actor payload from
+ * a literal with those hardcoded false, so a request cannot reach them, and
+ * `.strict()` here means an attempt is an error rather than a silently dropped
+ * key.
+ *
+ * `maxItems` is capped at 100 because the free plan is: the actor returns at
+ * most 100 rows for a non-paying account, and asking for more spends the run
+ * without returning them.
+ */
+export const loopnetIngestSchema = z
+  .object({
+    /**
+     * A loopnet.co.uk search URL. Free-text search resolves through a
+     * token-gated geocoder that failed on probe, and the actor's own log names
+     * startUrls as the token-free path — so a URL is the input, not a place.
+     */
+    searchUrl: z
+      .string()
+      .url()
+      .refine((u) => /^https:\/\/(www\.)?loopnet\.co\.uk\//.test(u), {
+        message:
+          "Must be a loopnet.co.uk search URL. loopnet.com is the US site: its listings are priced in dollars and are not UK conversion stock.",
+      })
+      .default("https://www.loopnet.co.uk/search/commercial-real-estate/united-kingdom/for-sale/"),
+    maxItems: z.number().int().positive().max(100).default(50),
+  })
+  .strict()
+
 export const trackContactSchema = z.object({
   propertyId: z.string().uuid("Invalid property ID"),
   action: z.enum(["view", "call", "email", "copy"], {
@@ -345,3 +385,4 @@ export type D2VCampaignCreate = z.infer<typeof d2vCampaignCreateSchema>
 export type ViewingCreate = z.infer<typeof viewingCreateSchema>
 export type ViewingUpdate = z.infer<typeof viewingUpdateSchema>
 export type RightmoveIngest = z.infer<typeof rightmoveIngestSchema>
+export type LoopnetIngest = z.infer<typeof loopnetIngestSchema>
