@@ -5,9 +5,7 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 import { shouldHonourFocus, shouldFlyToCity } from "@/lib/map/view-workflow"
-
-// Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard, no API key needed)
-const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+import { MAP_STYLE, withStadiaKey } from "@/lib/map/stadia"
 
 
 export function MapInner({
@@ -65,9 +63,7 @@ export function MapInner({
         pixelRatio: window.devicePixelRatio || 1,
         antialias: true,
         attributionControl: false,
-        transformRequest: (url: string) => {
-          return { url }
-        },
+        transformRequest: (url: string) => ({ url: withStadiaKey(url) }),
       })
 
       map.addControl(new maplibregl.NavigationControl(), "top-right")
