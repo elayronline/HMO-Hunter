@@ -5,9 +5,7 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 import type { MainMapViewProps } from "./main-map-view"
 import { shouldHonourFocus, shouldFlyToCity } from "@/lib/map/view-workflow"
-
-// Stadia Maps - Alidade Smooth (domain-based auth via Stadia dashboard, no API key needed)
-const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+import { MAP_STYLE, withStadiaKey } from "@/lib/map/stadia"
 
 
 export function MapInner({
@@ -27,6 +25,14 @@ export function MapInner({
   const markerElementsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const popupRef = useRef<maplibregl.Popup | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  // The city the map opens on. Read through a ref so initMap does not depend
+  // on selectedCity: when it did, every city change re-ran the init effect,
+  // whose cleanup removed the map and built a new one while mapReady stayed
+  // true. The marker and fly-to effects then ran against a map that had not
+  // loaded, and the result on screen was pins with no basemap under them, or
+  // a basemap with no pins, until the next drag forced a repaint. The map is
+  // built once; the fly-to effect below is what follows the city.
+  const initialCityRef = useRef(selectedCity)
   // Which focus request the camera has already honoured, and the latest one
   // asked for. Read through refs so the city effect below sees current values
   // without taking focusProperty as a dependency.
@@ -60,14 +66,12 @@ export function MapInner({
       const map = new maplibregl.Map({
         container: mapContainerRef.current,
         style: MAP_STYLE,
-        center: [selectedCity.longitude, selectedCity.latitude],
-        zoom: selectedCity.zoom,
+        center: [initialCityRef.current.longitude, initialCityRef.current.latitude],
+        zoom: initialCityRef.current.zoom,
         pixelRatio: window.devicePixelRatio || 1,
         antialias: true,
         attributionControl: false,
-        transformRequest: (url: string) => {
-          return { url }
-        },
+        transformRequest: (url: string) => ({ url: withStadiaKey(url) }),
       })
 
       map.addControl(new maplibregl.NavigationControl(), "top-right")
@@ -93,7 +97,8 @@ export function MapInner({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to initialize map")
     }
-  }, [selectedCity.name, selectedCity.longitude, selectedCity.latitude, selectedCity.zoom])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- built once; see initialCityRef
+  }, [])
 
   // Load Article 4 areas from official UK Government API
   const loadArticle4Areas = async (map: maplibregl.Map) => {

@@ -3,9 +3,7 @@
 import { useEffect, useRef } from "react"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
-
-// Stadia Maps - domain-based auth via Stadia dashboard, no API key needed
-const MAP_STYLE = "https://tiles.stadiamaps.com/styles/alidade_smooth.json"
+import { MAP_STYLE, withStadiaKey } from "@/lib/map/stadia"
 
 interface PropertyLocationMapProps {
   latitude: number
@@ -27,6 +25,7 @@ export function PropertyLocationMap({ latitude, longitude, address, className }:
       center: [longitude, latitude],
       zoom: 15,
       attributionControl: false,
+      transformRequest: (url: string) => ({ url: withStadiaKey(url) }),
     })
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right")
